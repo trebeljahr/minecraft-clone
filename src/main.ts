@@ -7,7 +7,7 @@ import { Noise } from "./noise";
 let stats, camera, controls, scene, renderer, mesh;
 
 const chunkWidth = 16;
-const worldHeight = 5;
+const worldHeight = 64;
 const chunkDepth = 16;
 const worldHalfWidth = chunkWidth / 2;
 const worldHalfDepth = chunkDepth / 2;
@@ -101,7 +101,7 @@ function init() {
   scene.add(line);
 
   const texture = new THREE.TextureLoader().load(
-    require("../assets/grass.png")
+    require("../assets/stone.png")
   );
   texture.magFilter = THREE.NearestFilter;
 
@@ -117,11 +117,8 @@ function init() {
   objects.push(mesh);
 
   const ambientLight = new THREE.AmbientLight(0xcccccc);
+  ambientLight.intensity = 0.5;
   scene.add(ambientLight);
-
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-  directionalLight.position.set(1, 1, 0.5).normalize();
-  scene.add(directionalLight);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -249,7 +246,7 @@ function shouldPlaceBlock(x: number, z: number, y: number) {
   console.log(x, z, y);
   const noiseVal = noise.perlin3(x / 10, z / 10, y / 10);
   console.log(noiseVal);
-  return noiseVal >= 0.2;
+  return noiseVal >= 0;
 }
 
 function animate() {
