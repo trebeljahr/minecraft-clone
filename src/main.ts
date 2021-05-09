@@ -1,25 +1,21 @@
+import "./main.css";
+
 import * as THREE from "three";
-
-import Stats from "three/examples/jsm/libs/stats.module.js";
-
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
-import { ImprovedNoise } from "three/examples/jsm/math/ImprovedNoise.js";
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { LineSegments } from "three";
-
+import { Noise } from "./noise";
 let stats, camera, controls, scene, renderer, mesh;
 
-const worldWidth = 16;
-const worldHeight = 256;
-const worldDepth = 16;
-const worldHalfWidth = worldWidth / 2;
-const worldHalfDepth = worldDepth / 2;
-const data = generateHeight(worldWidth, worldDepth);
-const objects = [];
+const chunkWidth = 16;
+const worldHeight = 5;
+const chunkDepth = 16;
+const worldHalfWidth = chunkWidth / 2;
+const worldHalfDepth = chunkDepth / 2;
 const blockLength = 100;
+const objects = [];
+const chunksToRender = 2;
 
-let raycaster;
-let wireframesView = false;
+let wireframesView = 1;
 let moveForward = false;
 let moveBack = false;
 let moveLeft = false;
@@ -31,6 +27,12 @@ let prevTime = performance.now();
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 const maxSpeed = 30000;
+const blocker = document.getElementById("blocker");
+const instructions = document.getElementById("instructions");
+const noise = new Noise();
+
+console.log("Executing JS!");
+
 init();
 animate();
 
@@ -41,52 +43,66 @@ function init() {
     1,
     20000
   );
-  camera.position.y = getY(worldHalfWidth, worldHalfDepth) * 100 + 500;
-
+  camera.position.y = worldHeight;
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfd1e5);
 
   const geometries = [];
-  const chunkList = [1];
   const lines = [];
 
-  for (let chunk in chunkList) {
-    for (let z = 0; z < worldDepth; z++) {
-      for (let x = 0; x < worldWidth; x++) {
-        const surfaceHeight = 20 + getY(x, z);
-        for (let y = 0; y < worldHeight; y++) {
-          if (y < surfaceHeight) {
-            const block = new THREE.BoxGeometry(
-              blockLength,
-              blockLength,
-              blockLength
-            );
+  for (let xOffset = 0; xOffset < chunksToRender; xOffset++) {
+    for (let zOffset = 0; zOffset < chunksToRender; zOffset++) {
+      for (let zIndex = 0; zIndex < chunkDepth; zIndex++) {
+        const z = zIndex + zOffset * chunkDepth;
+        for (let xIndex = 0; xIndex < chunkWidth; xIndex++) {
+          const x = xIndex + xOffset * chunkWidth;
 
-            block.translate(
-              x * blockLength - worldHalfWidth * blockLength,
-              y * blockLength,
-              z * blockLength - worldHalfDepth * blockLength
-            );
-            const wireframe = new THREE.WireframeGeometry(block);
-            const line = new THREE.LineSegments(wireframe);
-            line.material.depthTest = false;
-            line.material.opacity = 0.25;
-            line.material.transparent = true;
-            line.visible = false;
-            lines.push(line);
-            scene.add(line);
+          for (let y = 0; y < worldHeight; y++) {
+            if (shouldPlaceBlock(x, z, y)) {
+              const block = new THREE.BoxGeometry(
+                blockLength,
+                blockLength,
+                blockLength
+              );
 
-            geometries.push(block);
+              block.translate(
+                x * blockLength - worldHalfWidth * blockLength,
+                y * blockLength,
+                z * blockLength - worldHalfDepth * blockLength
+              );
+              const wireframe = new THREE.WireframeGeometry(block);
+              const line = new THREE.LineSegments(wireframe);
+              line.visible = false;
+              lines.push(line);
+              scene.add(line);
+
+              geometries.push(block);
+            }
           }
         }
       }
     }
   }
 
+  if (geometries.length === 0) {
+    geometries.push(
+      new THREE.BoxGeometry(blockLength, blockLength, blockLength)
+    );
+  }
   const geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
   geometry.computeBoundingSphere();
 
-  const texture = new THREE.TextureLoader().load("assets/textures/grass.png");
+  const wireframe = new THREE.WireframeGeometry(geometry);
+  const material = new THREE.LineBasicMaterial({ color: 0x4080ff });
+  const line = new THREE.LineSegments(wireframe, material);
+  line.computeLineDistances();
+  line.visible = false;
+
+  scene.add(line);
+
+  const texture = new THREE.TextureLoader().load(
+    require("../assets/grass.png")
+  );
   texture.magFilter = THREE.NearestFilter;
 
   mesh = new THREE.Mesh(
@@ -113,6 +129,7 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   controls = new PointerLockControls(camera, document.body);
+
   instructions.addEventListener("click", function () {
     controls.lock();
   });
@@ -130,14 +147,19 @@ function init() {
   scene.add(controls.getObject());
 
   const onKeyPress = (event) => {
+    if (event.repeat) {
+      console.log("Pressed F but repeated");
+      return;
+    }
     switch (event.code) {
       case "KeyF":
         console.log("Pressed F");
+        line.visible = wireframesView % 3 === 0;
         lines.forEach((line) => {
-          line.visible = !wireframesView;
+          line.visible = wireframesView % 3 === 2;
         });
-        mesh.visible = wireframesView;
-        wireframesView = !wireframesView;
+        mesh.visible = wireframesView % 3 === 1;
+        wireframesView++;
         break;
     }
   };
@@ -206,19 +228,14 @@ function init() {
     }
   };
 
+  console.log("Adding listeners");
+  document.removeEventListener("keypress", onKeyPress);
+  document.removeEventListener("keydown", onKeyDown);
+  document.removeEventListener("keyup", onKeyUp);
+
   document.addEventListener("keypress", onKeyPress);
   document.addEventListener("keydown", onKeyDown);
   document.addEventListener("keyup", onKeyUp);
-
-  raycaster = new THREE.Raycaster(
-    new THREE.Vector3(),
-    new THREE.Vector3(0, -1, 0),
-    0,
-    10
-  );
-
-  stats = new Stats();
-
   window.addEventListener("resize", onWindowResize);
 }
 
@@ -228,34 +245,12 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function generateHeight(width, height) {
-  const data = [],
-    perlin = new ImprovedNoise(),
-    size = width * height,
-    z = Math.random() * 100;
-
-  let quality = 2;
-
-  for (let j = 0; j < 4; j++) {
-    if (j === 0) for (let i = 0; i < size; i++) data[i] = 0;
-
-    for (let i = 0; i < size; i++) {
-      const x = i % width,
-        y = (i / width) | 0;
-      data[i] += perlin.noise(x / quality, y / quality, z) * quality;
-    }
-
-    quality *= 4;
-  }
-
-  return data;
+function shouldPlaceBlock(x: number, z: number, y: number) {
+  console.log(x, z, y);
+  const noiseVal = noise.perlin3(x / 10, z / 10, y / 10);
+  console.log(noiseVal);
+  return noiseVal >= 0.2;
 }
-
-function getY(x, z) {
-  return (data[x + z * worldWidth] * 0.2) | 0;
-}
-
-//
 
 function animate() {
   requestAnimationFrame(animate);
