@@ -1,14 +1,14 @@
 import { Noise } from "./noise";
-import { VoxelWorld } from "./VoxelWorld";
+import { Chunk } from "./VoxelWorld";
 import * as THREE from "three";
 
 const noise = new Noise();
 
 export const chunkSize = 16;
 export const halfChunk = chunkSize / 2;
+const tileSize = 16;
 const tileTextureWidth = 16;
 const tileTextureHeight = 16;
-const tileSize = 16;
 
 function shouldPlaceBlock(x: number, z: number, y: number) {
   const noiseVal = noise.perlin3(x / 10, z / 10, y / 10);
@@ -16,7 +16,7 @@ function shouldPlaceBlock(x: number, z: number, y: number) {
 }
 
 export function generateChunk(xOff: number, yOff: number, zOff: number) {
-  const world = new VoxelWorld({
+  const chunk = new Chunk({
     chunkSize,
     tileSize,
     tileTextureWidth,
@@ -30,7 +30,7 @@ export function generateChunk(xOff: number, yOff: number, zOff: number) {
       for (let x = 0; x < chunkSize; x++) {
         const realX = x + xOff;
         if (shouldPlaceBlock(realX, realY, realZ)) {
-          world.setVoxel(x, y, z, 1);
+          chunk.setVoxel(x, y, z, 1);
         }
       }
     }
@@ -41,12 +41,12 @@ export function generateChunk(xOff: number, yOff: number, zOff: number) {
     normals,
     uvs,
     indices,
-  } = world.generateGeometryDataForCell(0, 0, 0);
+  } = chunk.generateGeometryDataForCell(0, 0, 0);
 
   const geometry = new THREE.BufferGeometry();
 
   const texture = new THREE.TextureLoader().load(
-    require("../assets/sandstone_normal.png")
+    require("../assets/stone.png")
   );
 
   texture.magFilter = THREE.NearestFilter;
@@ -80,14 +80,13 @@ export function generateChunk(xOff: number, yOff: number, zOff: number) {
   geometry.setIndex(indices);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.translateX(xOff);
-  mesh.translateY(yOff);
-  mesh.translateZ(zOff);
-  console.log(xOff, yOff, zOff);
+  mesh.translateY(zOff);
+  mesh.translateZ(yOff);
   const wireframe = new THREE.WireframeGeometry(geometry);
   const lineMaterial = new THREE.LineBasicMaterial({ color: 0x4080ff });
   const line = new THREE.LineSegments(wireframe, lineMaterial);
   line.computeLineDistances();
   line.visible = true;
 
-  return { mesh, line };
+  return { mesh, line, chunk: chunk.cell };
 }

@@ -1,2 +1,2 @@
-export const worldHeight = 16;
+export const worldHeight = 8;
 export const blockLength = 100;

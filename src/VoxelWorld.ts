@@ -25,7 +25,7 @@ const faces = [
   },
   {
     // bottom
-    uvRow: 1,
+    uvRow: 0,
     dir: [0, -1, 0],
     corners: [
       { pos: [1, 0, 1], uv: [1, 0] },
@@ -36,7 +36,7 @@ const faces = [
   },
   {
     // top
-    uvRow: 2,
+    uvRow: 0,
     dir: [0, 1, 0],
     corners: [
       { pos: [0, 1, 1], uv: [1, 1] },
@@ -68,10 +68,10 @@ const faces = [
     ],
   },
 ];
-export class VoxelWorld {
+export class Chunk {
   private cellSize: number;
   private cellSliceSize: number;
-  private cell: Uint8Array;
+  public cell: Uint8Array;
   private tileSize: number;
   private tileTextureWidth: number;
   private tileTextureHeight: number;
@@ -106,7 +106,7 @@ export class VoxelWorld {
     }
     return this.cell;
   }
-  setVoxel(x: number, y: number, z: number, v: 1) {
+  setVoxel(x: number, y: number, z: number, v: number) {
     const cell = this.getCellForVoxel(x, y, z);
     if (!cell) {
       return; // TODO: add a new cell?

@@ -20,6 +20,7 @@ let camera, controls, scene, renderer;
 let wireframesView = 2;
 
 const chunksToRender = 3;
+const chunksToRenderDown = 2;
 const objects = [];
 const lines = [];
 const velocity = new THREE.Vector3();
@@ -46,85 +47,31 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfd1e5);
 
-  // for (let x = 0; x < chunksToRender; x++) {
-  //   for (let y = 0; y < chunksToRender; y++) {
-  //     for (let z = 0; z < worldHeight; z++) {
-  //       const chunk = generateChunk(
-  //         x * chunkSize,
-  //         y * chunkSize,
-  //         z * chunkSize
-  //       );
-  //       const geometries = [];
-  //       chunk.forEach((block) => {
-  //         if (block) {
-  //           const blockMesh = new THREE.BoxGeometry(
-  //             blockLength,
-  //             blockLength,
-  //             blockLength
-  //           );
-  //           blockMesh.translate(
-  //             block.x * blockLength - halfChunk * blockLength,
-  //             block.z * blockLength,
-  //             block.y * blockLength - halfChunk * blockLength
-  //           );
-  //           geometries.push(blockMesh);
-  //         }
-  //       });
-  //       if (geometries.length === 0) {
-  //         geometries.push(
-  //           new THREE.BoxGeometry(blockLength, blockLength, blockLength)
-  //         );
-  //       }
-  //       const geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
-  //       geometry.computeBoundingSphere();
+  for (let x = -chunksToRender; x < chunksToRender; x++) {
+    for (let y = -chunksToRender; y < chunksToRender; y++) {
+      for (let z = -chunksToRenderDown; z < 0; z++) {
+        console.log("Chunk");
+        const { mesh, line } = generateChunk(
+          x * chunkSize,
+          y * chunkSize,
+          z * chunkSize
+        );
 
-  //       const wireframe = new THREE.WireframeGeometry(geometry);
-  //       const material = new THREE.LineBasicMaterial({ color: 0x4080ff });
-  //       const line = new THREE.LineSegments(wireframe, material);
-  //       line.computeLineDistances();
-  //       line.visible = true;
+        scene.add(mesh);
+        lines.push(line);
+        objects.push(mesh);
+      }
+    }
+  }
 
-  //       scene.add(line);
+  const ambientLight = new THREE.AmbientLight(0xcccccc);
+  ambientLight.intensity = 0.5;
+  scene.add(ambientLight);
 
-  //       // mesh = new THREE.Mesh(
-  //       //   geometry,
-  //       //   new THREE.MeshLambertMaterial({
-  //       //     map: texture,
-  //       //     side: THREE.DoubleSide,
-  //       //   })
-  //       // );
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+  scene.add(directionalLight);
 
-  //       // scene.add(mesh);
-  //       // objects.push(mesh);
-  //     }
-  //   }
-  // }
-
-  // for (let x = 0; x < chunksToRender; x++) {
-  //   for (let y = 0; y < chunksToRender; y++) {
-  //     for (let z = 0; z < worldHeight; z++) {
-  console.log("Chunk");
-  const { mesh, line } = generateChunk(
-    0, //x * chunkSize,
-    0, //y * chunkSize,
-    0 //z * chunkSize
-  );
-
-  scene.add(mesh);
-  lines.push(line);
-  objects.push(mesh);
-  //     }
-  //   }
-  // }
-
-  // const ambientLight = new THREE.AmbientLight(0xcccccc);
-  // ambientLight.intensity = 0.8;
-  // scene.add(ambientLight);
-
-  // const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-  // scene.add(directionalLight);
-
-  addLights(scene);
+  // addLights(scene);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
