@@ -15,17 +15,20 @@ import {
   moveRight,
   moveUp,
 } from "./controls";
-let camera, controls, scene, renderer, mesh, line;
+
+let camera, controls, scene, renderer;
+let wireframesView = 2;
+
 const chunksToRender = 3;
 const objects = [];
-let wireframesView = 1;
-
-let prevTime = performance.now();
+const lines = [];
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
-const maxSpeed = 30000;
+const maxSpeed = 300;
 const blocker = document.getElementById("blocker");
 const instructions = document.getElementById("instructions");
+
+let prevTime = performance.now();
 
 console.log("Executing JS!");
 
@@ -43,64 +46,76 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfd1e5);
 
-  const texture = new THREE.TextureLoader().load(
-    require("../assets/stone.png")
+  // for (let x = 0; x < chunksToRender; x++) {
+  //   for (let y = 0; y < chunksToRender; y++) {
+  //     for (let z = 0; z < worldHeight; z++) {
+  //       const chunk = generateChunk(
+  //         x * chunkSize,
+  //         y * chunkSize,
+  //         z * chunkSize
+  //       );
+  //       const geometries = [];
+  //       chunk.forEach((block) => {
+  //         if (block) {
+  //           const blockMesh = new THREE.BoxGeometry(
+  //             blockLength,
+  //             blockLength,
+  //             blockLength
+  //           );
+  //           blockMesh.translate(
+  //             block.x * blockLength - halfChunk * blockLength,
+  //             block.z * blockLength,
+  //             block.y * blockLength - halfChunk * blockLength
+  //           );
+  //           geometries.push(blockMesh);
+  //         }
+  //       });
+  //       if (geometries.length === 0) {
+  //         geometries.push(
+  //           new THREE.BoxGeometry(blockLength, blockLength, blockLength)
+  //         );
+  //       }
+  //       const geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+  //       geometry.computeBoundingSphere();
+
+  //       const wireframe = new THREE.WireframeGeometry(geometry);
+  //       const material = new THREE.LineBasicMaterial({ color: 0x4080ff });
+  //       const line = new THREE.LineSegments(wireframe, material);
+  //       line.computeLineDistances();
+  //       line.visible = true;
+
+  //       scene.add(line);
+
+  //       // mesh = new THREE.Mesh(
+  //       //   geometry,
+  //       //   new THREE.MeshLambertMaterial({
+  //       //     map: texture,
+  //       //     side: THREE.DoubleSide,
+  //       //   })
+  //       // );
+
+  //       // scene.add(mesh);
+  //       // objects.push(mesh);
+  //     }
+  //   }
+  // }
+
+  // for (let x = 0; x < chunksToRender; x++) {
+  //   for (let y = 0; y < chunksToRender; y++) {
+  //     for (let z = 0; z < worldHeight; z++) {
+  console.log("Chunk");
+  const { mesh, line } = generateChunk(
+    0, //x * chunkSize,
+    0, //y * chunkSize,
+    0 //z * chunkSize
   );
-  texture.magFilter = THREE.NearestFilter;
 
-  for (let x = 0; x < chunksToRender; x++) {
-    for (let y = 0; y < chunksToRender; y++) {
-      for (let z = 0; z < worldHeight; z++) {
-        const chunk = generateChunk(
-          x * chunkSize,
-          y * chunkSize,
-          z * chunkSize
-        );
-        const geometries = [];
-        chunk.forEach((block) => {
-          if (block) {
-            const blockMesh = new THREE.BoxGeometry(
-              blockLength,
-              blockLength,
-              blockLength
-            );
-            blockMesh.translate(
-              block.x * blockLength - halfChunk * blockLength,
-              block.z * blockLength,
-              block.y * blockLength - halfChunk * blockLength
-            );
-            geometries.push(blockMesh);
-          }
-        });
-        if (geometries.length === 0) {
-          geometries.push(
-            new THREE.BoxGeometry(blockLength, blockLength, blockLength)
-          );
-        }
-        const geometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
-        geometry.computeBoundingSphere();
-
-        const wireframe = new THREE.WireframeGeometry(geometry);
-        const material = new THREE.LineBasicMaterial({ color: 0x4080ff });
-        const line = new THREE.LineSegments(wireframe, material);
-        line.computeLineDistances();
-        line.visible = false;
-
-        scene.add(line);
-
-        mesh = new THREE.Mesh(
-          geometry,
-          new THREE.MeshLambertMaterial({
-            map: texture,
-            side: THREE.DoubleSide,
-          })
-        );
-
-        scene.add(mesh);
-        objects.push(mesh);
-      }
-    }
-  }
+  scene.add(mesh);
+  lines.push(line);
+  objects.push(mesh);
+  //     }
+  //   }
+  // }
 
   // const ambientLight = new THREE.AmbientLight(0xcccccc);
   // ambientLight.intensity = 0.8;
@@ -140,8 +155,12 @@ function init() {
     switch (event.code) {
       case "KeyF":
         console.log("Pressed F");
-        line.visible = wireframesView % 3 === 0;
-        mesh.visible = wireframesView % 3 === 1;
+        lines.forEach((line) => {
+          line.visible = wireframesView % 2 === 0;
+        });
+        objects.forEach((mesh) => {
+          mesh.visible = wireframesView % 2 === 1;
+        });
         wireframesView++;
         break;
     }
