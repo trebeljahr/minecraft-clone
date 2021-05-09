@@ -2,107 +2,72 @@ import * as THREE from "three";
 
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
-import { FirstPersonControls } from "three/examples/jsm/controls/FirstPersonControls.js";
+import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import { ImprovedNoise } from "three/examples/jsm/math/ImprovedNoise.js";
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
-let container, stats;
+let stats, camera, controls, scene, renderer, mesh;
 
-let camera, controls, scene, renderer;
-
-const worldWidth = 128;
-const worldDepth = 128;
+const worldWidth = 16;
+const worldHeight = 256;
+const worldDepth = 16;
 const worldHalfWidth = worldWidth / 2;
 const worldHalfDepth = worldDepth / 2;
 const data = generateHeight(worldWidth, worldDepth);
+const objects = [];
+const blockLength = 100;
 
-const clock = new THREE.Clock();
+let raycaster;
 
+let moveForward = false;
+let moveBack = false;
+let moveLeft = false;
+let moveRight = false;
+let moveUp = false;
+let moveDown = false;
+
+let prevTime = performance.now();
+const velocity = new THREE.Vector3();
+const direction = new THREE.Vector3();
+const maxSpeed = 30000;
 init();
 animate();
 
 function init() {
-  container = document.getElementById("container");
-
   camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
     1,
     20000
   );
-  camera.position.y = getY(worldHalfWidth, worldHalfDepth) * 100 + 100;
+  camera.position.y = getY(worldHalfWidth, worldHalfDepth) * 100 + 500;
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfd1e5);
 
-  // sides
-
-  const matrix = new THREE.Matrix4();
-
-  const pxGeometry = new THREE.PlaneGeometry(100, 100);
-  pxGeometry.attributes.uv.array[1] = 0.5;
-  pxGeometry.attributes.uv.array[3] = 0.5;
-  pxGeometry.rotateY(Math.PI / 2);
-  pxGeometry.translate(50, 0, 0);
-
-  const nxGeometry = new THREE.PlaneGeometry(100, 100);
-  nxGeometry.attributes.uv.array[1] = 0.5;
-  nxGeometry.attributes.uv.array[3] = 0.5;
-  nxGeometry.rotateY(-Math.PI / 2);
-  nxGeometry.translate(-50, 0, 0);
-
-  const pyGeometry = new THREE.PlaneGeometry(100, 100);
-  pyGeometry.attributes.uv.array[5] = 0.5;
-  pyGeometry.attributes.uv.array[7] = 0.5;
-  pyGeometry.rotateX(-Math.PI / 2);
-  pyGeometry.translate(0, 50, 0);
-
-  const pzGeometry = new THREE.PlaneGeometry(100, 100);
-  pzGeometry.attributes.uv.array[1] = 0.5;
-  pzGeometry.attributes.uv.array[3] = 0.5;
-  pzGeometry.translate(0, 0, 50);
-
-  const nzGeometry = new THREE.PlaneGeometry(100, 100);
-  nzGeometry.attributes.uv.array[1] = 0.5;
-  nzGeometry.attributes.uv.array[3] = 0.5;
-  nzGeometry.rotateY(Math.PI);
-  nzGeometry.translate(0, 0, -50);
-
-  //
-
   const geometries = [];
+  const chunkList = [1];
+  for (let chunk in chunkList) {
+    for (let z = 0; z < worldDepth; z++) {
+      for (let x = 0; x < worldWidth; x++) {
+        const surfaceHeight = 20 + getY(x, z);
+        for (let y = 0; y < worldHeight; y++) {
+          if (y < surfaceHeight) {
+            const block = new THREE.BoxGeometry(
+              blockLength,
+              blockLength,
+              blockLength
+            );
 
-  for (let z = 0; z < worldDepth; z++) {
-    for (let x = 0; x < worldWidth; x++) {
-      const h = getY(x, z);
+            block.translate(
+              x * blockLength - worldHalfWidth * blockLength,
+              y * blockLength,
+              z * blockLength - worldHalfDepth * blockLength
+            );
 
-      matrix.makeTranslation(
-        x * 100 - worldHalfWidth * 100,
-        h * 100,
-        z * 100 - worldHalfDepth * 100
-      );
-
-      const px = getY(x + 1, z);
-      const nx = getY(x - 1, z);
-      const pz = getY(x, z + 1);
-      const nz = getY(x, z - 1);
-
-      geometries.push(pyGeometry.clone().applyMatrix4(matrix));
-
-      if ((px !== h && px !== h + 1) || x === 0) {
-        geometries.push(pxGeometry.clone().applyMatrix4(matrix));
-      }
-
-      if ((nx !== h && nx !== h + 1) || x === worldWidth - 1) {
-        geometries.push(nxGeometry.clone().applyMatrix4(matrix));
-      }
-
-      if ((pz !== h && pz !== h + 1) || z === worldDepth - 1) {
-        geometries.push(pzGeometry.clone().applyMatrix4(matrix));
-      }
-
-      if ((nz !== h && nz !== h + 1) || z === 0) {
-        geometries.push(nzGeometry.clone().applyMatrix4(matrix));
+            geometries.push(block);
+          }
+        }
       }
     }
   }
@@ -113,14 +78,16 @@ function init() {
   const texture = new THREE.TextureLoader().load("assets/textures/grass.png");
   texture.magFilter = THREE.NearestFilter;
 
-  const mesh = new THREE.Mesh(
+  mesh = new THREE.Mesh(
     geometry,
     new THREE.MeshLambertMaterial({
       map: texture,
       side: THREE.DoubleSide,
     })
   );
+
   scene.add(mesh);
+  objects.push(mesh);
 
   const ambientLight = new THREE.AmbientLight(0xcccccc);
   scene.add(ambientLight);
@@ -132,18 +99,100 @@ function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
-  container.appendChild(renderer.domElement);
+  document.body.appendChild(renderer.domElement);
 
-  controls = new FirstPersonControls(camera, renderer.domElement);
+  controls = new PointerLockControls(camera, document.body);
+  instructions.addEventListener("click", function () {
+    controls.lock();
+  });
 
-  controls.movementSpeed = 1000;
-  controls.lookSpeed = 0.125;
-  controls.lookVertical = true;
+  controls.addEventListener("lock", function () {
+    instructions.style.display = "none";
+    blocker.style.display = "none";
+  });
+
+  controls.addEventListener("unlock", function () {
+    blocker.style.display = "block";
+    instructions.style.display = "";
+  });
+
+  scene.add(controls.getObject());
+
+  const onKeyDown = function (event) {
+    switch (event.code) {
+      case "ArrowUp":
+      case "KeyW":
+        moveForward = true;
+        break;
+
+      case "ArrowLeft":
+      case "KeyA":
+        moveLeft = true;
+        break;
+
+      case "ArrowDown":
+      case "KeyS":
+        moveBack = true;
+        break;
+
+      case "ArrowRight":
+      case "KeyD":
+        moveRight = true;
+        break;
+
+      case "KeyC":
+        moveDown = true;
+        break;
+
+      case "Space":
+        moveUp = true;
+        break;
+    }
+  };
+
+  const onKeyUp = function (event) {
+    switch (event.code) {
+      case "ArrowUp":
+      case "KeyW":
+        moveForward = false;
+        break;
+
+      case "ArrowLeft":
+      case "KeyA":
+        moveLeft = false;
+        break;
+
+      case "ArrowDown":
+      case "KeyS":
+        moveBack = false;
+        break;
+
+      case "ArrowRight":
+      case "KeyD":
+        moveRight = false;
+        break;
+
+      case "KeyC":
+        moveDown = false;
+        break;
+
+      case "Space":
+        moveUp = false;
+        break;
+    }
+  };
+
+  document.addEventListener("keydown", onKeyDown);
+  document.addEventListener("keyup", onKeyUp);
+
+  raycaster = new THREE.Raycaster(
+    new THREE.Vector3(),
+    new THREE.Vector3(0, -1, 0),
+    0,
+    10
+  );
 
   stats = new Stats();
-  container.appendChild(stats.dom);
-
-  //
 
   window.addEventListener("resize", onWindowResize);
 }
@@ -151,10 +200,7 @@ function init() {
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-
   renderer.setSize(window.innerWidth, window.innerHeight);
-
-  controls.handleResize();
 }
 
 function generateHeight(width, height) {
@@ -194,6 +240,28 @@ function animate() {
 }
 
 function render() {
-  controls.update(clock.getDelta());
+  const time = performance.now();
+
+  if (controls.isLocked === true) {
+    const delta = (time - prevTime) / 1000;
+    velocity.x -= velocity.x * 10 * delta;
+    velocity.z -= velocity.z * 10 * delta;
+    velocity.y -= velocity.y * 10 * delta;
+
+    direction.z = Number(moveForward) - Number(moveBack);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.y = Number(moveDown) - Number(moveUp);
+    direction.normalize();
+
+    velocity.z -= direction.z * maxSpeed * delta;
+    velocity.x -= direction.x * maxSpeed * delta;
+    velocity.y -= direction.y * maxSpeed * delta;
+
+    controls.moveRight(-velocity.x * delta);
+    controls.moveForward(-velocity.z * delta);
+    controls.getObject().position.y += velocity.y * delta;
+  }
+  prevTime = time;
+
   renderer.render(scene, camera);
 }
