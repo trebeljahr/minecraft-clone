@@ -5,6 +5,7 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import { ImprovedNoise } from "three/examples/jsm/math/ImprovedNoise.js";
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { LineSegments } from "three";
 
 let stats, camera, controls, scene, renderer, mesh;
 
@@ -18,7 +19,7 @@ const objects = [];
 const blockLength = 100;
 
 let raycaster;
-
+let wireframesView = false;
 let moveForward = false;
 let moveBack = false;
 let moveLeft = false;
@@ -47,6 +48,8 @@ function init() {
 
   const geometries = [];
   const chunkList = [1];
+  const lines = [];
+
   for (let chunk in chunkList) {
     for (let z = 0; z < worldDepth; z++) {
       for (let x = 0; x < worldWidth; x++) {
@@ -64,6 +67,14 @@ function init() {
               y * blockLength,
               z * blockLength - worldHalfDepth * blockLength
             );
+            const wireframe = new THREE.WireframeGeometry(block);
+            const line = new THREE.LineSegments(wireframe);
+            line.material.depthTest = false;
+            line.material.opacity = 0.25;
+            line.material.transparent = true;
+            line.visible = false;
+            lines.push(line);
+            scene.add(line);
 
             geometries.push(block);
           }
@@ -117,6 +128,19 @@ function init() {
   });
 
   scene.add(controls.getObject());
+
+  const onKeyPress = (event) => {
+    switch (event.code) {
+      case "KeyF":
+        console.log("Pressed F");
+        lines.forEach((line) => {
+          line.visible = !wireframesView;
+        });
+        mesh.visible = wireframesView;
+        wireframesView = !wireframesView;
+        break;
+    }
+  };
 
   const onKeyDown = function (event) {
     switch (event.code) {
@@ -182,6 +206,7 @@ function init() {
     }
   };
 
+  document.addEventListener("keypress", onKeyPress);
   document.addEventListener("keydown", onKeyDown);
   document.addEventListener("keyup", onKeyUp);
 
