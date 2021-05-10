@@ -16,25 +16,80 @@ import {
   moveUp,
 } from "./controls";
 
-let camera, controls, scene, renderer;
+let camera, controls, lastChunk, scene, renderer;
 let wireframesView = 2;
-
+let rendering = false;
+const chunks = new Map<THREE.Vector3, Uint8Array>();
 const chunksToRender = 3;
 const chunksToRenderDown = 2;
 const objects = [];
 const lines = [];
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
-const maxSpeed = 300;
+const maxSpeed = 1;
 const blocker = document.getElementById("blocker");
 const instructions = document.getElementById("instructions");
-
+const object = new THREE.Object3D();
 let prevTime = performance.now();
 
 console.log("Executing JS!");
 
 init();
 animate();
+
+function getCurrentChunk(providedPos?: THREE.Vector3) {
+  const pos = providedPos || getPosition();
+  return pos.divideScalar(chunkSize).floor();
+}
+
+function generateChunkAtPosition(pos?: THREE.Vector3) {
+  const { x, y, z } = getCurrentChunk(pos).multiplyScalar(chunkSize);
+  const spatialIndex = new THREE.Vector3(x, y, z);
+  const { mesh, line, chunk } = generateChunk(x, z, y);
+  console.log("Generated chunk at: ", spatialIndex);
+  chunks.set(spatialIndex, chunk);
+  scene.add(mesh);
+  lines.push(line);
+  objects.push(mesh);
+  return chunk;
+}
+
+function getCameraDirection() {
+  const pos = new THREE.Vector3();
+  camera.getWorldDirection(pos);
+  return pos;
+}
+
+function generateChunksAroundCamera() {
+  for (let x = -1; x <= 1; x++) {
+    for (let y = -1; y <= 1; y++) {
+      const pos = getCurrentChunk();
+      const offset = new THREE.Vector3(x, y, -1);
+      const spatialIndex = pos.add(offset).multiplyScalar(chunkSize);
+      if (!chunks.get(spatialIndex)) {
+        console.log("Generating new chunk");
+        console.log("At: ", spatialIndex);
+
+        const chunk = generateChunkAtPosition();
+        chunks.set(spatialIndex, chunk);
+      }
+    }
+  }
+  rendering = false;
+}
+
+function generateChunkBeforeCamera() {
+  const newPosition = getCameraDirection()
+    .multiplyScalar(chunkSize * 2)
+    .add(controls.getObject().position);
+  generateChunkAtPosition(newPosition);
+}
+
+function getPosition() {
+  const { x, y, z } = controls.getObject().position;
+  const pos = new THREE.Vector3(x, y, z);
+  return pos;
+}
 
 function init() {
   camera = new THREE.PerspectiveCamera(
@@ -44,25 +99,11 @@ function init() {
     20000
   );
   camera.position.y = worldHeight;
+  object.position.set(0, 0, -chunkSize);
+  camera.add(object);
+
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfd1e5);
-
-  for (let x = -chunksToRender; x < chunksToRender; x++) {
-    for (let y = -chunksToRender; y < chunksToRender; y++) {
-      for (let z = -chunksToRenderDown; z < 0; z++) {
-        console.log("Chunk");
-        const { mesh, line } = generateChunk(
-          x * chunkSize,
-          y * chunkSize,
-          z * chunkSize
-        );
-
-        scene.add(mesh);
-        lines.push(line);
-        objects.push(mesh);
-      }
-    }
-  }
 
   const ambientLight = new THREE.AmbientLight(0xcccccc);
   ambientLight.intensity = 0.5;
@@ -102,13 +143,14 @@ function init() {
     switch (event.code) {
       case "KeyF":
         console.log("Pressed F");
-        lines.forEach((line) => {
-          line.visible = wireframesView % 2 === 0;
-        });
-        objects.forEach((mesh) => {
-          mesh.visible = wireframesView % 2 === 1;
-        });
-        wireframesView++;
+        generateChunksAroundCamera();
+        // lines.forEach((line) => {
+        //   line.visible = wireframesView % 2 === 0;
+        // });
+        // objects.forEach((mesh) => {
+        //   mesh.visible = wireframesView % 2 === 1;
+        // });
+        // wireframesView++;
         break;
     }
   };
@@ -117,6 +159,7 @@ function init() {
   addListeners();
 
   scene.add(controls.getObject());
+  lastChunk = getCurrentChunk();
 
   window.addEventListener("resize", onWindowResize);
 }
@@ -134,28 +177,27 @@ function animate() {
 }
 
 function render() {
-  const time = performance.now();
-
+  // let time = performance.now();
   if (controls.isLocked === true) {
-    const delta = (time - prevTime) / 1000;
-    velocity.x -= velocity.x * 10 * delta;
-    velocity.z -= velocity.z * 10 * delta;
-    velocity.y -= velocity.y * 10 * delta;
-
     direction.z = Number(moveForward) - Number(moveBack);
     direction.x = Number(moveRight) - Number(moveLeft);
     direction.y = Number(moveDown) - Number(moveUp);
     direction.normalize();
 
-    velocity.z -= direction.z * maxSpeed * delta;
-    velocity.x -= direction.x * maxSpeed * delta;
-    velocity.y -= direction.y * maxSpeed * delta;
+    velocity.z = -direction.z * maxSpeed;
+    velocity.x = -direction.x * maxSpeed;
+    velocity.y = -direction.y * maxSpeed;
 
-    controls.moveRight(-velocity.x * delta);
-    controls.moveForward(-velocity.z * delta);
-    controls.getObject().position.y += velocity.y * delta;
+    controls.moveRight(-velocity.x);
+    controls.moveForward(-velocity.z);
+    controls.getObject().position.y += velocity.y;
+    if (!getCurrentChunk().equals(lastChunk)) {
+      console.log("Moved to a new chunk!");
+      generateChunksAroundCamera();
+    }
   }
-  prevTime = time;
+  // prevTime = time;
+  lastChunk = getCurrentChunk();
 
   renderer.render(scene, camera);
 }

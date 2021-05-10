@@ -29,7 +29,7 @@ export function generateChunk(xOff: number, yOff: number, zOff: number) {
       const realY = y + yOff;
       for (let x = 0; x < chunkSize; x++) {
         const realX = x + xOff;
-        if (shouldPlaceBlock(realX, realY, realZ)) {
+        if (shouldPlaceBlock(realX, realY, realZ) && realZ < 30) {
           chunk.setVoxel(x, y, z, 1);
         }
       }
