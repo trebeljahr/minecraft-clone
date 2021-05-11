@@ -9,6 +9,25 @@
   display: block;
 }
 
+#crosshair-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+#crosshair {
+  width: 1vw;
+  height: 1vw;
+  border-radius: 10px;
+  background-color: white;
+}
 body {
   width: 100vw;
   height: 100vh;
