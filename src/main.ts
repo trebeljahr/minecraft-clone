@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { addLights } from "./lights";
-import { blockLength, worldHeight } from "./constants";
+import { blockLength, terrainHeight } from "./constants";
 import {
   chunkSize,
   shouldPlaceBlock,
@@ -72,7 +72,7 @@ animate();
 
 function getCurrentChunk(providedPos?: THREE.Vector3) {
   const pos = providedPos || getPosition();
-  return pos.divideScalar(chunkSize).floor();
+  return copy(pos).divideScalar(chunkSize).floor();
 }
 
 function requestRenderIfNotRequested() {
@@ -83,26 +83,64 @@ function requestRenderIfNotRequested() {
 }
 
 function generateChunkAtPosition(pos: THREE.Vector3) {
+  pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
   for (let y = 0; y < chunkSize; ++y) {
+    if (pos.y + y > terrainHeight || pos.y + y <= 0) {
+      continue;
+    }
     for (let z = 0; z < chunkSize; ++z) {
       for (let x = 0; x < chunkSize; ++x) {
-        if (shouldPlaceBlock(pos.x + x, pos.y + y, pos.z + z) && z < 30) {
+        if (shouldPlaceBlock(pos.x + x, pos.y + y, pos.z + z)) {
           world.setVoxel(pos.x + x, pos.y + y, pos.z + z, 1);
         }
       }
     }
   }
-  console.log({ pos });
   updateVoxelGeometry(pos.x, pos.y, pos.z);
 }
 
+function cameraDirection() {
+  const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const x = (pos.x / window.innerWidth) * 2 - 1;
+  const y = (pos.y / window.innerHeight) * -2 + 1; // note we flip Y
+  const start = new THREE.Vector3();
+  const end = new THREE.Vector3();
+  start.setFromMatrixPosition(camera.matrixWorld);
+  end.set(x, y, 1).unproject(camera);
+  const direction = new THREE.Vector3().copy(end).sub(start).normalize();
+  return direction;
+}
+
 function generateChunksAroundCamera() {
-  for (let x = -1; x <= 1; x++) {
-    for (let y = -1; y <= 1; y++) {
-      const offset = new THREE.Vector3(x, y, -1).multiplyScalar(chunkSize);
-      generateChunkAtPosition(copy(getPosition()).add(offset));
+  for (let x = -2; x <= 2; x++) {
+    for (let y = -2; y <= 2; y++) {
+      for (let z = -3; z < 0; z++) {
+        const offset = new THREE.Vector3(x, z, y).multiplyScalar(chunkSize);
+        const newPos = copy(getPosition()).add(offset);
+        generateChunkAtPosition(newPos);
+      }
     }
   }
+}
+
+function generateChunksInMovementDirection() {
+  const dir = getCurrentChunk().sub(lastChunk);
+  console.log("Direction", dir);
+
+  var axis = new THREE.Vector3(0, 1, 0);
+  var angle = Math.PI / 2;
+
+  const rotatedOffset = copy(dir)
+    .applyAxisAngle(axis, angle)
+    .multiplyScalar(chunkSize);
+
+  const offset = dir
+    .multiplyScalar(chunkSize)
+    .add(new THREE.Vector3(0, -chunkSize, 0));
+  const newPos = copy(getPosition()).add(offset);
+  generateChunkAtPosition(newPos);
+  generateChunkAtPosition(copy(newPos).add(rotatedOffset));
+  generateChunkAtPosition(copy(newPos).sub(rotatedOffset));
 }
 
 function placeVoxel(event) {
@@ -135,11 +173,8 @@ function updateVoxelGeometry(x: number, y: number, z: number) {
     const ox = x + offset[0];
     const oy = y + offset[1];
     const oz = z + offset[2];
-    console.log(ox, oy, oz);
     const chunkId = world.computeChunkId(ox, oy, oz);
-    console.log({ chunkId });
     if (!updatedChunkIds[chunkId]) {
-      console.log("Updating Chunk Geometry");
       updatedChunkIds[chunkId] = true;
       updateChunkGeometry(ox, oy, oz);
     }
@@ -221,7 +256,7 @@ function init() {
     1,
     20000
   );
-  camera.position.y = worldHeight;
+  camera.position.y = terrainHeight;
   object.position.set(0, 0, -chunkSize);
   camera.add(object);
 
@@ -263,7 +298,6 @@ function init() {
 
   const onKeyPress = (event) => {
     if (event.repeat) {
-      console.log("Pressed F but repeated");
       return;
     }
     switch (event.code) {
@@ -290,9 +324,7 @@ function init() {
 
   window.addEventListener("resize", onWindowResize);
 
-  generateChunkAtPosition(new THREE.Vector3(0, 0, 1));
-  generateChunkAtPosition(new THREE.Vector3(0, 0, 17));
-  generateChunkAtPosition(new THREE.Vector3(0, 0, 33));
+  generateChunksAroundCamera();
 
   console.log("Testing chunkId: ", world.computeChunkId(16, 17, -33));
 }
@@ -326,13 +358,14 @@ function render() {
     controls.moveRight(-velocity.x);
     controls.moveForward(-velocity.z);
     controls.getObject().position.y += velocity.y;
-    // if (!getCurrentChunk().equals(lastChunk)) {
-    //   console.log("Moved to a new chunk!");
-    // generateChunksAroundCamera();
-    // }
+    if (!getCurrentChunk().equals(lastChunk)) {
+      console.log("Moved to a new chunk!");
+      generateChunksInMovementDirection();
+      // generateChunksAroundCamera();
+    }
   }
   // prevTime = time;
-  // lastChunk = getCurrentChunk();
+  lastChunk = getCurrentChunk();
 
   renderer.render(scene, camera);
 }
