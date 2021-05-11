@@ -125,7 +125,9 @@ function getCanvasRelativePosition(event) {
 }
 
 function placeVoxel(event) {
-  const pos = getCanvasRelativePosition(event);
+  if (event.button !== 0 && event.button !== 2) return;
+
+  const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   const x = (pos.x / window.innerWidth) * 2 - 1;
   const y = (pos.y / window.innerHeight) * -2 + 1; // note we flip Y
 
@@ -136,7 +138,7 @@ function placeVoxel(event) {
 
   const intersection = world.intersectRay(start, end);
   if (intersection) {
-    const voxelId = event.shiftKey ? 0 : 1;
+    const voxelId = event.button === 0 ? 0 : 1;
     // the intersection point is on the face. That means
     // the math imprecision could put us on either side of the face.
     // so go half a normal into the voxel if removing (currentVoxel = 0)
@@ -320,9 +322,9 @@ function init() {
 }
 
 function onWindowResize() {
-  camera.aspect = canvas.width / canvas.height;
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(canvas.width, canvas.height);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function animate() {
