@@ -203,20 +203,13 @@ export class World {
     normal: [number, number, number];
     voxel: number;
   } {
-    let dx = end.x - start.x;
-    let dy = end.y - start.y;
-    let dz = end.z - start.z;
-    const lenSq = dx * dx + dy * dy + dz * dz;
-    const len = Math.sqrt(lenSq);
-
-    dx /= len;
-    dy /= len;
-    dz /= len;
+    const { x: dx, y: dy, z: dz } = new THREE.Vector3()
+      .copy(end)
+      .sub(start)
+      .normalize();
 
     let t = 0.0;
-    let ix = Math.floor(start.x);
-    let iy = Math.floor(start.y);
-    let iz = Math.floor(start.z);
+    let { x: ix, y: iy, z: iz } = new THREE.Vector3().copy(start).floor();
 
     const stepX = dx > 0 ? 1 : -1;
     const stepY = dy > 0 ? 1 : -1;
@@ -238,7 +231,7 @@ export class World {
     let steppedIndex = -1;
 
     // main loop along raycast vector
-    while (t <= len) {
+    while (t <= 6) {
       const voxel = this.getVoxel(ix, iy, iz);
       if (voxel) {
         return {

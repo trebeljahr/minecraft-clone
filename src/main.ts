@@ -37,9 +37,11 @@ const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 const maxSpeed = 1;
 const blocker = document.getElementById("blocker");
+const crosshairs = document.getElementById("crosshair-container");
 const instructions = document.getElementById("instructions");
 const object = new THREE.Object3D();
 let prevTime = performance.now();
+let menu = true;
 const neighborOffsets = [
   [0, 0, 0], // self
   [-1, 0, 0], // left
@@ -80,52 +82,31 @@ function requestRenderIfNotRequested() {
   }
 }
 
-// function generateChunkAtPosition(pos?: THREE.Vector3) {
-//   const { x, y, z } = getCurrentChunk(pos).multiplyScalar(chunkSize);
-//   const spatialIndex = new THREE.Vector3(x, y, z);
-//   const { mesh, line, chunk } = generateChunk(x, z, y);
-//   console.log("Generated chunk at: ", spatialIndex);
-//   chunks.set(spatialIndex, chunk);
-//   scene.add(mesh);
-//   lines.push(line);
-//   objects.push(mesh);
-//   return chunk;
-// }
+function generateChunkAtPosition(pos: THREE.Vector3) {
+  for (let y = 0; y < chunkSize; ++y) {
+    for (let z = 0; z < chunkSize; ++z) {
+      for (let x = 0; x < chunkSize; ++x) {
+        if (shouldPlaceBlock(pos.x + x, pos.y + y, pos.z + z) && z < 30) {
+          world.setVoxel(pos.x + x, pos.y + y, pos.z + z, 1);
+        }
+      }
+    }
+  }
+  console.log({ pos });
+  updateVoxelGeometry(pos.x, pos.y, pos.z);
+}
 
-// function getCameraDirection() {
-//   const pos = new THREE.Vector3();
-//   camera.getWorldDirection(pos);
-//   return pos;
-// }
-
-// function generateChunksAroundCamera() {
-//   for (let x = -1; x <= 1; x++) {
-//     for (let y = -1; y <= 1; y++) {
-//       const pos = getCurrentChunk();
-//       const offset = new THREE.Vector3(x, y, -1);
-//       const spatialIndex = pos.add(offset).multiplyScalar(chunkSize);
-//       if (!chunks.get(spatialIndex)) {
-//         console.log("Generating new chunk");
-//         console.log("At: ", spatialIndex);
-
-//         const chunk = generateChunkAtPosition();
-//         chunks.set(spatialIndex, chunk);
-//       }
-//     }
-//   }
-//   rendering = false;
-// }
-
-function getCanvasRelativePosition(event) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: ((event.clientX - rect.left) * window.innerWidth) / rect.width,
-    y: ((event.clientY - rect.top) * window.innerHeight) / rect.height,
-  };
+function generateChunksAroundCamera() {
+  for (let x = -1; x <= 1; x++) {
+    for (let y = -1; y <= 1; y++) {
+      const offset = new THREE.Vector3(x, y, -1).multiplyScalar(chunkSize);
+      generateChunkAtPosition(copy(getPosition()).add(offset));
+    }
+  }
 }
 
 function placeVoxel(event) {
-  if (event.button !== 0 && event.button !== 2) return;
+  if ((event.button !== 0 && event.button !== 2) || menu) return;
 
   const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   const x = (pos.x / window.innerWidth) * 2 - 1;
@@ -139,10 +120,6 @@ function placeVoxel(event) {
   const intersection = world.intersectRay(start, end);
   if (intersection) {
     const voxelId = event.button === 0 ? 0 : 1;
-    // the intersection point is on the face. That means
-    // the math imprecision could put us on either side of the face.
-    // so go half a normal into the voxel if removing (currentVoxel = 0)
-    // our out of the voxel if adding (currentVoxel  > 0)
     const pos = intersection.position.map((v, ndx) => {
       return v + intersection.normal[ndx] * (voxelId > 0 ? 0.5 : -0.5);
     }) as [number, number, number];
@@ -153,14 +130,17 @@ function placeVoxel(event) {
 }
 
 function updateVoxelGeometry(x: number, y: number, z: number) {
-  const updatedCellIds = {};
+  const updatedChunkIds = {};
   for (const offset of neighborOffsets) {
     const ox = x + offset[0];
     const oy = y + offset[1];
     const oz = z + offset[2];
-    const cellId = world.computeChunkId(ox, oy, oz);
-    if (!updatedCellIds[cellId]) {
-      updatedCellIds[cellId] = true;
+    console.log(ox, oy, oz);
+    const chunkId = world.computeChunkId(ox, oy, oz);
+    console.log({ chunkId });
+    if (!updatedChunkIds[chunkId]) {
+      console.log("Updating Chunk Geometry");
+      updatedChunkIds[chunkId] = true;
       updateChunkGeometry(ox, oy, oz);
     }
   }
@@ -214,12 +194,9 @@ function updateChunkGeometry(x: number, y: number, z: number) {
   }
 }
 
-// function generateChunkBeforeCamera() {
-//   const newPosition = getCameraDirection()
-//     .multiplyScalar(chunkSize * 2)
-//     .add(controls.getObject().position);
-//   generateChunkAtPosition(newPosition);
-// }
+function copy(vec: THREE.Vector3) {
+  return new THREE.Vector3().copy(vec);
+}
 
 function getPosition() {
   const { x, y, z } = controls.getObject().position;
@@ -251,17 +228,6 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfd1e5);
 
-  for (let y = 0; y < chunkSize; ++y) {
-    for (let z = 0; z < chunkSize; ++z) {
-      for (let x = 0; x < chunkSize; ++x) {
-        if (shouldPlaceBlock(x, y, z) && z < 30) {
-          world.setVoxel(x, y, z, 1);
-        }
-      }
-    }
-  }
-  updateVoxelGeometry(1, 1, 1);
-
   const ambientLight = new THREE.AmbientLight(0xcccccc);
   ambientLight.intensity = 0.5;
   scene.add(ambientLight);
@@ -282,13 +248,17 @@ function init() {
   });
 
   controls.addEventListener("lock", function () {
+    menu = false;
     instructions.style.display = "none";
     blocker.style.display = "none";
+    crosshairs.style.display = "flex";
   });
 
   controls.addEventListener("unlock", function () {
+    menu = true;
     blocker.style.display = "block";
     instructions.style.display = "";
+    crosshairs.style.display = "none";
   });
 
   const onKeyPress = (event) => {
@@ -299,7 +269,7 @@ function init() {
     switch (event.code) {
       case "KeyF":
         console.log("Pressed F");
-        // generateChunksAroundCamera();
+        generateChunksAroundCamera();
         // lines.forEach((line) => {
         //   line.visible = wireframesView % 2 === 0;
         // });
@@ -319,6 +289,12 @@ function init() {
   lastChunk = getCurrentChunk();
 
   window.addEventListener("resize", onWindowResize);
+
+  generateChunkAtPosition(new THREE.Vector3(0, 0, 1));
+  generateChunkAtPosition(new THREE.Vector3(0, 0, 17));
+  generateChunkAtPosition(new THREE.Vector3(0, 0, 33));
+
+  console.log("Testing chunkId: ", world.computeChunkId(16, 17, -33));
 }
 
 function onWindowResize() {
