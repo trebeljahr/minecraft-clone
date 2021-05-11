@@ -1,5 +1,5 @@
 import { Noise } from "./noise";
-import { Chunk } from "./VoxelWorld";
+import { World } from "./VoxelWorld";
 import * as THREE from "three";
 
 const noise = new Noise();
@@ -10,13 +10,13 @@ const tileSize = 16;
 const tileTextureWidth = 16;
 const tileTextureHeight = 16;
 
-function shouldPlaceBlock(x: number, z: number, y: number) {
+export function shouldPlaceBlock(x: number, z: number, y: number) {
   const noiseVal = noise.perlin3(x / 10, z / 10, y / 10);
   return noiseVal >= 0;
 }
 
 export function generateChunk(xOff: number, yOff: number, zOff: number) {
-  const chunk = new Chunk({
+  const chunk = new World({
     chunkSize,
     tileSize,
     tileTextureWidth,
@@ -41,7 +41,7 @@ export function generateChunk(xOff: number, yOff: number, zOff: number) {
     normals,
     uvs,
     indices,
-  } = chunk.generateGeometryDataForCell(0, 0, 0);
+  } = chunk.generateGeometryDataForChunk(0, 0, 0);
 
   const geometry = new THREE.BufferGeometry();
 
@@ -88,5 +88,5 @@ export function generateChunk(xOff: number, yOff: number, zOff: number) {
   line.computeLineDistances();
   line.visible = true;
 
-  return { mesh, line, chunk: chunk.cell };
+  return { mesh, line, chunk };
 }

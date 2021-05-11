@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { chunkSize } from "./createChunk";
 
 const faces = [
   {
@@ -68,10 +69,11 @@ const faces = [
     ],
   },
 ];
-export class Chunk {
-  private cellSize: number;
-  private cellSliceSize: number;
-  public cell: Uint8Array;
+
+export class World {
+  private chunkSize: number;
+  private chunkSliceSize: number;
+  public chunks: Record<string, Uint8Array>;
   private tileSize: number;
   private tileTextureWidth: number;
   private tileTextureHeight: number;
@@ -81,62 +83,81 @@ export class Chunk {
     tileTextureWidth: number;
     tileTextureHeight: number;
   }) {
-    this.cellSize = options.chunkSize;
+    this.chunkSize = options.chunkSize;
     this.tileSize = options.tileSize;
     this.tileTextureWidth = options.tileTextureWidth;
     this.tileTextureHeight = options.tileTextureHeight;
-    const { cellSize } = this;
-    this.cellSliceSize = cellSize * cellSize;
-    this.cell = new Uint8Array(cellSize * cellSize * cellSize);
+    const { chunkSize } = this;
+    this.chunkSliceSize = chunkSize * chunkSize;
+    this.chunks = {};
   }
   computeVoxelOffset(x: number, y: number, z: number) {
-    const { cellSize, cellSliceSize } = this;
-    const voxelX = THREE.MathUtils.euclideanModulo(x, cellSize) | 0;
-    const voxelY = THREE.MathUtils.euclideanModulo(y, cellSize) | 0;
-    const voxelZ = THREE.MathUtils.euclideanModulo(z, cellSize) | 0;
-    return voxelY * cellSliceSize + voxelZ * cellSize + voxelX;
+    const { chunkSize, chunkSliceSize } = this;
+    const voxelX = THREE.MathUtils.euclideanModulo(x, chunkSize) | 0;
+    const voxelY = THREE.MathUtils.euclideanModulo(y, chunkSize) | 0;
+    const voxelZ = THREE.MathUtils.euclideanModulo(z, chunkSize) | 0;
+    return voxelY * chunkSliceSize + voxelZ * chunkSize + voxelX;
   }
-  getCellForVoxel(x: number, y: number, z: number) {
-    const { cellSize } = this;
-    const cellX = Math.floor(x / cellSize);
-    const cellY = Math.floor(y / cellSize);
-    const cellZ = Math.floor(z / cellSize);
-    if (cellX !== 0 || cellY !== 0 || cellZ !== 0) {
-      return null;
-    }
-    return this.cell;
+  getChunkForVoxel(x: number, y: number, z: number) {
+    return this.chunks[this.computeChunkId(x, y, z)];
   }
-  setVoxel(x: number, y: number, z: number, v: number) {
-    const cell = this.getCellForVoxel(x, y, z);
-    if (!cell) {
-      return; // TODO: add a new cell?
+  computeChunkId(x: number, y: number, z: number) {
+    const { chunkSize } = this;
+    const chunkX = Math.floor(x / chunkSize);
+    const chunkY = Math.floor(y / chunkSize);
+    const chunkZ = Math.floor(z / chunkSize);
+    return `${chunkX},${chunkY},${chunkZ}`;
+  }
+  setVoxel(x: number, y: number, z: number, v: number, addChunk = true) {
+    let chunk = this.getChunkForVoxel(x, y, z);
+    if (!chunk) {
+      if (!addChunk) {
+        return;
+      }
+      chunk = this.addChunkForVoxel(x, y, z);
     }
     const voxelOffset = this.computeVoxelOffset(x, y, z);
-    cell[voxelOffset] = v;
+    chunk[voxelOffset] = v;
   }
+  addChunkForVoxel(x: number, y: number, z: number) {
+    const chunkId = this.computeChunkId(x, y, z);
+    let chunk = this.chunks[chunkId];
+    if (!chunk) {
+      const { chunkSize } = this;
+      chunk = new Uint8Array(chunkSize * chunkSize * chunkSize);
+      this.chunks[chunkId] = chunk;
+    }
+    return chunk;
+  }
+
   getVoxel(x: number, y: number, z: number) {
-    const cell = this.getCellForVoxel(x, y, z);
-    if (!cell) {
+    const chunk = this.getChunkForVoxel(x, y, z);
+    if (!chunk) {
       return 0;
     }
     const voxelOffset = this.computeVoxelOffset(x, y, z);
-    return cell[voxelOffset];
+    return chunk[voxelOffset];
   }
-  generateGeometryDataForCell(cellX: number, cellY: number, cellZ: number) {
-    const { cellSize, tileSize, tileTextureWidth, tileTextureHeight } = this;
+  generateGeometryDataForChunk(chunkX: number, chunkY: number, chunkZ: number) {
+    const {
+      chunkSize: chunkSize,
+      tileSize,
+      tileTextureWidth,
+      tileTextureHeight,
+    } = this;
     const positions: number[] = [];
     const normals: number[] = [];
     const indices: number[] = [];
     const uvs: number[] = [];
-    const startX = cellX * cellSize;
-    const startY = cellY * cellSize;
-    const startZ = cellZ * cellSize;
+    const startX = chunkX * chunkSize;
+    const startY = chunkY * chunkSize;
+    const startZ = chunkZ * chunkSize;
 
-    for (let y = 0; y < cellSize; ++y) {
+    for (let y = 0; y < chunkSize; ++y) {
       const voxelY = startY + y;
-      for (let z = 0; z < cellSize; ++z) {
+      for (let z = 0; z < chunkSize; ++z) {
         const voxelZ = startZ + z;
-        for (let x = 0; x < cellSize; ++x) {
+        for (let x = 0; x < chunkSize; ++x) {
           const voxelX = startX + x;
           const voxel = this.getVoxel(voxelX, voxelY, voxelZ);
           if (voxel) {
@@ -173,5 +194,91 @@ export class Chunk {
       indices,
       uvs,
     };
+  }
+  intersectRay(
+    start: THREE.Vector3,
+    end: THREE.Vector3
+  ): {
+    position: [number, number, number];
+    normal: [number, number, number];
+    voxel: number;
+  } {
+    let dx = end.x - start.x;
+    let dy = end.y - start.y;
+    let dz = end.z - start.z;
+    const lenSq = dx * dx + dy * dy + dz * dz;
+    const len = Math.sqrt(lenSq);
+
+    dx /= len;
+    dy /= len;
+    dz /= len;
+
+    let t = 0.0;
+    let ix = Math.floor(start.x);
+    let iy = Math.floor(start.y);
+    let iz = Math.floor(start.z);
+
+    const stepX = dx > 0 ? 1 : -1;
+    const stepY = dy > 0 ? 1 : -1;
+    const stepZ = dz > 0 ? 1 : -1;
+
+    const txDelta = Math.abs(1 / dx);
+    const tyDelta = Math.abs(1 / dy);
+    const tzDelta = Math.abs(1 / dz);
+
+    const xDist = stepX > 0 ? ix + 1 - start.x : start.x - ix;
+    const yDist = stepY > 0 ? iy + 1 - start.y : start.y - iy;
+    const zDist = stepZ > 0 ? iz + 1 - start.z : start.z - iz;
+
+    // location of nearest voxel boundary, in units of t
+    let txMax = txDelta < Infinity ? txDelta * xDist : Infinity;
+    let tyMax = tyDelta < Infinity ? tyDelta * yDist : Infinity;
+    let tzMax = tzDelta < Infinity ? tzDelta * zDist : Infinity;
+
+    let steppedIndex = -1;
+
+    // main loop along raycast vector
+    while (t <= len) {
+      const voxel = this.getVoxel(ix, iy, iz);
+      if (voxel) {
+        return {
+          position: [start.x + t * dx, start.y + t * dy, start.z + t * dz],
+          normal: [
+            steppedIndex === 0 ? -stepX : 0,
+            steppedIndex === 1 ? -stepY : 0,
+            steppedIndex === 2 ? -stepZ : 0,
+          ],
+          voxel,
+        };
+      }
+
+      // advance t to next nearest voxel boundary
+      if (txMax < tyMax) {
+        if (txMax < tzMax) {
+          ix += stepX;
+          t = txMax;
+          txMax += txDelta;
+          steppedIndex = 0;
+        } else {
+          iz += stepZ;
+          t = tzMax;
+          tzMax += tzDelta;
+          steppedIndex = 2;
+        }
+      } else {
+        if (tyMax < tzMax) {
+          iy += stepY;
+          t = tyMax;
+          tyMax += tyDelta;
+          steppedIndex = 1;
+        } else {
+          iz += stepZ;
+          t = tzMax;
+          tzMax += tzDelta;
+          steppedIndex = 2;
+        }
+      }
+    }
+    return null;
   }
 }
