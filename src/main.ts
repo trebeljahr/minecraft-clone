@@ -36,21 +36,22 @@ const objects = [];
 const lines = [];
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
-const maxSpeed = 1;
+const maxSpeed = 0.5;
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshair-container");
 const instructions = document.getElementById("instructions");
+const player = new THREE.BoxGeometry(0.5, 1.8, 0.5);
 const object = new THREE.Object3D();
 let prevTime = performance.now();
 let menu = true;
 const neighborOffsets = [
-  [0, 0, 0], // self
-  [-1, 0, 0], // left
-  [1, 0, 0], // right
-  [0, -1, 0], // down
-  [0, 1, 0], // up
-  [0, 0, -1], // back
-  [0, 0, 1], // front
+  new THREE.Vector3(0, 0, 0), // self
+  new THREE.Vector3(-1, 0, 0), // left
+  new THREE.Vector3(1, 0, 0), // right
+  new THREE.Vector3(0, -1, 0), // down
+  new THREE.Vector3(0, 1, 0), // up
+  new THREE.Vector3(0, 0, -1), // back
+  new THREE.Vector3(0, 0, 1), // front
 ];
 const loopSize = 3;
 let minX = -loopSize;
@@ -173,9 +174,9 @@ function placeVoxel(event) {
 function updateVoxelGeometry(x: number, y: number, z: number) {
   const updatedChunkIds = {};
   for (const offset of neighborOffsets) {
-    const ox = x + offset[0];
-    const oy = y + offset[1];
-    const oz = z + offset[2];
+    const ox = x + offset.x;
+    const oy = y + offset.y;
+    const oz = z + offset.z;
     const chunkId = world.computeChunkId(ox, oy, oz);
     if (!updatedChunkIds[chunkId]) {
       updatedChunkIds[chunkId] = true;
@@ -256,7 +257,7 @@ function init() {
   camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
-    1,
+    0.01,
     20000
   );
   camera.position.y = terrainHeight;
@@ -351,6 +352,21 @@ function requestRenderIfNotRequested() {
   }
 }
 
+function isCollidingWithTerrain(px: number, py: number, pz: number) {
+  for (const offset of neighborOffsets) {
+    const collides =
+      world.getVoxel(
+        px + offset.x * 1.1,
+        py + offset.y * 1.1,
+        pz + offset.z * 1.1
+      ) !== 0;
+    if (collides) {
+      console.log(offset);
+      return offset;
+    }
+  }
+  return false;
+}
 function render() {
   renderRequested = false;
   if (renderer.info.render.frame % 5 === 0) {
@@ -360,7 +376,7 @@ function render() {
       y * chunkSize
     );
     if (maxX <= 5) {
-      console.log("Spawning new chunk", pos);
+      // console.log("Spawning new chunk", pos);
       generateChunkAtPosition(pos);
       generateChunkAtPosition(
         copy(pos).sub(new THREE.Vector3(0, 1 * chunkSize, 0))
@@ -414,9 +430,27 @@ function render() {
     velocity.x = -direction.x * maxSpeed;
     velocity.y = -direction.y * maxSpeed;
 
-    controls.moveRight(-velocity.x);
-    controls.moveForward(-velocity.z);
-    controls.getObject().position.y += velocity.y;
+    // controls.moveRight(-velocity.x);
+    // controls.moveForward(-velocity.z);
+    // controls.getObject().position.y += velocity.y;
+    const { x: px, y: py, z: pz } = copy(controls.getObject().position).add(
+      velocity
+    );
+    player.translate(px, py, pz);
+    // player.computeBoundingBox();
+    // console.log(player.boundingBox);
+    const collisionDir = isCollidingWithTerrain(px, py, pz);
+    if (collisionDir) {
+      console.log(cameraDirection());
+      velocity.sub(collisionDir);
+      controls.moveRight(-velocity.x);
+      controls.moveForward(-velocity.z);
+      controls.getObject().position.y += velocity.y;
+    } else {
+      controls.moveRight(-velocity.x);
+      controls.moveForward(-velocity.z);
+      controls.getObject().position.y += velocity.y;
+    }
     if (!getCurrentChunk().equals(lastChunk)) {
       console.log("Moved to a new chunk!");
       // generateChunksInMovementDirection();
