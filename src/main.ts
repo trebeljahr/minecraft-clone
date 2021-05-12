@@ -22,8 +22,9 @@ import {
 } from "./controls";
 import { World } from "./VoxelWorld";
 
-let camera, controls, lastChunk, scene, renderer, canvas;
+let camera, controls, lastChunk, scene, canvas;
 let world: World;
+let renderer: THREE.WebGLRenderer;
 let renderRequested = false;
 
 let wireframesView = 2;
@@ -52,6 +53,13 @@ const neighborOffsets = [
   [0, 0, 1], // front
 ];
 
+let x = 0;
+let maxX = 0;
+let minX = 0;
+let y = 0;
+let maxY = 0;
+let minY = 0;
+
 const chunkIdToMesh = {};
 const texture = new THREE.TextureLoader().load(require("../assets/stone.png"));
 
@@ -75,13 +83,6 @@ function getCurrentChunk(providedPos?: THREE.Vector3) {
   return copy(pos).divideScalar(chunkSize).floor();
 }
 
-function requestRenderIfNotRequested() {
-  if (!renderRequested) {
-    renderRequested = true;
-    requestAnimationFrame(render);
-  }
-}
-
 function generateChunkAtPosition(pos: THREE.Vector3) {
   pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
   for (let y = 0; y < chunkSize; ++y) {
@@ -97,6 +98,7 @@ function generateChunkAtPosition(pos: THREE.Vector3) {
     }
   }
   updateVoxelGeometry(pos.x, pos.y, pos.z);
+  requestRenderIfNotRequested();
 }
 
 function cameraDirection() {
@@ -278,7 +280,7 @@ function init() {
 
   controls = new PointerLockControls(camera, document.body);
 
-  instructions.addEventListener("click", function () {
+  blocker.addEventListener("click", function () {
     controls.lock();
   });
 
@@ -291,7 +293,7 @@ function init() {
 
   controls.addEventListener("unlock", function () {
     menu = true;
-    blocker.style.display = "block";
+    blocker.style.display = "flex";
     instructions.style.display = "";
     crosshairs.style.display = "none";
   });
@@ -303,7 +305,37 @@ function init() {
     switch (event.code) {
       case "KeyF":
         console.log("Pressed F");
-        generateChunksAroundCamera();
+
+        y = minY;
+        for (let x = minX; x <= maxX; x++) {
+          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
+          console.log("Spawning new chunk", pos);
+          generateChunkAtPosition(pos);
+        }
+        y = maxY;
+        for (let x = minX; x <= maxX; x++) {
+          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
+          console.log("Spawning new chunk", pos);
+          generateChunkAtPosition(pos);
+        }
+        x = minX;
+        for (let y = minY; y <= maxY; y++) {
+          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
+          console.log("Spawning new chunk", pos);
+          generateChunkAtPosition(pos);
+        }
+        x = maxX;
+        for (let y = minY; y <= maxY; y++) {
+          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
+          console.log("Spawning new chunk", pos);
+          generateChunkAtPosition(pos);
+        }
+        maxX++;
+        maxY++;
+        minY--;
+        minX--;
+
+        // generateChunksAroundCamera();
         // lines.forEach((line) => {
         //   line.visible = wireframesView % 2 === 0;
         // });
@@ -341,8 +373,17 @@ function animate() {
   render();
 }
 
+function requestRenderIfNotRequested() {
+  if (!renderRequested) {
+    renderRequested = true;
+    requestAnimationFrame(render);
+  }
+}
+
 function render() {
   renderRequested = false;
+  if (renderer.info.render.frame % 10 === 0) {
+  }
 
   // let time = performance.now();
   if (controls.isLocked === true) {
@@ -360,7 +401,7 @@ function render() {
     controls.getObject().position.y += velocity.y;
     if (!getCurrentChunk().equals(lastChunk)) {
       console.log("Moved to a new chunk!");
-      generateChunksInMovementDirection();
+      // generateChunksInMovementDirection();
       // generateChunksAroundCamera();
     }
   }
