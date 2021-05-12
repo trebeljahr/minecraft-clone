@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { addLights } from "./lights";
-import { blockLength, terrainHeight } from "./constants";
+import { blockLength, surface, terrainHeight } from "./constants";
 import {
   chunkSize,
   shouldPlaceBlock,
@@ -52,13 +52,14 @@ const neighborOffsets = [
   [0, 0, -1], // back
   [0, 0, 1], // front
 ];
+const loopSize = 3;
+let minX = -loopSize;
+let maxX = loopSize;
+let x = minX;
 
-let x = 0;
-let maxX = 0;
-let minX = 0;
-let y = 0;
-let maxY = 0;
-let minY = 0;
+let minY = -loopSize;
+let maxY = loopSize;
+let y = minY;
 
 const chunkIdToMesh = {};
 const texture = new THREE.TextureLoader().load(require("../assets/stone.png"));
@@ -305,36 +306,6 @@ function init() {
     switch (event.code) {
       case "KeyF":
         console.log("Pressed F");
-
-        y = minY;
-        for (let x = minX; x <= maxX; x++) {
-          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
-          console.log("Spawning new chunk", pos);
-          generateChunkAtPosition(pos);
-        }
-        y = maxY;
-        for (let x = minX; x <= maxX; x++) {
-          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
-          console.log("Spawning new chunk", pos);
-          generateChunkAtPosition(pos);
-        }
-        x = minX;
-        for (let y = minY; y <= maxY; y++) {
-          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
-          console.log("Spawning new chunk", pos);
-          generateChunkAtPosition(pos);
-        }
-        x = maxX;
-        for (let y = minY; y <= maxY; y++) {
-          const pos = new THREE.Vector3(x * chunkSize, 0, y * chunkSize);
-          console.log("Spawning new chunk", pos);
-          generateChunkAtPosition(pos);
-        }
-        maxX++;
-        maxY++;
-        minY--;
-        minX--;
-
         // generateChunksAroundCamera();
         // lines.forEach((line) => {
         //   line.visible = wireframesView % 2 === 0;
@@ -382,7 +353,54 @@ function requestRenderIfNotRequested() {
 
 function render() {
   renderRequested = false;
-  if (renderer.info.render.frame % 10 === 0) {
+  if (renderer.info.render.frame % 5 === 0) {
+    const pos = new THREE.Vector3(
+      x * chunkSize,
+      surface - chunkSize,
+      y * chunkSize
+    );
+    if (maxX <= 5) {
+      console.log("Spawning new chunk", pos);
+      generateChunkAtPosition(pos);
+      generateChunkAtPosition(
+        copy(pos).sub(new THREE.Vector3(0, 1 * chunkSize, 0))
+      );
+      generateChunkAtPosition(
+        copy(pos).sub(new THREE.Vector3(0, 2 * chunkSize, 0))
+      );
+    }
+    if (y === maxY && x === maxX - 1) {
+      console.log("Finished loop");
+      minX--;
+      maxX++;
+      x = minX;
+      minY--;
+      maxY++;
+      y = minY;
+    } else {
+      if (y === maxY && x > minX && x < maxX) {
+        x++;
+      }
+      if (y === maxY && x === maxX) {
+        x = minX + 1;
+      }
+      if (y >= minY && y < maxY && x === maxX) {
+        y++;
+      }
+
+      if (x > minX && x < maxX && y === minY) {
+        x++;
+      }
+
+      if (x === minX) {
+        if (y === maxY) {
+          x++;
+          y = minY;
+        } else {
+          y++;
+        }
+      }
+    }
   }
 
   // let time = performance.now();

@@ -1,4 +1,5 @@
 import { chunkSize } from "./createChunk";
 
-export const terrainHeight = 5 * chunkSize + 10;
+export const surface = 5 * chunkSize;
+export const terrainHeight = surface + 10;
 export const blockLength = 100;
