@@ -29,6 +29,7 @@ let renderRequested = false;
 let controls: PointerLockControls;
 let wireframesView = 2;
 let rendering = false;
+const eyeLevel = 1.5;
 const chunks = new Map<THREE.Vector3, Uint8Array>();
 const chunksToRender = 3;
 const chunksToRenderDown = 2;
@@ -58,15 +59,13 @@ const loopSize = 3;
 let minX = -loopSize;
 let maxX = loopSize;
 let x = minX;
-
+let canJump = false;
 let minY = -loopSize;
 let maxY = loopSize;
 let y = minY;
 
 const chunkIdToMesh = {};
-const texture = new THREE.TextureLoader().load(
-  require("../assets/flourish-atlas.png")
-);
+const texture = new THREE.TextureLoader().load(require("../assets/stone.png"));
 
 texture.magFilter = THREE.NearestFilter;
 texture.minFilter = THREE.NearestFilter;
@@ -244,8 +243,8 @@ function getPosition() {
 
 function init() {
   const tileSize = 16;
-  const tileTextureWidth = 256;
-  const tileTextureHeight = 64;
+  const tileTextureWidth = 16;
+  const tileTextureHeight = 16;
   world = new World({
     chunkSize,
     tileSize,
@@ -304,6 +303,10 @@ function init() {
       return;
     }
     switch (event.code) {
+      case "Space":
+        if (canJump === true) velocity.y += 1.5;
+        canJump = false;
+        break;
       case "KeyF":
         console.log("Pressed F");
         // camera.position.y = terrainHeight;
@@ -408,6 +411,14 @@ function generateTerrain() {
   }
 }
 
+function playerCollidesWithTerrain() {
+  return (
+    wouldCollideWithTerrain(copy(controls.getObject().position)) ||
+    wouldCollideWithTerrain(
+      copy(controls.getObject().position).sub(new THREE.Vector3(0, eyeLevel, 0))
+    )
+  );
+}
 function render() {
   renderRequested = false;
   generateTerrain();
@@ -415,49 +426,27 @@ function render() {
   if (controls.isLocked === true) {
     direction.z = Number(moveForward) - Number(moveBack);
     direction.x = Number(moveRight) - Number(moveLeft);
-    // direction.y = Number(moveDown) - Number(moveUp);
     direction.normalize();
 
     velocity.z = direction.z * maxSpeed;
     velocity.x = direction.x * maxSpeed;
-    velocity.y = maxSpeed;
+    if (velocity.y >= -maxSpeed * 2) velocity.y -= 0.2;
 
     controls.moveRight(velocity.x);
-    if (
-      wouldCollideWithTerrain(copy(controls.getObject().position)) ||
-      wouldCollideWithTerrain(
-        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
-      )
-    ) {
+    if (playerCollidesWithTerrain()) {
       controls.moveRight(-velocity.x);
     }
 
-    controls.getObject().position.y -= velocity.y;
-    if (
-      wouldCollideWithTerrain(
-        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
-      ) ||
-      wouldCollideWithTerrain(
-        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
-      )
-    ) {
-      controls.getObject().position.y += velocity.y;
+    controls.getObject().position.y += velocity.y;
+    if (playerCollidesWithTerrain()) {
+      canJump = true;
+      controls.getObject().position.y -= velocity.y;
     }
 
     controls.moveForward(velocity.z);
-    if (
-      wouldCollideWithTerrain(copy(controls.getObject().position)) ||
-      wouldCollideWithTerrain(
-        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
-      )
-    ) {
+    if (playerCollidesWithTerrain()) {
       controls.moveForward(-velocity.z);
     }
-
-    if (!getCurrentChunk().equals(lastChunk)) {
-    }
   }
-  lastChunk = getCurrentChunk();
-
   renderer.render(scene, camera);
 }

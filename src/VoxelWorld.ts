@@ -16,7 +16,7 @@ const faces = [
   },
   {
     // right
-    uvRow: 1,
+    uvRow: 0,
     dir: [1, 0, 0],
     corners: [
       { pos: [1, 1, 1], uv: [0, 1] },
@@ -27,7 +27,7 @@ const faces = [
   },
   {
     // bottom
-    uvRow: 2,
+    uvRow: 0,
     dir: [0, -1, 0],
     corners: [
       { pos: [1, 0, 1], uv: [1, 0] },
