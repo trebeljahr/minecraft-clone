@@ -22,11 +22,11 @@ import {
 } from "./controls";
 import { World } from "./VoxelWorld";
 
-let camera, controls, lastChunk, scene, canvas;
+let camera, lastChunk, scene, canvas;
 let world: World;
 let renderer: THREE.WebGLRenderer;
 let renderRequested = false;
-
+let controls: PointerLockControls;
 let wireframesView = 2;
 let rendering = false;
 const chunks = new Map<THREE.Vector3, Uint8Array>();
@@ -53,6 +53,7 @@ const neighborOffsets = [
   new THREE.Vector3(0, 0, -1), // back
   new THREE.Vector3(0, 0, 1), // front
 ];
+
 const loopSize = 3;
 let minX = -loopSize;
 let maxX = loopSize;
@@ -350,20 +351,9 @@ function requestRenderIfNotRequested() {
   }
 }
 
-function isCollidingWithTerrain() {
-  const rayIntersection = world.intersectRay(
-    copy(controls.getObject().position),
-    copy(controls.getObject().position).add(velocity)
-  );
-
-  if (rayIntersection) {
-    const {
-      position: [x, y, z],
-    } = rayIntersection;
-    world.setVoxel(x, y, z, 2);
-    updateVoxelGeometry(x, y, z);
-    return rayIntersection;
-  }
+function wouldCollideWithTerrain({ x, y, z }: THREE.Vector3) {
+  const collision = world.getVoxel(x, y, z);
+  if (collision !== 0) return true;
   return false;
 }
 
@@ -435,15 +425,23 @@ function render() {
     velocity.x = -direction.x * maxSpeed;
     velocity.y = -direction.y * maxSpeed;
 
-    const collision = isCollidingWithTerrain();
-
-    if (collision) {
-      velocity.multiplyScalar(0);
-      console.log(collision);
-    }
     controls.moveRight(-velocity.x);
-    controls.moveForward(-velocity.z);
+    if (wouldCollideWithTerrain(copy(controls.getObject().position))) {
+      console.log("Would collide in X dir");
+      controls.moveRight(+velocity.x);
+    }
+
     controls.getObject().position.y += velocity.y;
+    if (wouldCollideWithTerrain(copy(controls.getObject().position))) {
+      console.log("Would collide in Y dir");
+      controls.getObject().position.y -= velocity.y;
+    }
+
+    controls.moveForward(-velocity.z);
+    if (wouldCollideWithTerrain(copy(controls.getObject().position))) {
+      console.log("Would collide in Z dir");
+      controls.moveRight(+velocity.z);
+    }
 
     if (!getCurrentChunk().equals(lastChunk)) {
       console.log("Moved to a new chunk!");
