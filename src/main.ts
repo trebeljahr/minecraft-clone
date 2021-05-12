@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { addLights } from "./lights";
-import { blockLength, surface, terrainHeight } from "./constants";
+import { blockLength, copy, surface, terrainHeight } from "./constants";
 import {
   chunkSize,
   shouldPlaceBlock,
@@ -63,7 +63,9 @@ let maxY = loopSize;
 let y = minY;
 
 const chunkIdToMesh = {};
-const texture = new THREE.TextureLoader().load(require("../assets/stone.png"));
+const texture = new THREE.TextureLoader().load(
+  require("../assets/flourish-atlas.png")
+);
 
 texture.magFilter = THREE.NearestFilter;
 texture.minFilter = THREE.NearestFilter;
@@ -233,10 +235,6 @@ function updateChunkGeometry(x: number, y: number, z: number) {
   }
 }
 
-function copy(vec: THREE.Vector3) {
-  return new THREE.Vector3().copy(vec);
-}
-
 function getPosition() {
   const { x, y, z } = controls.getObject().position;
   const pos = new THREE.Vector3(x, y, z);
@@ -245,8 +243,8 @@ function getPosition() {
 
 function init() {
   const tileSize = 16;
-  const tileTextureWidth = 16;
-  const tileTextureHeight = 16;
+  const tileTextureWidth = 256;
+  const tileTextureHeight = 64;
   world = new World({
     chunkSize,
     tileSize,
@@ -352,39 +350,41 @@ function requestRenderIfNotRequested() {
   }
 }
 
-function isCollidingWithTerrain(px: number, py: number, pz: number) {
-  for (const offset of neighborOffsets) {
-    const collides =
-      world.getVoxel(
-        px + offset.x * 1.1,
-        py + offset.y * 1.1,
-        pz + offset.z * 1.1
-      ) !== 0;
-    if (collides) {
-      console.log(offset);
-      return offset;
-    }
+function isCollidingWithTerrain() {
+  const rayIntersection = world.intersectRay(
+    copy(controls.getObject().position),
+    copy(controls.getObject().position).add(velocity)
+  );
+
+  if (rayIntersection) {
+    const {
+      position: [x, y, z],
+    } = rayIntersection;
+    world.setVoxel(x, y, z, 2);
+    updateVoxelGeometry(x, y, z);
+    return rayIntersection;
   }
   return false;
 }
-function render() {
-  renderRequested = false;
+
+function generateTerrain() {
+  if (maxX > 5) return;
+
   if (renderer.info.render.frame % 5 === 0) {
     const pos = new THREE.Vector3(
       x * chunkSize,
       surface - chunkSize,
       y * chunkSize
     );
-    if (maxX <= 5) {
-      // console.log("Spawning new chunk", pos);
-      generateChunkAtPosition(pos);
-      generateChunkAtPosition(
-        copy(pos).sub(new THREE.Vector3(0, 1 * chunkSize, 0))
-      );
-      generateChunkAtPosition(
-        copy(pos).sub(new THREE.Vector3(0, 2 * chunkSize, 0))
-      );
-    }
+
+    generateChunkAtPosition(pos);
+    generateChunkAtPosition(
+      copy(pos).sub(new THREE.Vector3(0, 1 * chunkSize, 0))
+    );
+    generateChunkAtPosition(
+      copy(pos).sub(new THREE.Vector3(0, 2 * chunkSize, 0))
+    );
+
     if (y === maxY && x === maxX - 1) {
       console.log("Finished loop");
       minX--;
@@ -418,6 +418,11 @@ function render() {
       }
     }
   }
+}
+
+function render() {
+  renderRequested = false;
+  generateTerrain();
 
   // let time = performance.now();
   if (controls.isLocked === true) {
@@ -430,27 +435,16 @@ function render() {
     velocity.x = -direction.x * maxSpeed;
     velocity.y = -direction.y * maxSpeed;
 
-    // controls.moveRight(-velocity.x);
-    // controls.moveForward(-velocity.z);
-    // controls.getObject().position.y += velocity.y;
-    const { x: px, y: py, z: pz } = copy(controls.getObject().position).add(
-      velocity
-    );
-    player.translate(px, py, pz);
-    // player.computeBoundingBox();
-    // console.log(player.boundingBox);
-    const collisionDir = isCollidingWithTerrain(px, py, pz);
-    if (collisionDir) {
-      console.log(cameraDirection());
-      velocity.sub(collisionDir);
-      controls.moveRight(-velocity.x);
-      controls.moveForward(-velocity.z);
-      controls.getObject().position.y += velocity.y;
-    } else {
-      controls.moveRight(-velocity.x);
-      controls.moveForward(-velocity.z);
-      controls.getObject().position.y += velocity.y;
+    const collision = isCollidingWithTerrain();
+
+    if (collision) {
+      velocity.multiplyScalar(0);
+      console.log(collision);
     }
+    controls.moveRight(-velocity.x);
+    controls.moveForward(-velocity.z);
+    controls.getObject().position.y += velocity.y;
+
     if (!getCurrentChunk().equals(lastChunk)) {
       console.log("Moved to a new chunk!");
       // generateChunksInMovementDirection();

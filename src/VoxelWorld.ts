@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { copy } from "./constants";
 import { chunkSize } from "./createChunk";
 
 const faces = [
@@ -15,7 +16,7 @@ const faces = [
   },
   {
     // right
-    uvRow: 0,
+    uvRow: 1,
     dir: [1, 0, 0],
     corners: [
       { pos: [1, 1, 1], uv: [0, 1] },
@@ -26,7 +27,7 @@ const faces = [
   },
   {
     // bottom
-    uvRow: 0,
+    uvRow: 2,
     dir: [0, -1, 0],
     corners: [
       { pos: [1, 0, 1], uv: [1, 0] },
@@ -90,6 +91,9 @@ export class World {
     const { chunkSize } = this;
     this.chunkSliceSize = chunkSize * chunkSize;
     this.chunks = {};
+  }
+  computeVoxelCoordinates(pos: THREE.Vector3) {
+    return copy(pos).floor();
   }
   computeVoxelOffset(x: number, y: number, z: number) {
     const { chunkSize, chunkSliceSize } = this;
@@ -197,7 +201,8 @@ export class World {
   }
   intersectRay(
     start: THREE.Vector3,
-    end: THREE.Vector3
+    end: THREE.Vector3,
+    velocity = 6
   ): {
     position: [number, number, number];
     normal: [number, number, number];
@@ -231,7 +236,7 @@ export class World {
     let steppedIndex = -1;
 
     // main loop along raycast vector
-    while (t <= 6) {
+    while (t <= velocity) {
       const voxel = this.getVoxel(ix, iy, iz);
       if (voxel) {
         return {
