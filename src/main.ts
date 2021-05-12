@@ -36,7 +36,7 @@ const objects = [];
 const lines = [];
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
-const maxSpeed = 0.5;
+const maxSpeed = 10 / 50;
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshair-container");
 const instructions = document.getElementById("instructions");
@@ -252,11 +252,11 @@ function init() {
     tileTextureWidth,
     tileTextureHeight,
   });
-
+  const near = 0.01;
   camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
-    0.01,
+    near,
     20000
   );
   camera.position.y = terrainHeight;
@@ -306,14 +306,12 @@ function init() {
     switch (event.code) {
       case "KeyF":
         console.log("Pressed F");
-        // generateChunksAroundCamera();
-        // lines.forEach((line) => {
-        //   line.visible = wireframesView % 2 === 0;
-        // });
-        // objects.forEach((mesh) => {
-        //   mesh.visible = wireframesView % 2 === 1;
-        // });
-        // wireframesView++;
+        // camera.position.y = terrainHeight;
+        const newPos = new THREE.Vector3(0, terrainHeight, 0);
+        controls.getObject().position.y = newPos.y;
+        controls.getObject().position.x = newPos.x;
+        controls.getObject().position.z = newPos.z;
+
         break;
     }
   };
@@ -414,42 +412,51 @@ function render() {
   renderRequested = false;
   generateTerrain();
 
-  // let time = performance.now();
   if (controls.isLocked === true) {
     direction.z = Number(moveForward) - Number(moveBack);
     direction.x = Number(moveRight) - Number(moveLeft);
-    direction.y = Number(moveDown) - Number(moveUp);
+    // direction.y = Number(moveDown) - Number(moveUp);
     direction.normalize();
 
-    velocity.z = -direction.z * maxSpeed;
-    velocity.x = -direction.x * maxSpeed;
-    velocity.y = -direction.y * maxSpeed;
+    velocity.z = direction.z * maxSpeed;
+    velocity.x = direction.x * maxSpeed;
+    velocity.y = maxSpeed;
 
-    controls.moveRight(-velocity.x);
-    if (wouldCollideWithTerrain(copy(controls.getObject().position))) {
-      console.log("Would collide in X dir");
-      controls.moveRight(+velocity.x);
+    controls.moveRight(velocity.x);
+    if (
+      wouldCollideWithTerrain(copy(controls.getObject().position)) ||
+      wouldCollideWithTerrain(
+        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
+      )
+    ) {
+      controls.moveRight(-velocity.x);
     }
 
-    controls.getObject().position.y += velocity.y;
-    if (wouldCollideWithTerrain(copy(controls.getObject().position))) {
-      console.log("Would collide in Y dir");
-      controls.getObject().position.y -= velocity.y;
+    controls.getObject().position.y -= velocity.y;
+    if (
+      wouldCollideWithTerrain(
+        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
+      ) ||
+      wouldCollideWithTerrain(
+        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
+      )
+    ) {
+      controls.getObject().position.y += velocity.y;
     }
 
-    controls.moveForward(-velocity.z);
-    if (wouldCollideWithTerrain(copy(controls.getObject().position))) {
-      console.log("Would collide in Z dir");
-      controls.moveRight(+velocity.z);
+    controls.moveForward(velocity.z);
+    if (
+      wouldCollideWithTerrain(copy(controls.getObject().position)) ||
+      wouldCollideWithTerrain(
+        copy(controls.getObject().position).sub(new THREE.Vector3(0, 1.7, 0))
+      )
+    ) {
+      controls.moveForward(-velocity.z);
     }
 
     if (!getCurrentChunk().equals(lastChunk)) {
-      console.log("Moved to a new chunk!");
-      // generateChunksInMovementDirection();
-      // generateChunksAroundCamera();
     }
   }
-  // prevTime = time;
   lastChunk = getCurrentChunk();
 
   renderer.render(scene, camera);
