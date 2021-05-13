@@ -29,7 +29,7 @@ export function initSky(
     mieDirectionalG: 0.1,
     mieCoefficient: 0.1,
     turbidity: 2,
-    exposure: 0.1,
+    exposure: 0.6,
   };
 
   const nightValues = {
@@ -133,7 +133,7 @@ export function initSky(
         compare = (param: string) => parameters[param] > values[param];
         update = (param: string, delta: number) => {
           parameters[param] -=
-            (increments[param] * delta * parameters.sunVelocity) / 10;
+            (increments[param] * delta * parameters.sunVelocity) / 5;
           parameters[param] = Math.max(values[param], parameters[param]);
         };
       }
