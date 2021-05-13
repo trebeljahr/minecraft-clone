@@ -48,6 +48,10 @@ body {
   cursor: pointer;
 }
 
+.dg.ac {
+  z-index: 30 !important;
+}
+
 #instructions {
   color: #ffffff;
   text-align: center;

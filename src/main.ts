@@ -5,7 +5,10 @@ import { chunkSize, shouldPlaceBlock } from "./createChunk";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
 import { Player } from "./Player";
+import { initSky } from "./sky";
+
 import {
+  ACESFilmicToneMapping,
   AmbientLight,
   BufferAttribute,
   BufferGeometry,
@@ -14,9 +17,11 @@ import {
   DoubleSide,
   Mesh,
   MeshLambertMaterial,
+  MeshStandardMaterial,
   NearestFilter,
   PerspectiveCamera,
   Scene,
+  sRGBEncoding,
   TextureLoader,
   Vector3,
   WebGLRenderer,
@@ -58,12 +63,7 @@ const texture = new TextureLoader().load(require("../assets/stone.png"));
 texture.magFilter = NearestFilter;
 texture.minFilter = NearestFilter;
 
-const material = new MeshLambertMaterial({
-  map: texture,
-  side: DoubleSide,
-  alphaTest: 0.1,
-  transparent: true,
-});
+const material = new MeshStandardMaterial({ map: texture });
 
 init();
 
@@ -203,6 +203,9 @@ function init() {
   renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputEncoding = sRGBEncoding;
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.3;
 
   scene = new Scene();
   scene.background = new Color(0xbfd1e5);
@@ -212,12 +215,12 @@ function init() {
   loop.register(player);
   loop.start();
 
-  const ambientLight = new AmbientLight(0xcccccc);
-  ambientLight.intensity = 0.5;
-  scene.add(ambientLight);
+  // const ambientLight = new AmbientLight(0xcccccc);
+  // ambientLight.intensity = 0.5;
+  // scene.add(ambientLight);
 
-  const directionalLight = new DirectionalLight(0xffffff, 0.3);
-  scene.add(directionalLight);
+  // const directionalLight = new DirectionalLight(0xffffff, 0.3);
+  // scene.add(directionalLight);
 
   blocker.addEventListener("click", function () {
     player.controls.lock();
@@ -261,6 +264,8 @@ function init() {
 
   window.addEventListener("resize", onWindowResize);
   generateChunksAroundCamera();
+  const sky = initSky(camera, scene, renderer);
+  loop.register(sky);
 }
 
 function onWindowResize() {
