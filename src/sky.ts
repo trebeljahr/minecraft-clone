@@ -22,14 +22,12 @@ export function initSky(
   sky.scale.setScalar(10000);
 
   scene.add(sky);
-  const start = 180;
 
   const increments = {
     rayleigh: 0.5,
     mieDirectionalG: 0.1,
     mieCoefficient: 0.1,
     turbidity: 2,
-    exposure: 0.1,
   };
 
   const nightValues = {
@@ -37,25 +35,24 @@ export function initSky(
     mieDirectionalG: 0.05,
     mieCoefficient: 0,
     turbidity: 1,
-    exposure: 0.1,
   };
   const dayValues = {
     rayleigh: 4,
     mieDirectionalG: 0.7,
     mieCoefficient: 0.05,
     turbidity: 10,
-    exposure: 0.2,
   };
 
   const isDay = (rotation: number) => rotation >= 180 && rotation <= 360;
 
+  const start = 45;
   const parameters = {
     ...(isDay(start) ? dayValues : nightValues),
     rotation: start,
     elevation: start,
     azimuth: 180,
-    exposure: 0.2,
     sunVelocity: 20,
+    exposure: 0.5,
   };
 
   const pmremGenerator = new PMREMGenerator(renderer);

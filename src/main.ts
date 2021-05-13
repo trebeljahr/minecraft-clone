@@ -36,7 +36,8 @@ const instructions = document.getElementById("instructions");
 let menu = true;
 
 const stone = 12;
-const dirt = 1;
+const grass = 1;
+const dirt = 14;
 const neighborOffsets = [
   new Vector3(0, 0, 0), // self
   new Vector3(-1, 0, 0), // left
@@ -68,8 +69,21 @@ const material = new MeshStandardMaterial({ map: texture });
 init();
 
 function wouldPlaceBlockAbove(x: number, currentY: number, z: number) {
-  for (let y = currentY + 1; y < currentY + 10; y++) {
+  for (let y = currentY + 1; y < currentY + 5; y++) {
     if (shouldPlaceBlock(x, y, z)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function shouldSpawnGrass(x: number, y: number, z: number) {
+  return !wouldPlaceBlockAbove(x, y, z);
+}
+
+function shouldSpawnDirt(x: number, currentY: number, z: number) {
+  for (let y = currentY + 1; y < currentY + 4; y++) {
+    if (shouldSpawnGrass(x, y, z)) {
       return true;
     }
   }
@@ -84,10 +98,12 @@ function generateChunkAtPosition(pos: Vector3) {
     for (let z = 0; z < chunkSize; ++z) {
       for (let x = 0; x < chunkSize; ++x) {
         if (shouldPlaceBlock(pos.x + x, pos.y + y, pos.z + z)) {
-          if (wouldPlaceBlockAbove(pos.x + x, pos.y + y, pos.z + z)) {
-            world.setVoxel(pos.x + x, pos.y + y, pos.z + z, stone);
-          } else {
+          if (shouldSpawnGrass(pos.x + x, pos.y + y, pos.z + z)) {
+            world.setVoxel(pos.x + x, pos.y + y, pos.z + z, grass);
+          } else if (shouldSpawnDirt(pos.x + x, pos.y + y, pos.z + z)) {
             world.setVoxel(pos.x + x, pos.y + y, pos.z + z, dirt);
+          } else {
+            world.setVoxel(pos.x + x, pos.y + y, pos.z + z, stone);
           }
         }
       }
@@ -209,7 +225,9 @@ function init() {
     near,
     20000
   );
-  camera.position.y = terrainHeight;
+  camera.position.x = 0.1;
+  camera.position.z = 0.1;
+  camera.position.y = terrainHeight + 5;
 
   canvas = document.querySelector("#canvas");
   renderer = new WebGLRenderer({ antialias: true, canvas });
@@ -253,7 +271,7 @@ function init() {
         console.log("Pressed F");
         // camera.position.y = terrainHeight;
         const pos = player.controls.getObject().position;
-        const newPos = new Vector3(0, terrainHeight, 0);
+        const newPos = new Vector3(0.1, terrainHeight + 5, 0.1);
         pos.y = newPos.y;
         pos.x = newPos.x;
         pos.z = newPos.z;
