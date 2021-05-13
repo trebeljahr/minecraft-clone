@@ -1,93 +1,73 @@
 import "./main.css";
-
-import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
-import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { addLights } from "./lights";
-import { blockLength, copy, surface, terrainHeight } from "./constants";
-import {
-  chunkSize,
-  shouldPlaceBlock,
-  generateChunk,
-  halfChunk,
-} from "./createChunk";
-import {
-  addListeners,
-  moveBack,
-  moveDown,
-  moveForward,
-  moveLeft,
-  moveRight,
-  moveUp,
-} from "./controls";
+import { copy, surface, terrainHeight } from "./constants";
+import { chunkSize, shouldPlaceBlock } from "./createChunk";
 import { World } from "./VoxelWorld";
+import { Loop } from "./Loop";
+import { Player } from "./Player";
+import {
+  AmbientLight,
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  DirectionalLight,
+  DoubleSide,
+  Mesh,
+  MeshLambertMaterial,
+  NearestFilter,
+  PerspectiveCamera,
+  Scene,
+  TextureLoader,
+  Vector3,
+  WebGLRenderer,
+} from "three";
 
-let camera, lastChunk, scene, canvas;
+let camera: PerspectiveCamera;
+let scene: Scene;
+let canvas: HTMLCanvasElement;
 let world: World;
-let renderer: THREE.WebGLRenderer;
+let player: Player;
+let renderer: WebGLRenderer;
 let renderRequested = false;
-let controls: PointerLockControls;
-let wireframesView = 2;
-let rendering = false;
-const eyeLevel = 1.5;
-const chunks = new Map<THREE.Vector3, Uint8Array>();
-const chunksToRender = 3;
-const chunksToRenderDown = 2;
-const objects = [];
-const lines = [];
-const velocity = new THREE.Vector3();
-const direction = new THREE.Vector3();
-const maxSpeed = 10 / 50;
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshair-container");
 const instructions = document.getElementById("instructions");
-const player = new THREE.BoxGeometry(0.5, 1.8, 0.5);
-const object = new THREE.Object3D();
-let prevTime = performance.now();
 let menu = true;
+
 const neighborOffsets = [
-  new THREE.Vector3(0, 0, 0), // self
-  new THREE.Vector3(-1, 0, 0), // left
-  new THREE.Vector3(1, 0, 0), // right
-  new THREE.Vector3(0, -1, 0), // down
-  new THREE.Vector3(0, 1, 0), // up
-  new THREE.Vector3(0, 0, -1), // back
-  new THREE.Vector3(0, 0, 1), // front
+  new Vector3(0, 0, 0), // self
+  new Vector3(-1, 0, 0), // left
+  new Vector3(1, 0, 0), // right
+  new Vector3(0, -1, 0), // down
+  new Vector3(0, 1, 0), // up
+  new Vector3(0, 0, -1), // back
+  new Vector3(0, 0, 1), // front
 ];
 
 const loopSize = 3;
 let minX = -loopSize;
 let maxX = loopSize;
 let x = minX;
-let canJump = false;
 let minY = -loopSize;
 let maxY = loopSize;
 let y = minY;
 
 const chunkIdToMesh = {};
-const texture = new THREE.TextureLoader().load(require("../assets/stone.png"));
+const texture = new TextureLoader().load(require("../assets/stone.png"));
 
-texture.magFilter = THREE.NearestFilter;
-texture.minFilter = THREE.NearestFilter;
+texture.magFilter = NearestFilter;
+texture.minFilter = NearestFilter;
 
-const material = new THREE.MeshLambertMaterial({
+const material = new MeshLambertMaterial({
   map: texture,
-  side: THREE.DoubleSide,
+  side: DoubleSide,
   alphaTest: 0.1,
   transparent: true,
 });
 
-console.log("Executing JS!");
-
 init();
-animate();
 
-function getCurrentChunk(providedPos?: THREE.Vector3) {
-  const pos = providedPos || getPosition();
-  return copy(pos).divideScalar(chunkSize).floor();
-}
-
-function generateChunkAtPosition(pos: THREE.Vector3) {
+function generateChunkAtPosition(pos: Vector3) {
   pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
   for (let y = 0; y < chunkSize; ++y) {
     if (pos.y + y > terrainHeight || pos.y + y <= 0) {
@@ -105,48 +85,16 @@ function generateChunkAtPosition(pos: THREE.Vector3) {
   requestRenderIfNotRequested();
 }
 
-function cameraDirection() {
-  const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-  const x = (pos.x / window.innerWidth) * 2 - 1;
-  const y = (pos.y / window.innerHeight) * -2 + 1; // note we flip Y
-  const start = new THREE.Vector3();
-  const end = new THREE.Vector3();
-  start.setFromMatrixPosition(camera.matrixWorld);
-  end.set(x, y, 1).unproject(camera);
-  const direction = new THREE.Vector3().copy(end).sub(start).normalize();
-  return direction;
-}
-
 function generateChunksAroundCamera() {
   for (let x = -2; x <= 2; x++) {
     for (let y = -2; y <= 2; y++) {
       for (let z = -3; z < 0; z++) {
-        const offset = new THREE.Vector3(x, z, y).multiplyScalar(chunkSize);
-        const newPos = copy(getPosition()).add(offset);
+        const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
+        const newPos = player.position.add(offset);
         generateChunkAtPosition(newPos);
       }
     }
   }
-}
-
-function generateChunksInMovementDirection() {
-  const dir = getCurrentChunk().sub(lastChunk);
-  console.log("Direction", dir);
-
-  var axis = new THREE.Vector3(0, 1, 0);
-  var angle = Math.PI / 2;
-
-  const rotatedOffset = copy(dir)
-    .applyAxisAngle(axis, angle)
-    .multiplyScalar(chunkSize);
-
-  const offset = dir
-    .multiplyScalar(chunkSize)
-    .add(new THREE.Vector3(0, -chunkSize, 0));
-  const newPos = copy(getPosition()).add(offset);
-  generateChunkAtPosition(newPos);
-  generateChunkAtPosition(copy(newPos).add(rotatedOffset));
-  generateChunkAtPosition(copy(newPos).sub(rotatedOffset));
 }
 
 function placeVoxel(event) {
@@ -156,8 +104,8 @@ function placeVoxel(event) {
   const x = (pos.x / window.innerWidth) * 2 - 1;
   const y = (pos.y / window.innerHeight) * -2 + 1; // note we flip Y
 
-  const start = new THREE.Vector3();
-  const end = new THREE.Vector3();
+  const start = new Vector3();
+  const end = new Vector3();
   start.setFromMatrixPosition(camera.matrixWorld);
   end.set(x, y, 1).unproject(camera);
 
@@ -193,7 +141,7 @@ function updateChunkGeometry(x: number, y: number, z: number) {
   const chunkZ = Math.floor(z / chunkSize);
   const chunkId = world.computeChunkId(x, y, z);
   let mesh = chunkIdToMesh[chunkId];
-  const geometry = mesh ? mesh.geometry : new THREE.BufferGeometry();
+  const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
   const {
     positions,
@@ -204,26 +152,23 @@ function updateChunkGeometry(x: number, y: number, z: number) {
   const positionNumComponents = 3;
   geometry.setAttribute(
     "position",
-    new THREE.BufferAttribute(
-      new Float32Array(positions),
-      positionNumComponents
-    )
+    new BufferAttribute(new Float32Array(positions), positionNumComponents)
   );
   const normalNumComponents = 3;
   geometry.setAttribute(
     "normal",
-    new THREE.BufferAttribute(new Float32Array(normals), normalNumComponents)
+    new BufferAttribute(new Float32Array(normals), normalNumComponents)
   );
   const uvNumComponents = 2;
   geometry.setAttribute(
     "uv",
-    new THREE.BufferAttribute(new Float32Array(uvs), uvNumComponents)
+    new BufferAttribute(new Float32Array(uvs), uvNumComponents)
   );
   geometry.setIndex(indices);
   geometry.computeBoundingSphere();
 
   if (!mesh) {
-    mesh = new THREE.Mesh(geometry, material);
+    mesh = new Mesh(geometry, material);
     mesh.name = chunkId;
     chunkIdToMesh[chunkId] = mesh;
     scene.add(mesh);
@@ -233,12 +178,6 @@ function updateChunkGeometry(x: number, y: number, z: number) {
       chunkZ * chunkSize
     );
   }
-}
-
-function getPosition() {
-  const { x, y, z } = controls.getObject().position;
-  const pos = new THREE.Vector3(x, y, z);
-  return pos;
 }
 
 function init() {
@@ -252,46 +191,46 @@ function init() {
     tileTextureHeight,
   });
   const near = 0.01;
-  camera = new THREE.PerspectiveCamera(
+  camera = new PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
     near,
     20000
   );
   camera.position.y = terrainHeight;
-  object.position.set(0, 0, -chunkSize);
-  camera.add(object);
 
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xbfd1e5);
-
-  const ambientLight = new THREE.AmbientLight(0xcccccc);
-  ambientLight.intensity = 0.5;
-  scene.add(ambientLight);
-
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
-  scene.add(directionalLight);
-
-  // addLights(scene);
   canvas = document.querySelector("#canvas");
-  renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+  renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  controls = new PointerLockControls(camera, document.body);
+  scene = new Scene();
+  scene.background = new Color(0xbfd1e5);
+
+  const loop = new Loop(camera, scene, renderer);
+  player = new Player(new PointerLockControls(camera, document.body), world);
+  loop.register(player);
+  loop.start();
+
+  const ambientLight = new AmbientLight(0xcccccc);
+  ambientLight.intensity = 0.5;
+  scene.add(ambientLight);
+
+  const directionalLight = new DirectionalLight(0xffffff, 0.3);
+  scene.add(directionalLight);
 
   blocker.addEventListener("click", function () {
-    controls.lock();
+    player.controls.lock();
   });
 
-  controls.addEventListener("lock", function () {
+  player.controls.addEventListener("lock", function () {
     menu = false;
     instructions.style.display = "none";
     blocker.style.display = "none";
     crosshairs.style.display = "flex";
   });
 
-  controls.addEventListener("unlock", function () {
+  player.controls.addEventListener("unlock", function () {
     menu = true;
     blocker.style.display = "flex";
     instructions.style.display = "";
@@ -303,17 +242,13 @@ function init() {
       return;
     }
     switch (event.code) {
-      case "Space":
-        if (canJump === true) velocity.y += 1.5;
-        canJump = false;
-        break;
       case "KeyF":
         console.log("Pressed F");
         // camera.position.y = terrainHeight;
-        const newPos = new THREE.Vector3(0, terrainHeight, 0);
-        controls.getObject().position.y = newPos.y;
-        controls.getObject().position.x = newPos.x;
-        controls.getObject().position.z = newPos.z;
+        const newPos = new Vector3(0, terrainHeight, 0);
+        player.position.y = newPos.y;
+        player.position.x = newPos.x;
+        player.position.z = newPos.z;
 
         break;
     }
@@ -321,16 +256,11 @@ function init() {
   document.removeEventListener("keypress", onKeyPress);
   document.addEventListener("keypress", onKeyPress);
   window.addEventListener("click", placeVoxel);
-  addListeners();
 
-  scene.add(controls.getObject());
-  lastChunk = getCurrentChunk();
+  scene.add(player.controls.getObject());
 
   window.addEventListener("resize", onWindowResize);
-
   generateChunksAroundCamera();
-
-  console.log("Testing chunkId: ", world.computeChunkId(16, 17, -33));
 }
 
 function onWindowResize() {
@@ -339,10 +269,10 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function animate() {
-  requestAnimationFrame(animate);
-
-  render();
+function render() {
+  renderRequested = false;
+  generateTerrain();
+  renderer.render(scene, camera);
 }
 
 function requestRenderIfNotRequested() {
@@ -352,29 +282,15 @@ function requestRenderIfNotRequested() {
   }
 }
 
-function wouldCollideWithTerrain({ x, y, z }: THREE.Vector3) {
-  const collision = world.getVoxel(x, y, z);
-  if (collision !== 0) return true;
-  return false;
-}
-
 function generateTerrain() {
   if (maxX > 5) return;
 
   if (renderer.info.render.frame % 5 === 0) {
-    const pos = new THREE.Vector3(
-      x * chunkSize,
-      surface - chunkSize,
-      y * chunkSize
-    );
+    const pos = new Vector3(x * chunkSize, surface - chunkSize, y * chunkSize);
 
     generateChunkAtPosition(pos);
-    generateChunkAtPosition(
-      copy(pos).sub(new THREE.Vector3(0, 1 * chunkSize, 0))
-    );
-    generateChunkAtPosition(
-      copy(pos).sub(new THREE.Vector3(0, 2 * chunkSize, 0))
-    );
+    generateChunkAtPosition(copy(pos).sub(new Vector3(0, 1 * chunkSize, 0)));
+    generateChunkAtPosition(copy(pos).sub(new Vector3(0, 2 * chunkSize, 0)));
 
     if (y === maxY && x === maxX - 1) {
       console.log("Finished loop");
@@ -409,44 +325,4 @@ function generateTerrain() {
       }
     }
   }
-}
-
-function playerCollidesWithTerrain() {
-  return (
-    wouldCollideWithTerrain(copy(controls.getObject().position)) ||
-    wouldCollideWithTerrain(
-      copy(controls.getObject().position).sub(new THREE.Vector3(0, eyeLevel, 0))
-    )
-  );
-}
-function render() {
-  renderRequested = false;
-  generateTerrain();
-
-  if (controls.isLocked === true) {
-    direction.z = Number(moveForward) - Number(moveBack);
-    direction.x = Number(moveRight) - Number(moveLeft);
-    direction.normalize();
-
-    velocity.z = direction.z * maxSpeed;
-    velocity.x = direction.x * maxSpeed;
-    if (velocity.y >= -maxSpeed * 2) velocity.y -= 0.2;
-
-    controls.moveRight(velocity.x);
-    if (playerCollidesWithTerrain()) {
-      controls.moveRight(-velocity.x);
-    }
-
-    controls.getObject().position.y += velocity.y;
-    if (playerCollidesWithTerrain()) {
-      canJump = true;
-      controls.getObject().position.y -= velocity.y;
-    }
-
-    controls.moveForward(velocity.z);
-    if (playerCollidesWithTerrain()) {
-      controls.moveForward(-velocity.z);
-    }
-  }
-  renderer.render(scene, camera);
 }
