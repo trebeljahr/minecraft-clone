@@ -22,14 +22,14 @@ export function initSky(
   sky.scale.setScalar(10000);
 
   scene.add(sky);
-
+  const start = 180;
   const parameters = {
-    cycle: 0,
+    cycle: start,
     turbidity: 10,
     rayleigh: 3,
     mieCoefficient: 0.005,
     mieDirectionalG: 0.7,
-    elevation: 2,
+    elevation: start,
     azimuth: 180,
     exposure: 0.2,
     sunVelocity: 10,
@@ -78,24 +78,24 @@ export function initSky(
         console.log(parameters.exposure);
       }
 
-      const isNight = Math.abs(parameters.cycle / 180) >s= 1;
+      const isNight = Math.floor(Math.abs(parameters.cycle / 180)) === 1;
       if (isNight) {
         parameters.elevation = parameters.cycle - 180;
         if (parameters.rayleigh > 0.15) {
           parameters.rayleigh -= 0.2 * delta;
         }
         if (parameters.mieCoefficient > 0.003) {
-          parameters.rayleigh -= 0.2 * delta;
+          parameters.mieCoefficient -= 0.2 * delta;
         }
         if (parameters.mieDirectionalG < 0.865) {
           parameters.mieDirectionalG += 0.2 * delta;
         }
       } else {
         parameters.elevation = parameters.cycle;
-    
       }
 
       parameters.cycle += delta * parameters.sunVelocity;
+      if (parameters.cycle >= 360) parameters.cycle = 0;
       updateSky();
     },
   };
