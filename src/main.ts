@@ -26,7 +26,6 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { Godrays } from "./godrays";
 
 let camera: PerspectiveCamera;
 let scene: Scene;
@@ -206,20 +205,15 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputEncoding = sRGBEncoding;
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.setClearColor(0xffffff);
-  renderer.autoClear = false;
 
   scene = new Scene();
   scene.background = new Color(0xbfd1e5);
 
-  // const godrays = new Godrays(renderer, camera, scene);
-  const sky = initSky(camera, scene, renderer);
   const loop = new Loop(camera, scene, renderer);
-
   player = new Player(new PointerLockControls(camera, document.body), world);
   loop.register(player);
-  // loop.register(godrays);
-  loop.register(sky);
+  loop.start();
+
   // const ambientLight = new AmbientLight(0xcccccc);
   // ambientLight.intensity = 0.5;
   // scene.add(ambientLight);
@@ -254,10 +248,9 @@ function init() {
         console.log("Pressed F");
         // camera.position.y = terrainHeight;
         const newPos = new Vector3(0, terrainHeight, 0);
-        const pos = player.controls.getObject().position;
-        pos.y = newPos.y;
-        pos.x = newPos.x;
-        pos.z = newPos.z;
+        player.position.y = newPos.y;
+        player.position.x = newPos.x;
+        player.position.z = newPos.z;
 
         break;
     }
@@ -266,12 +259,12 @@ function init() {
   document.addEventListener("keypress", onKeyPress);
   window.addEventListener("click", placeVoxel);
 
-  scene.add();
+  scene.add(player.controls.getObject());
 
   window.addEventListener("resize", onWindowResize);
   generateChunksAroundCamera();
-
-  loop.start();
+  const sky = initSky(camera, scene, renderer);
+  loop.register(sky);
 }
 
 function onWindowResize() {
