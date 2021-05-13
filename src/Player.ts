@@ -31,12 +31,9 @@ export class Player {
   }
 
   jump() {
-    console.log("Can jump? ", this.canJump);
-    console.log("Velocity.Y? ", this.velocity.y);
     if (this.canJump) {
       this.velocity.y = 12;
       this.canJump = false;
-      console.log("Velocity.Y after? ", this.velocity.y);
     }
   }
   standsOnGround(delta: number): boolean {

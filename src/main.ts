@@ -205,7 +205,6 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputEncoding = sRGBEncoding;
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.3;
 
   scene = new Scene();
   scene.background = new Color(0xbfd1e5);
