@@ -9,14 +9,10 @@ import { initSky } from "./sky";
 
 import {
   ACESFilmicToneMapping,
-  AmbientLight,
   BufferAttribute,
   BufferGeometry,
   Color,
-  DirectionalLight,
-  DoubleSide,
   Mesh,
-  MeshLambertMaterial,
   MeshStandardMaterial,
   NearestFilter,
   PerspectiveCamera,
@@ -39,6 +35,8 @@ const crosshairs = document.getElementById("crosshair-container");
 const instructions = document.getElementById("instructions");
 let menu = true;
 
+const stone = 12;
+const dirt = 1;
 const neighborOffsets = [
   new Vector3(0, 0, 0), // self
   new Vector3(-1, 0, 0), // left
@@ -69,16 +67,28 @@ const material = new MeshStandardMaterial({ map: texture });
 
 init();
 
+function wouldPlaceBlockAbove(x: number, currentY: number, z: number) {
+  for (let y = currentY + 1; y < currentY + 10; y++) {
+    if (shouldPlaceBlock(x, y, z)) {
+      return true;
+    }
+  }
+  return false;
+}
 function generateChunkAtPosition(pos: Vector3) {
   pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
-  for (let y = 0; y < chunkSize; ++y) {
+  for (let y = chunkSize - 1; y >= 0; --y) {
     if (pos.y + y > terrainHeight || pos.y + y <= 0) {
       continue;
     }
     for (let z = 0; z < chunkSize; ++z) {
       for (let x = 0; x < chunkSize; ++x) {
         if (shouldPlaceBlock(pos.x + x, pos.y + y, pos.z + z)) {
-          world.setVoxel(pos.x + x, pos.y + y, pos.z + z, 1);
+          if (wouldPlaceBlockAbove(pos.x + x, pos.y + y, pos.z + z)) {
+            world.setVoxel(pos.x + x, pos.y + y, pos.z + z, stone);
+          } else {
+            world.setVoxel(pos.x + x, pos.y + y, pos.z + z, dirt);
+          }
         }
       }
     }
@@ -184,7 +194,7 @@ function updateChunkGeometry(x: number, y: number, z: number) {
 
 function init() {
   const tileSize = 16;
-  const tileTextureWidth = 144;
+  const tileTextureWidth = 320;
   const tileTextureHeight = 48;
   world = new World({
     chunkSize,
@@ -216,13 +226,6 @@ function init() {
   loop.register(player);
   loop.start();
 
-  // const ambientLight = new AmbientLight(0xcccccc);
-  // ambientLight.intensity = 0.5;
-  // scene.add(ambientLight);
-
-  // const directionalLight = new DirectionalLight(0xffffff, 0.3);
-  // scene.add(directionalLight);
-
   blocker.addEventListener("click", function () {
     player.controls.lock();
   });
@@ -249,10 +252,11 @@ function init() {
       case "KeyF":
         console.log("Pressed F");
         // camera.position.y = terrainHeight;
+        const pos = player.controls.getObject().position;
         const newPos = new Vector3(0, terrainHeight, 0);
-        player.position.y = newPos.y;
-        player.position.x = newPos.x;
-        player.position.z = newPos.z;
+        pos.y = newPos.y;
+        pos.x = newPos.x;
+        pos.z = newPos.z;
 
         break;
     }

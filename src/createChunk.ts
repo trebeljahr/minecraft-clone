@@ -1,6 +1,7 @@
 import { Noise } from "./noise";
 import { World } from "./VoxelWorld";
 import * as THREE from "three";
+import { terrainHeight } from "./constants";
 
 const noise = new Noise();
 
@@ -12,7 +13,7 @@ const tileTextureHeight = 16;
 
 export function shouldPlaceBlock(x: number, z: number, y: number) {
   const noiseVal = noise.perlin3(x / 10, z / 10, y / 10);
-  return noiseVal >= 0;
+  return noiseVal >= 0 && z < terrainHeight;
 }
 
 export function generateChunk(xOff: number, yOff: number, zOff: number) {
