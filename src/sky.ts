@@ -104,59 +104,52 @@ export function initSky(
 
   const dayrise = () => parameters.rotation >= 0 && parameters.rotation < 90;
 
-  return {
-    tick: (delta: number) => {
-      if (parameters.sunVelocity === 0) return;
-
-      parameters.rotation += delta * parameters.sunVelocity;
-      if (parameters.rotation >= 360) parameters.rotation = 0;
-
-      let values = dayValues;
-      let compare = (_param: string) => false;
-      let update = (_param: string, _delta: number) => {};
-      if (dayrise()) {
-        if (renderer.info.render.frame % 10 === 0) {
-          console.log("dayrise");
-        }
-        compare = (param: string) => parameters[param] < values[param];
-        update = (param: string, delta: number) => {
-          parameters[param] +=
-            (increments[param] * delta * parameters.sunVelocity) / 10;
-          parameters[param] = Math.min(values[param], parameters[param]);
-        };
+  function changeToValues({ values, compare, update }) {
+    Object.keys(values).forEach((param) => {
+      if (compare(param)) {
+        update(param);
       }
-      if (nightfall()) {
-        if (renderer.info.render.frame % 10 === 0) {
-          console.log("nightfall");
-        }
-        values = nightValues;
-        compare = (param: string) => parameters[param] > values[param];
-        update = (param: string, delta: number) => {
-          parameters[param] -=
-            (increments[param] * delta * parameters.sunVelocity) / 10;
-          parameters[param] = Math.max(values[param], parameters[param]);
-        };
-      }
-      if (!isDay(parameters.rotation)) {
-        if (renderer.info.render.frame % 10 === 0) {
-          // console.log("Night");
-        }
-        parameters.elevation = parameters.rotation - 180;
-      } else {
-        if (renderer.info.render.frame % 10 === 0) {
-          // console.log("Day");
-        }
-        parameters.elevation = parameters.rotation;
-      }
+    });
+  }
+  function tick() {
+    const { sunVelocity: vel } = parameters;
+    if (vel === 0) return;
 
-      Object.keys(values).forEach((param) => {
-        if (compare(param)) {
-          update(param, delta);
-        }
+    parameters.rotation += vel / 500;
+    if (parameters.rotation >= 360) parameters.rotation = 0;
+
+    if (dayrise()) {
+      changeToValues({
+        values: dayValues,
+        compare: (param: string) => parameters[param] < dayValues[param],
+        update: (param: string) => {
+          parameters[param] += (increments[param] * vel) / 500;
+          parameters[param] = Math.min(dayValues[param], parameters[param]);
+        },
       });
+    }
+    if (nightfall()) {
+      changeToValues({
+        values: nightValues,
+        compare: (param: string) => parameters[param] > nightValues[param],
+        update: (param: string) => {
+          parameters[param] -= (increments[param] * vel) / 500;
+          parameters[param] = Math.max(nightValues[param], parameters[param]);
+        },
+      });
+    }
+    if (!isDay(parameters.rotation)) {
+      parameters.elevation = parameters.rotation - 180;
+    } else {
+      parameters.elevation = parameters.rotation;
+    }
 
-      updateSky();
-      gui.updateDisplay();
-    },
+    updateSky();
+    gui.updateDisplay();
+  }
+
+  setInterval(tick, 500);
+  return {
+    tick,
   };
 }

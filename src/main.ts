@@ -58,7 +58,9 @@ let maxY = loopSize;
 let y = minY;
 
 const chunkIdToMesh = {};
-const texture = new TextureLoader().load(require("../assets/stone.png"));
+const texture = new TextureLoader().load(
+  require("../assets/First-Texture-Atlas.png")
+);
 
 texture.magFilter = NearestFilter;
 texture.minFilter = NearestFilter;
@@ -182,8 +184,8 @@ function updateChunkGeometry(x: number, y: number, z: number) {
 
 function init() {
   const tileSize = 16;
-  const tileTextureWidth = 16;
-  const tileTextureHeight = 16;
+  const tileTextureWidth = 144;
+  const tileTextureHeight = 48;
   world = new World({
     chunkSize,
     tileSize,
@@ -255,6 +257,7 @@ function init() {
         break;
     }
   };
+
   document.removeEventListener("keypress", onKeyPress);
   document.addEventListener("keypress", onKeyPress);
   window.addEventListener("click", placeVoxel);
@@ -263,8 +266,7 @@ function init() {
 
   window.addEventListener("resize", onWindowResize);
   generateChunksAroundCamera();
-  const sky = initSky(camera, scene, renderer);
-  loop.register(sky);
+  initSky(camera, scene, renderer);
 }
 
 function onWindowResize() {
