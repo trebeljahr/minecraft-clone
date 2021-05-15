@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { copy, transparentBlocks } from "./constants";
+import { cactus, copy, transparentBlocks } from "./constants";
 import { chunkSize } from "./createChunk";
 
 const faces = [
@@ -177,7 +177,15 @@ export class World {
               if (!neighbor || transparentBlocks.includes(neighbor)) {
                 const ndx = positions.length / 3;
                 for (const { pos, uv } of corners) {
-                  positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
+                  if (voxel === cactus) {
+                    positions.push(
+                      pos[0] - dir[0] * 0.063 + x,
+                      pos[1] + y,
+                      pos[2] - dir[2] * 0.063 + z
+                    );
+                  } else {
+                    positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
+                  }
                   normals.push(...dir);
                   uvs.push(
                     ((uvVoxel + uv[0]) * tileSize) / tileTextureWidth,

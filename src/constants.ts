@@ -25,6 +25,10 @@ export const oakwood = 3;
 export const foliage = 2;
 export const cactus = 18;
 
+export const tileSize = 16;
+export const tileTextureWidth = 320;
+export const tileTextureHeight = 48;
+
 export const neighborOffsets = [
   new Vector3(0, 0, 0), // self
   new Vector3(-1, 0, 0), // left

@@ -2,6 +2,7 @@ import "./main.css";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
   birchwood,
+  cactus,
   copy,
   dirt,
   foliage,
@@ -12,6 +13,9 @@ import {
   stone,
   surface,
   terrainHeight,
+  tileSize,
+  tileTextureWidth,
+  tileTextureHeight,
 } from "./constants";
 import { chunkSize, shouldPlaceBlock } from "./createChunk";
 import { World } from "./VoxelWorld";
@@ -238,7 +242,7 @@ function placeVoxel(event) {
 
   const intersection = world.intersectRay(start, end);
   if (intersection) {
-    const voxelId = event.button === 0 ? 0 : 2;
+    const voxelId = event.button === 0 ? 0 : cactus;
     const pos = intersection.position.map((v, ndx) => {
       return v + intersection.normal[ndx] * (voxelId > 0 ? 0.5 : -0.5);
     }) as [number, number, number];
@@ -323,9 +327,6 @@ function updateChunkGeometry(x: number, y: number, z: number) {
 }
 
 function init() {
-  const tileSize = 16;
-  const tileTextureWidth = 320;
-  const tileTextureHeight = 48;
   world = new World({
     chunkSize,
     tileSize,
