@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { copy } from "./constants";
+import { copy, transparentBlocks } from "./constants";
 import { chunkSize } from "./createChunk";
 
 const faces = [
@@ -174,7 +174,7 @@ export class World {
                 voxelY + dir[1],
                 voxelZ + dir[2]
               );
-              if (!neighbor) {
+              if (!neighbor || transparentBlocks.includes(neighbor)) {
                 const ndx = positions.length / 3;
                 for (const { pos, uv } of corners) {
                   positions.push(pos[0] + x, pos[1] + y, pos[2] + z);

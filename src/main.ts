@@ -1,6 +1,18 @@
 import "./main.css";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
-import { copy, surface, terrainHeight } from "./constants";
+import {
+  birchwood,
+  copy,
+  dirt,
+  foliage,
+  gold,
+  grass,
+  neighborOffsets,
+  oakwood,
+  stone,
+  surface,
+  terrainHeight,
+} from "./constants";
 import { chunkSize, shouldPlaceBlock } from "./createChunk";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
@@ -35,29 +47,6 @@ const crosshairs = document.getElementById("crosshair-container");
 const instructions = document.getElementById("instructions");
 let menu = true;
 
-const stone = 12;
-const grass = 1;
-const dirt = 14;
-const gold = 6;
-const coal = 7;
-const lapis = 9;
-const diamonds = 15;
-const emerald = 17;
-const iron = 19;
-const birchwood = 20;
-const oakwood = 3;
-const foliage = 2;
-
-const neighborOffsets = [
-  new Vector3(0, 0, 0), // self
-  new Vector3(-1, 0, 0), // left
-  new Vector3(1, 0, 0), // right
-  new Vector3(0, -1, 0), // down
-  new Vector3(0, 1, 0), // up
-  new Vector3(0, 0, -1), // back
-  new Vector3(0, 0, 1), // front
-];
-
 const loopSize = 3;
 let minX = -loopSize;
 let maxX = loopSize;
@@ -75,7 +64,7 @@ const texture = new TextureLoader().load(
 texture.magFilter = NearestFilter;
 texture.minFilter = NearestFilter;
 
-const material = new MeshStandardMaterial({ map: texture });
+const material = new MeshStandardMaterial({ map: texture, alphaTest: 0.2 });
 
 init();
 
