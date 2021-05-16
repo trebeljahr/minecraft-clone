@@ -67,135 +67,13 @@ let x = minX;
 let minY = -loopSize;
 let maxY = loopSize;
 let y = minY;
-let lastChunk;
 
 const chunkIdToMesh = {};
 const texture = new TextureLoader().load(
   require("../assets/First-Texture-Atlas.png")
 );
-
 texture.magFilter = NearestFilter;
 texture.minFilter = NearestFilter;
-
-// const material = new MeshStandardMaterial({
-//   map: texture,
-//   alphaTest: 0.8,
-// color: new Color(0.8, 0.8, 0.8),
-// });
-
-const loader = new TextureLoader();
-const stoneTexture = loader.load(require("../assets/stone.png"));
-stoneTexture.minFilter = NearestFilter;
-stoneTexture.magFilter = NearestFilter;
-stoneTexture.wrapS = RepeatWrapping;
-stoneTexture.wrapT = RepeatWrapping;
-const setup = () => {
-  var uniforms = {
-    myTexture: { value: stoneTexture },
-  };
-  const vertexShader = `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-      }`; // document.getElementById("vertShader").textContent;
-  const fragmentShader = `varying vec2 vUv;
-      uniform sampler2D myTexture;
-
-      void main() {
-         gl_FragColor = texture2D(myTexture, vUv) * 15.0 / 12.0;
-       }`; // document.getElementById("fragShader").textContent;
-  const myMaterial = new ShaderMaterial({
-    uniforms,
-    vertexShader,
-    fragmentShader,
-  });
-
-  // Create directional light and add to scene.
-  var directionalLight = new DirectionalLight(0xffffff);
-  directionalLight.position.set(1, 1, 1).normalize();
-  scene.add(directionalLight);
-
-  var light = new AmbientLight(0x404040); // soft white light
-  scene.add(light);
-
-  const myGeometry = new BoxGeometry(1, 1, 1);
-  const mesh = new Mesh(myGeometry, myMaterial);
-  mesh.position.set(5, terrainHeight + 5, 0);
-  scene.add(mesh);
-};
-
-const opaque = new ShaderMaterial({
-  name: "voxels-material",
-  vertexColors: true,
-  fog: true,
-  fragmentShader: ShaderLib.basic.fragmentShader
-    .replace(
-      "#include <common>",
-      [
-        "varying float vlight;",
-        "varying float vsunlight;",
-        "uniform float sunlightIntensity;",
-        "#include <common>",
-      ].join("\n")
-    )
-    .replace(
-      "#include <envmap_fragment>",
-      [
-        "#include <envmap_fragment>",
-        "outgoingLight *= (vlight + max(vsunlight * sunlightIntensity, 0.05)) * 0.5;",
-      ].join("\n")
-    ),
-  vertexShader: ShaderLib.basic.vertexShader
-    .replace(
-      "#include <common>",
-      [
-        "attribute float light;",
-        "varying float vlight;",
-        "varying float vsunlight;",
-        "#include <common>",
-      ].join("\n")
-    )
-    .replace(
-      "#include <color_vertex>",
-      [
-        "#ifdef USE_COLOR",
-        "  vColor.xyz = color.xyz / 255.0;",
-        "#endif",
-        "vlight = float((int(light) >> 4) & 15) / 15.0;",
-        "vsunlight = float(int(light) & 15) / 15.0;",
-      ].join("\n")
-    ),
-  uniforms: {
-    ...UniformsUtils.clone(ShaderLib.basic.uniforms),
-    sunlightIntensity: { value: 1 },
-  },
-});
-
-// const firstShaderMaterial = new ShaderMaterial({
-//   uniforms: UniformsUtils.merge([
-//     UniformsLib["lights"],
-//     {
-//       lightIntensity: { type: "f", value: 1.0 },
-//       textureSampler: { type: "t", value: null },
-//     },
-//   ]),
-//   vertexShader: document.getElementById("vertShader").textContent,
-//   fragmentShader: document.getElementById("fragShader").textContent,
-//   transparent: true,
-//   lights: true,
-// });
-// firstShaderMaterial.uniforms.textureSampler.value = stoneTexture;
-
-// const material = new ShaderMaterial({
-//   uniforms: {
-//     texture: {
-//       value: stoneTexture,
-//     },
-//   },
-//   vertexShader: document.getElementById("vertShader").textContent,
-//   fragmentShader: document.getElementById("fragShader").textContent,
-// });
 
 function updateChunkGeometry(x: number, y: number, z: number) {
   const chunkX = Math.floor(x / chunkSize);
@@ -238,7 +116,27 @@ function updateChunkGeometry(x: number, y: number, z: number) {
   );
 
   if (!mesh) {
-    mesh = new Mesh(geometry, opaque);
+    const uniforms = {
+      myTexture: { value: texture },
+    };
+    const vertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      }`; // document.getElementById("vertShader").textContent;
+    const fragmentShader = `varying vec2 vUv;
+      uniform sampler2D myTexture;
+
+      void main() {
+         gl_FragColor = texture2D(myTexture, vUv) * 15.0 / 12.0;
+       }`; // document.getElementById("fragShader").textContent;
+    const myMaterial = new ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+    });
+    mesh = new Mesh(geometry, myMaterial);
     mesh.name = chunkId;
     chunkIdToMesh[chunkId] = mesh;
     scene.add(mesh);
@@ -257,18 +155,6 @@ function spawnSingleBlock() {
 }
 
 init();
-
-// function cameraDirection() {
-//   const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-//   const x = (pos.x / window.innerWidth) * 2 - 1;
-//   const y = (pos.y / window.innerHeight) * -2 + 1; // note we flip Y
-//   const start = new Vector3();
-//   const end = new Vector3();
-//   start.setFromMatrixPosition(camera.matrixWorld);
-//   end.set(x, y, 1).unproject(camera);
-//   const direction = new Vector3().copy(end).sub(start).normalize();
-//   return direction;
-// }
 
 function getCurrentChunk(providedPos?: Vector3) {
   const pos = providedPos || player.position;
@@ -494,7 +380,6 @@ function init() {
 
   scene = new Scene();
   scene.background = new Color(0xbfd1e5);
-  setup();
   const loop = new Loop(camera, scene, renderer);
   player = new Player(new PointerLockControls(camera, document.body), world);
   loop.register(player);
@@ -556,7 +441,7 @@ function init() {
   scene.add(player.controls.getObject());
 
   window.addEventListener("resize", onWindowResize);
-  // generateChunksAroundCamera();
+  generateChunksAroundCamera();
   spawnSingleBlock();
 
   initSky(camera, scene, renderer);
