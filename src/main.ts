@@ -25,16 +25,25 @@ import { initSky } from "./sky";
 
 import {
   ACESFilmicToneMapping,
+  AmbientLight,
+  BoxGeometry,
   BufferAttribute,
   BufferGeometry,
   Color,
+  DirectionalLight,
+  Fog,
   Mesh,
   MeshStandardMaterial,
   NearestFilter,
   PerspectiveCamera,
+  RepeatWrapping,
   Scene,
+  ShaderLib,
+  ShaderMaterial,
   sRGBEncoding,
   TextureLoader,
+  UniformsLib,
+  UniformsUtils,
   Vector3,
   WebGLRenderer,
 } from "three";
@@ -68,7 +77,184 @@ const texture = new TextureLoader().load(
 texture.magFilter = NearestFilter;
 texture.minFilter = NearestFilter;
 
-const material = new MeshStandardMaterial({ map: texture, alphaTest: 0.2 });
+// const material = new MeshStandardMaterial({
+//   map: texture,
+//   alphaTest: 0.8,
+// color: new Color(0.8, 0.8, 0.8),
+// });
+
+const loader = new TextureLoader();
+const stoneTexture = loader.load(require("../assets/stone.png"));
+stoneTexture.minFilter = NearestFilter;
+stoneTexture.magFilter = NearestFilter;
+stoneTexture.wrapS = RepeatWrapping;
+stoneTexture.wrapT = RepeatWrapping;
+const setup = () => {
+  var uniforms = {
+    myTexture: { value: stoneTexture },
+  };
+  const vertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      }`; // document.getElementById("vertShader").textContent;
+  const fragmentShader = `varying vec2 vUv;
+      uniform sampler2D myTexture;
+
+      void main() {
+         gl_FragColor = texture2D(myTexture, vUv) * 15.0 / 12.0;
+       }`; // document.getElementById("fragShader").textContent;
+  const myMaterial = new ShaderMaterial({
+    uniforms,
+    vertexShader,
+    fragmentShader,
+  });
+
+  // Create directional light and add to scene.
+  var directionalLight = new DirectionalLight(0xffffff);
+  directionalLight.position.set(1, 1, 1).normalize();
+  scene.add(directionalLight);
+
+  var light = new AmbientLight(0x404040); // soft white light
+  scene.add(light);
+
+  const myGeometry = new BoxGeometry(1, 1, 1);
+  const mesh = new Mesh(myGeometry, myMaterial);
+  mesh.position.set(5, terrainHeight + 5, 0);
+  scene.add(mesh);
+};
+
+const opaque = new ShaderMaterial({
+  name: "voxels-material",
+  vertexColors: true,
+  fog: true,
+  fragmentShader: ShaderLib.basic.fragmentShader
+    .replace(
+      "#include <common>",
+      [
+        "varying float vlight;",
+        "varying float vsunlight;",
+        "uniform float sunlightIntensity;",
+        "#include <common>",
+      ].join("\n")
+    )
+    .replace(
+      "#include <envmap_fragment>",
+      [
+        "#include <envmap_fragment>",
+        "outgoingLight *= (vlight + max(vsunlight * sunlightIntensity, 0.05)) * 0.5;",
+      ].join("\n")
+    ),
+  vertexShader: ShaderLib.basic.vertexShader
+    .replace(
+      "#include <common>",
+      [
+        "attribute float light;",
+        "varying float vlight;",
+        "varying float vsunlight;",
+        "#include <common>",
+      ].join("\n")
+    )
+    .replace(
+      "#include <color_vertex>",
+      [
+        "#ifdef USE_COLOR",
+        "  vColor.xyz = color.xyz / 255.0;",
+        "#endif",
+        "vlight = float((int(light) >> 4) & 15) / 15.0;",
+        "vsunlight = float(int(light) & 15) / 15.0;",
+      ].join("\n")
+    ),
+  uniforms: {
+    ...UniformsUtils.clone(ShaderLib.basic.uniforms),
+    sunlightIntensity: { value: 1 },
+  },
+});
+
+// const firstShaderMaterial = new ShaderMaterial({
+//   uniforms: UniformsUtils.merge([
+//     UniformsLib["lights"],
+//     {
+//       lightIntensity: { type: "f", value: 1.0 },
+//       textureSampler: { type: "t", value: null },
+//     },
+//   ]),
+//   vertexShader: document.getElementById("vertShader").textContent,
+//   fragmentShader: document.getElementById("fragShader").textContent,
+//   transparent: true,
+//   lights: true,
+// });
+// firstShaderMaterial.uniforms.textureSampler.value = stoneTexture;
+
+// const material = new ShaderMaterial({
+//   uniforms: {
+//     texture: {
+//       value: stoneTexture,
+//     },
+//   },
+//   vertexShader: document.getElementById("vertShader").textContent,
+//   fragmentShader: document.getElementById("fragShader").textContent,
+// });
+
+function updateChunkGeometry(x: number, y: number, z: number) {
+  const chunkX = Math.floor(x / chunkSize);
+  const chunkY = Math.floor(y / chunkSize);
+  const chunkZ = Math.floor(z / chunkSize);
+  const chunkId = world.computeChunkId(x, y, z);
+  let mesh = chunkIdToMesh[chunkId];
+  const geometry = mesh ? mesh.geometry : new BufferGeometry();
+
+  const {
+    positions,
+    normals,
+    uvs,
+    indices,
+  } = world.generateGeometryDataForChunk(chunkX, chunkY, chunkZ);
+  const positionNumComponents = 3;
+  geometry.setAttribute(
+    "position",
+    new BufferAttribute(new Float32Array(positions), positionNumComponents)
+  );
+  const normalNumComponents = 3;
+  geometry.setAttribute(
+    "normal",
+    new BufferAttribute(new Float32Array(normals), normalNumComponents)
+  );
+  const uvNumComponents = 2;
+  geometry.setAttribute(
+    "uv",
+    new BufferAttribute(new Float32Array(uvs), uvNumComponents)
+  );
+  geometry.setIndex(indices);
+  geometry.computeBoundingSphere();
+  geometry.setAttribute(
+    "color",
+    new BufferAttribute(new Float32Array(positions.map(() => 200)), 3)
+  );
+  geometry.setAttribute(
+    "light",
+    new BufferAttribute(new Float32Array(positions.map(() => 4)), 1)
+  );
+
+  if (!mesh) {
+    mesh = new Mesh(geometry, opaque);
+    mesh.name = chunkId;
+    chunkIdToMesh[chunkId] = mesh;
+    scene.add(mesh);
+    mesh.position.set(
+      chunkX * chunkSize,
+      chunkY * chunkSize,
+      chunkZ * chunkSize
+    );
+  }
+}
+
+function spawnSingleBlock() {
+  const pos = copy(player.pos);
+  world.setVoxel(...pos.setX(pos.x + 3).toArray(), 3);
+  updateVoxelGeometry(...pos.toArray());
+}
 
 init();
 
@@ -281,51 +467,6 @@ function updateVoxelGeometry(x: number, y: number, z: number) {
   }
 }
 
-function updateChunkGeometry(x: number, y: number, z: number) {
-  const chunkX = Math.floor(x / chunkSize);
-  const chunkY = Math.floor(y / chunkSize);
-  const chunkZ = Math.floor(z / chunkSize);
-  const chunkId = world.computeChunkId(x, y, z);
-  let mesh = chunkIdToMesh[chunkId];
-  const geometry = mesh ? mesh.geometry : new BufferGeometry();
-
-  const {
-    positions,
-    normals,
-    uvs,
-    indices,
-  } = world.generateGeometryDataForChunk(chunkX, chunkY, chunkZ);
-  const positionNumComponents = 3;
-  geometry.setAttribute(
-    "position",
-    new BufferAttribute(new Float32Array(positions), positionNumComponents)
-  );
-  const normalNumComponents = 3;
-  geometry.setAttribute(
-    "normal",
-    new BufferAttribute(new Float32Array(normals), normalNumComponents)
-  );
-  const uvNumComponents = 2;
-  geometry.setAttribute(
-    "uv",
-    new BufferAttribute(new Float32Array(uvs), uvNumComponents)
-  );
-  geometry.setIndex(indices);
-  geometry.computeBoundingSphere();
-
-  if (!mesh) {
-    mesh = new Mesh(geometry, material);
-    mesh.name = chunkId;
-    chunkIdToMesh[chunkId] = mesh;
-    scene.add(mesh);
-    mesh.position.set(
-      chunkX * chunkSize,
-      chunkY * chunkSize,
-      chunkZ * chunkSize
-    );
-  }
-}
-
 function init() {
   world = new World({
     chunkSize,
@@ -348,10 +489,12 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputEncoding = sRGBEncoding;
   renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.physicallyCorrectLights = true;
 
   scene = new Scene();
   scene.background = new Color(0xbfd1e5);
-
+  setup();
   const loop = new Loop(camera, scene, renderer);
   player = new Player(new PointerLockControls(camera, document.body), world);
   loop.register(player);
@@ -413,7 +556,9 @@ function init() {
   scene.add(player.controls.getObject());
 
   window.addEventListener("resize", onWindowResize);
-  generateChunksAroundCamera();
+  // generateChunksAroundCamera();
+  spawnSingleBlock();
+
   initSky(camera, scene, renderer);
 }
 
@@ -425,7 +570,7 @@ function onWindowResize() {
 
 function render() {
   renderRequested = false;
-  generateTerrain();
+  // generateTerrain();
   renderer.render(scene, camera);
 }
 
