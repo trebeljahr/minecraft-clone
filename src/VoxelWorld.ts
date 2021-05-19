@@ -174,7 +174,11 @@ export class World {
                 voxelY + dir[1],
                 voxelZ + dir[2]
               );
-              if (!neighbor || transparentBlocks.includes(neighbor)) {
+              if (
+                !neighbor ||
+                transparentBlocks.includes(neighbor) ||
+                transparentBlocks.includes(voxel)
+              ) {
                 const ndx = positions.length / 3;
                 for (const { pos, uv } of corners) {
                   if (voxel === cactus) {
@@ -287,4 +291,153 @@ export class World {
     }
     return null;
   }
+
+  // propagate() {
+  //   const { fields, getVoxel, maxHeight, maxLight, size } = Chunk;
+  //   const {
+  //     voxels,
+  //     world: {
+  //       generator: { types },
+  //     },
+  //   } = this;
+  //   const lightQueue = [];
+  //   const sunlightQueue = [];
+  //   const trees = [];
+  //   for (let x = 0; x < size; x += 1) {
+  //     for (let y = 0; y < maxHeight; y += 1) {
+  //       for (let z = 0; z < size; z += 1) {
+  //         const voxel = getVoxel(x, y, z);
+  //         const type = voxels[voxel];
+  //         if (type === types.sapling) {
+  //           trees.push({
+  //             sapling: { x, y, z },
+  //             height: voxels[voxel + fields.r],
+  //             hue: voxels[voxel + fields.g],
+  //             radius: voxels[voxel + fields.b],
+  //           });
+  //         } else if (types[type].isLight) {
+  //           voxels[voxel + fields.light] = maxLight;
+  //           lightQueue.push({ x, y, z });
+  //         }
+  //       }
+  //     }
+  //   }
+  //   const top = maxHeight - 1;
+  //   for (let x = 0; x < size; x += 1) {
+  //     for (let z = 0; z < size; z += 1) {
+  //       const voxel = getVoxel(x, top, z);
+  //       const type = voxels[voxel];
+  //       if (types[type].isTransparent) {
+  //         voxels[voxel + fields.sunlight] = maxLight;
+  //         sunlightQueue.push({ x, y: top, z });
+  //       }
+  //     }
+  //   }
+  //   this.floodLight(lightQueue, "light");
+  //   this.floodLight(sunlightQueue, "sunlight");
+  // }
+
+  // floodLight(queue, key = "light") {
+  //   const {
+  //     fields,
+  //     getVoxel,
+  //     maxHeight,
+  //     maxLight,
+  //     size,
+  //     voxelNeighbors,
+  //   } = Chunk;
+  //   const {
+  //     world: {
+  //       generator: { types },
+  //     },
+  //   } = this;
+  //   const isSunLight = key === "sunlight";
+  //   while (queue.length) {
+  //     const { x, y, z } = queue.shift();
+  //     const { chunk, cx, cz } = this.get(x, z);
+  //     const light = chunk.voxels[getVoxel(cx, y, cz) + fields[key]];
+  //     voxelNeighbors.forEach((offset) => {
+  //       const ny = y + offset.y;
+  //       if (ny < 0 || ny >= maxHeight) {
+  //         return;
+  //       }
+  //       const nx = x + offset.x;
+  //       const nz = z + offset.z;
+  //       const nl =
+  //         light - (isSunLight && offset.y === -1 && light === maxLight ? 0 : 1);
+  //       const { chunk, cx, cz } = this.get(nx, nz);
+  //       const voxel = getVoxel(cx, ny, cz);
+  //       if (
+  //         !types[chunk.voxels[voxel]].isTransparent ||
+  //         (isSunLight &&
+  //           offset.y !== -1 &&
+  //           light === maxLight &&
+  //           ny > chunk.heightmap[cx * size + cz]) ||
+  //         chunk.voxels[voxel + fields[key]] >= nl
+  //       ) {
+  //         return;
+  //       }
+  //       chunk.voxels[voxel + fields[key]] = nl;
+  //       chunk.needsPersistence = true;
+  //       queue.push({ x: nx, y: ny, z: nz });
+  //     });
+  //   }
+  // }
+
+  // removeLight(x, y, z, key = "light") {
+  //   const { fields, getVoxel, maxHeight, maxLight, voxelNeighbors } = World;
+  //   const { chunk, cx, cz } = this.get(x, z);
+  //   const voxel = getVoxel(cx, y, cz);
+  //   const fill = [];
+  //   const queue = [];
+  //   queue.push({
+  //     x,
+  //     y,
+  //     z,
+  //     light: chunk.voxels[voxel + fields[key]],
+  //   });
+  //   chunk.voxels[voxel + fields[key]] = 0;
+  //   chunk.needsPersistence = true;
+  //   const isSunLight = key === "sunlight";
+  //   while (queue.length) {
+  //     const { x, y, z, light } = queue.shift();
+  //     voxelNeighbors.forEach((offset) => {
+  //       const ny = y + offset.y;
+  //       if (ny < 0 || ny >= maxHeight) {
+  //         return;
+  //       }
+  //       const nx = x + offset.x;
+  //       const nz = z + offset.z;
+  //       const { chunk, cx, cz } = this.get(nx, nz);
+  //       const voxel = getVoxel(cx, ny, cz);
+  //       const nl = chunk.voxels[voxel + fields[key]];
+  //       if (nl === 0) {
+  //         return;
+  //       }
+  //       if (
+  //         nl < light ||
+  //         (isSunLight &&
+  //           offset.y === -1 &&
+  //           light === maxLight &&
+  //           nl === maxLight)
+  //       ) {
+  //         queue.push({
+  //           x: nx,
+  //           y: ny,
+  //           z: nz,
+  //           light: nl,
+  //         });
+  //         chunk.voxels[voxel + fields[key]] = 0;
+  //         chunk.needsPersistence = true;
+  //       } else if (nl >= light) {
+  //         fill.push({
+  //           x: nx,
+  //           y: ny,
+  //           z: nz,
+  //         });
+  //       }
+  //     });
+  //   }
+  //   this.floodLight(fill, key);
+  // }
 }
