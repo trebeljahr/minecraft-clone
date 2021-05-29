@@ -191,13 +191,11 @@ export class Player {
   }
 
   addListeners() {
-    console.log("Adding listeners");
     document.addEventListener("keydown", this.onKeyDown.bind(this));
     document.addEventListener("keyup", this.onKeyUp);
   }
 
   removeListeners() {
-    console.log("Removing listeners");
     document.removeEventListener("keydown", this.onKeyDown);
     document.removeEventListener("keyup", this.onKeyUp);
   }

@@ -11,7 +11,7 @@ export type Position = [number, number, number];
 export function copy(vec: THREE.Vector3) {
   return new THREE.Vector3().copy(vec);
 }
-export const maxHeight = 128;
+export const maxHeight = terrainHeight + chunkSize / 2;
 
 export const stone = 12;
 export const grass = 1;
@@ -62,6 +62,84 @@ export const surroundingOffsetsWithoutSelf = surroundingOffsets.filter(
 
 export const glowingBlocks = [cactus];
 export const transparentBlocks = [air, cactus, foliage];
+
+export const maxLight = 15;
+export const fields = {
+  r: 1,
+  g: 2,
+  b: 3,
+  light: 4,
+  sunlight: 5,
+  count: 6,
+};
+export const faces = [
+  {
+    // left
+    uvRow: 1,
+    dir: [-1, 0, 0],
+    corners: [
+      { pos: [0, 1, 0], uv: [0, 1] },
+      { pos: [0, 0, 0], uv: [0, 0] },
+      { pos: [0, 1, 1], uv: [1, 1] },
+      { pos: [0, 0, 1], uv: [1, 0] },
+    ],
+  },
+  {
+    // right
+    uvRow: 1,
+    dir: [1, 0, 0],
+    corners: [
+      { pos: [1, 1, 1], uv: [0, 1] },
+      { pos: [1, 0, 1], uv: [0, 0] },
+      { pos: [1, 1, 0], uv: [1, 1] },
+      { pos: [1, 0, 0], uv: [1, 0] },
+    ],
+  },
+  {
+    // bottom
+    uvRow: 2,
+    dir: [0, -1, 0],
+    corners: [
+      { pos: [1, 0, 1], uv: [1, 0] },
+      { pos: [0, 0, 1], uv: [0, 0] },
+      { pos: [1, 0, 0], uv: [1, 1] },
+      { pos: [0, 0, 0], uv: [0, 1] },
+    ],
+  },
+  {
+    // top
+    uvRow: 0,
+    dir: [0, 1, 0],
+    corners: [
+      { pos: [0, 1, 1], uv: [1, 1] },
+      { pos: [1, 1, 1], uv: [0, 1] },
+      { pos: [0, 1, 0], uv: [1, 0] },
+      { pos: [1, 1, 0], uv: [0, 0] },
+    ],
+  },
+  {
+    // back
+    uvRow: 1,
+    dir: [0, 0, -1],
+    corners: [
+      { pos: [1, 0, 0], uv: [0, 0] },
+      { pos: [0, 0, 0], uv: [1, 0] },
+      { pos: [1, 1, 0], uv: [0, 1] },
+      { pos: [0, 1, 0], uv: [1, 1] },
+    ],
+  },
+  {
+    // front
+    uvRow: 1,
+    dir: [0, 0, 1],
+    corners: [
+      { pos: [0, 0, 1], uv: [0, 0] },
+      { pos: [1, 0, 1], uv: [1, 0] },
+      { pos: [0, 1, 1], uv: [0, 1] },
+      { pos: [1, 1, 1], uv: [1, 1] },
+    ],
+  },
+];
 
 // function getCurrentChunk(providedPos?: Vector3) {
 //   const pos = providedPos || player.position;
