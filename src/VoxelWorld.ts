@@ -20,8 +20,7 @@ import {
   grass,
   dirt,
   chunkSize,
-  air,
-  surroundingOffsets,
+  maxHeight,
 } from "./constants";
 import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
@@ -134,34 +133,43 @@ export class World {
     this.chunkSliceSize = chunkSize * chunkSize;
     this.chunks = {};
   }
+  computeChunkOffset(pos: [number, number, number]): [number, number, number] {
+    return this.computeChunkCoordinates(pos).map(
+      (coord) => coord * chunkSize
+    ) as [number, number, number];
+  }
+  computeChunkCoordinates(
+    pos: [number, number, number]
+  ): [number, number, number] {
+    return pos.map((coord) => coord / chunkSize).map(Math.floor) as [
+      number,
+      number,
+      number
+    ];
+  }
   computeVoxelCoordinates(pos: Vector3) {
     return copy(pos).floor();
   }
-  computeVoxelIndex(x: number, y: number, z: number) {
+  computeVoxelIndex(pos: [number, number, number]) {
     const { chunkSize, chunkSliceSize } = this;
-    const voxelX = MathUtils.euclideanModulo(x, chunkSize) | 0;
-    const voxelY = MathUtils.euclideanModulo(y, chunkSize) | 0;
-    const voxelZ = MathUtils.euclideanModulo(z, chunkSize) | 0;
-    return (
-      (voxelY * chunkSliceSize + voxelZ * chunkSize + voxelX) * fields.count
-    );
+    const [x, y, z] = pos
+      .map((coord) => MathUtils.euclideanModulo(coord, chunkSize))
+      .map((value) => value | 0);
+    return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
   }
-  getChunkForVoxel(x: number, y: number, z: number) {
-    return this.chunks[this.computeChunkId(x, y, z)];
+  getChunkForVoxel(pos: [number, number, number]) {
+    return this.chunks[this.computeChunkIndex(pos)];
   }
-  computeChunkId(x: number, y: number, z: number) {
-    const { chunkSize } = this;
-    const chunkX = Math.floor(x / chunkSize);
-    const chunkY = Math.floor(y / chunkSize);
-    const chunkZ = Math.floor(z / chunkSize);
+  computeChunkIndex(pos: [number, number, number]) {
+    const [chunkX, chunkY, chunkZ] = this.computeChunkCoordinates(pos);
     return `${chunkX},${chunkY},${chunkZ}`;
   }
-  setVoxel(x: number, y: number, z: number, type: number) {
-    let chunk = this.getChunkForVoxel(x, y, z);
+  setVoxel(pos: [number, number, number], type: number) {
+    let chunk = this.getChunkForVoxel(pos);
     if (!chunk) {
-      chunk = this.addChunkForVoxel(x, y, z).chunk;
+      chunk = this.addChunkForVoxel(pos).chunk;
     }
-    const voxelOffset = this.computeVoxelIndex(x, y, z);
+    const voxelOffset = this.computeVoxelIndex(pos);
     chunk[voxelOffset] = type;
     chunk[voxelOffset + fields.r] = 0;
     chunk[voxelOffset + fields.g] = 0;
@@ -170,8 +178,8 @@ export class World {
     chunk[voxelOffset + fields.sunlight] = 0;
   }
 
-  addChunkForVoxel(x: number, y: number, z: number) {
-    const chunkId = this.computeChunkId(x, y, z);
+  addChunkForVoxel(pos: [number, number, number]) {
+    const chunkId = this.computeChunkIndex(pos);
     let chunk = this.chunks[chunkId];
     if (!chunk) {
       const { chunkSize } = this;
@@ -182,9 +190,9 @@ export class World {
     return { chunk, chunkId };
   }
 
-  getVoxel(x: number, y: number, z: number) {
-    const { chunk } = this.addChunkForVoxel(x, y, z);
-    const voxelIndex = this.computeVoxelIndex(x, y, z);
+  getVoxel(pos: [number, number, number]) {
+    const { chunk } = this.addChunkForVoxel(pos);
+    const voxelIndex = this.computeVoxelIndex(pos);
     return {
       type: chunk[voxelIndex],
       light: chunk[voxelIndex + fields.light],
@@ -192,7 +200,7 @@ export class World {
     };
   }
 
-  generateGeometryDataForChunk(chunkX: number, chunkY: number, chunkZ: number) {
+  generateGeometryDataForChunk(chunkOffset: [number, number, number]) {
     const {
       chunkSize: chunkSize,
       tileSize,
@@ -205,9 +213,9 @@ export class World {
     const normals: number[] = [];
     const indices: number[] = [];
     const uvs: number[] = [];
-    const startX = chunkX * chunkSize;
-    const startY = chunkY * chunkSize;
-    const startZ = chunkZ * chunkSize;
+    const [startX, startY, startZ] = chunkOffset.map(
+      (coord) => coord * chunkSize
+    );
 
     for (let y = 0; y < chunkSize; ++y) {
       const voxelY = startY + y;
@@ -215,7 +223,7 @@ export class World {
         const voxelZ = startZ + z;
         for (let x = 0; x < chunkSize; ++x) {
           const voxelX = startX + x;
-          const { type: voxel } = this.getVoxel(voxelX, voxelY, voxelZ);
+          const { type: voxel } = this.getVoxel([voxelX, voxelY, voxelZ]);
           if (voxel) {
             const uvVoxel = voxel - 1;
             for (const { dir, corners, uvRow } of faces) {
@@ -223,11 +231,11 @@ export class World {
                 type: neighbor,
                 light: neighborLight,
                 sunlight: neighbourSunLight,
-              } = this.getVoxel(
+              } = this.getVoxel([
                 voxelX + dir[0],
                 voxelY + dir[1],
-                voxelZ + dir[2]
-              );
+                voxelZ + dir[2],
+              ]);
               if (
                 transparentBlocks.includes(neighbor) ||
                 transparentBlocks.includes(voxel)
@@ -306,7 +314,7 @@ export class World {
     let steppedIndex = -1;
 
     while (t <= velocity) {
-      const { type: voxel } = this.getVoxel(ix, iy, iz);
+      const { type: voxel } = this.getVoxel([ix, iy, iz]);
       if (voxel) {
         return {
           position: [start.x + t * dx, start.y + t * dy, start.z + t * dz],
@@ -347,10 +355,20 @@ export class World {
     }
     return null;
   }
-  setLightValue({ x, y, z }: Vector3, lightValue: number) {
-    const { chunk } = this.addChunkForVoxel(x, y, z);
-    const blockIndex = this.computeVoxelIndex(x, y, z);
-    console.log("Setting light value at pos: ", { x, y, z });
+  sunLightChunkAt(pos: [number, number, number]) {
+    const [cx, _cy, cz] = this.computeChunkOffset(pos);
+    const queue = [];
+    for (let xOff = 0; xOff <= chunkSize; xOff++) {
+      for (let zOff = -1; zOff <= chunkSize; zOff++) {
+        queue.push([xOff + cx, maxHeight, zOff + cz]);
+      }
+    }
+    this.floodLight(queue, () => {});
+  }
+
+  setLightValue(pos: [number, number, number], lightValue: number) {
+    const { chunk } = this.addChunkForVoxel(pos);
+    const blockIndex = this.computeVoxelIndex(pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
   floodLight(queue: [number, number, number][], callback: () => void) {
@@ -358,26 +376,31 @@ export class World {
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
 
     console.log("Neighbors", [...neighbors.map((vec) => copy(vec))]);
+    const isSunlight = false;
+    const isGoingDown = false;
+
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
-      const { chunk } = this.addChunkForVoxel(x, y, z);
-      const blockIndex = this.computeVoxelIndex(x, y, z);
+      const { chunk } = this.addChunkForVoxel([x, y, z]);
+      const blockIndex = this.computeVoxelIndex([x, y, z]);
       const blockLightValue = chunk[blockIndex + fields.light];
-      const newLightValue = blockLightValue - 1;
+      const decrement = isSunlight && isGoingDown ? 0 : 1;
+      const newLightValue = blockLightValue - decrement;
 
       if (newLightValue > 0) {
         neighbors.forEach((offset) => {
           const nx = x + offset.x;
           const ny = y + offset.y;
           const nz = z + offset.z;
-          const { chunk: neighborsChunk } = this.addChunkForVoxel(nx, ny, nz);
-          const neighborIndex = this.computeVoxelIndex(nx, ny, nz);
+          const { chunk: neighborsChunk } = this.addChunkForVoxel([nx, ny, nz]);
+          const neighborIndex = this.computeVoxelIndex([nx, ny, nz]);
           let lightValueInNeighbor =
             neighborsChunk[neighborIndex + fields.light];
           let neighborType = neighborsChunk[neighborIndex];
 
           if (
             newLightValue > lightValueInNeighbor &&
+            newLightValue > 0 &&
             transparentBlocks.includes(neighborType)
           ) {
             neighborsChunk[neighborIndex + fields.light] = newLightValue;
@@ -406,16 +429,18 @@ export class World {
           if (this.shouldPlaceBlock(pos.x + x, pos.y + y, pos.z + z)) {
             if (this.shouldSpawnGold(pos.x + x, pos.y + y, pos.z + z)) {
               console.log("Spawning Gold");
-              this.setVoxel(pos.x + x, pos.y + y, pos.z + z, gold);
-            } else if (this.shouldSpawnGrass(pos.x + x, pos.y + y, pos.z + z)) {
-              this.setVoxel(pos.x + x, pos.y + y, pos.z + z, grass);
+              this.setVoxel([pos.x + x, pos.y + y, pos.z + z], gold);
+            } else if (
+              this.shouldSpawnGrass([pos.x + x, pos.y + y, pos.z + z])
+            ) {
+              this.setVoxel([pos.x + x, pos.y + y, pos.z + z], grass);
               if (this.shouldSpawnTree()) {
                 this.spawnTree(pos.x + x, pos.y + y + 1, pos.z + z);
               }
             } else if (this.shouldSpawnDirt(pos.x + x, pos.y + y, pos.z + z)) {
-              this.setVoxel(pos.x + x, pos.y + y, pos.z + z, dirt);
+              this.setVoxel([pos.x + x, pos.y + y, pos.z + z], dirt);
             } else {
-              this.setVoxel(pos.x + x, pos.y + y, pos.z + z, stone);
+              this.setVoxel([pos.x + x, pos.y + y, pos.z + z], stone);
             }
           }
         }
@@ -437,8 +462,8 @@ export class World {
     return false;
   }
 
-  shouldSpawnGrass(x: number, y: number, z: number) {
-    return !this.wouldPlaceBlockAbove(x, y, z);
+  shouldSpawnGrass(pos: [number, number, number]) {
+    return !this.wouldPlaceBlockAbove(...pos);
   }
 
   shouldSpawnGold(_x: number, currentY: number, _z: number) {
@@ -451,7 +476,7 @@ export class World {
 
   shouldSpawnDirt(x: number, currentY: number, z: number) {
     for (let y = currentY + 1; y < currentY + 4; y++) {
-      if (this.shouldSpawnGrass(x, y, z)) {
+      if (this.shouldSpawnGrass([x, y, z])) {
         return true;
       }
     }
@@ -475,59 +500,59 @@ export class World {
       if (y >= leafHeightMin && y < treeHeight) {
         for (let x = currentX - leafWidth; x <= currentX + leafWidth; x++) {
           for (let z = currentZ - leafWidth; z <= currentZ + leafWidth; z++) {
-            this.setVoxel(x, y, z, foliage);
+            this.setVoxel([x, y, z], foliage);
           }
         }
       } else if (y >= leafHeightMin && y <= treeHeight) {
         for (let x = currentX - 1; x <= currentX + 1; x++) {
           for (let z = currentZ - 1; z <= currentZ + 1; z++) {
-            this.setVoxel(x, y, z, foliage);
+            this.setVoxel([x, y, z], foliage);
           }
         }
       } else if (y >= leafHeightMin) {
-        this.setVoxel(currentX, y, currentZ, foliage);
-        this.setVoxel(currentX, y, currentZ + 1, foliage);
-        this.setVoxel(currentX, y, currentZ - 1, foliage);
-        this.setVoxel(currentX + 1, y, currentZ, foliage);
-        this.setVoxel(currentX - 1, y, currentZ, foliage);
+        this.setVoxel([currentX, y, currentZ], foliage);
+        this.setVoxel([currentX, y, currentZ + 1], foliage);
+        this.setVoxel([currentX, y, currentZ - 1], foliage);
+        this.setVoxel([currentX + 1, y, currentZ], foliage);
+        this.setVoxel([currentX - 1, y, currentZ], foliage);
       }
       if (y <= treeHeight) {
-        this.setVoxel(currentX, y, currentZ, wood);
+        this.setVoxel([currentX, y, currentZ], wood);
       }
     }
 
-    this.updateVoxelGeometry(currentX, leafHeightMax, currentZ);
-    this.updateVoxelGeometry(currentX - leafWidth, leafHeightMax, currentZ);
-    this.updateVoxelGeometry(currentX + leafWidth, leafHeightMax, currentZ);
-    this.updateVoxelGeometry(currentX, leafHeightMax, currentZ - leafWidth);
-    this.updateVoxelGeometry(currentX, leafHeightMax, currentZ + leafWidth);
+    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
+    this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
+    this.updateVoxelGeometry([currentX + leafWidth, leafHeightMax, currentZ]);
+    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ - leafWidth]);
+    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
   }
 
   spawnSingleBlock(player: Player) {
     const pos = copy(player.pos);
-    this.setVoxel(...pos.setX(pos.x + 3).toArray(), 3);
-    this.updateVoxelGeometry(...pos.toArray());
+    this.setVoxel(pos.setX(pos.x + 3).toArray(), 3);
+    this.updateVoxelGeometry(pos.toArray());
   }
 
-  updateVoxelGeometry(x: number, y: number, z: number) {
+  updateVoxelGeometry(pos: [number, number, number]) {
     const updatedChunkIds = {};
     for (const offset of neighborOffsets) {
-      const ox = x + offset.x;
-      const oy = y + offset.y;
-      const oz = z + offset.z;
-      const chunkId = this.computeChunkId(ox, oy, oz);
+      const offsetPos = pos.map((coord, i) => coord + offset.toArray()[i]) as [
+        number,
+        number,
+        number
+      ];
+      const chunkId = this.computeChunkIndex(offsetPos);
       if (!updatedChunkIds[chunkId]) {
         updatedChunkIds[chunkId] = true;
-        this.updateChunkGeometry(ox, oy, oz);
+        this.updateChunkGeometry(offsetPos);
       }
     }
   }
 
-  updateChunkGeometry(x: number, y: number, z: number) {
-    const chunkX = Math.floor(x / chunkSize);
-    const chunkY = Math.floor(y / chunkSize);
-    const chunkZ = Math.floor(z / chunkSize);
-    const chunkId = this.computeChunkId(x, y, z);
+  updateChunkGeometry(pos: [number, number, number]) {
+    const chunkOffset = this.computeChunkOffset(pos);
+    const chunkId = this.computeChunkIndex(pos);
 
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
@@ -538,7 +563,7 @@ export class World {
       uvs,
       indices,
       lightValues,
-    } = this.generateGeometryDataForChunk(chunkX, chunkY, chunkZ);
+    } = this.generateGeometryDataForChunk(chunkOffset);
 
     // console.log(
     //   "Light Values other than 0:",
@@ -586,11 +611,7 @@ export class World {
       mesh.name = chunkId;
       chunkIdToMesh[chunkId] = mesh;
       this.scene.add(mesh);
-      mesh.position.set(
-        chunkX * chunkSize,
-        chunkY * chunkSize,
-        chunkZ * chunkSize
-      );
+      mesh.position.set(...chunkOffset.map((coord) => coord * chunkSize));
     }
   }
 }

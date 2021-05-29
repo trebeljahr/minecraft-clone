@@ -52,7 +52,7 @@ init();
 
 function generateChunkAtPosition(pos: Vector3) {
   world.generateChunkData(pos);
-  world.updateVoxelGeometry(pos.x, pos.y, pos.z);
+  world.updateVoxelGeometry(pos.toArray());
   requestRenderIfNotRequested();
 }
 
@@ -101,20 +101,21 @@ function placeVoxel(event) {
       return;
     }
     console.log("Setting voxel at ", pos);
-    world.setVoxel(...pos, voxelId);
-    const vPos = new Vector3(...pos);
+    world.setVoxel(pos, voxelId);
     const emanatingLight = glowingBlocks.includes(voxelId) ? 15 : 0;
     const neighborLight = neighborOffsets.reduce((maxLight, offset) => {
-      const neighborPos = copy(vPos).add(offset);
-      const { light } = world.getVoxel(...neighborPos.toArray());
+      const neighborPos = pos.map(
+        (coord, i) => coord + offset.toArray()[i]
+      ) as [number, number, number];
+      const { light } = world.getVoxel(neighborPos);
       return light > maxLight ? light : maxLight;
     }, 0);
     const lightValue = Math.max(emanatingLight, neighborLight - 1);
-    world.setLightValue(vPos, lightValue);
+    world.setLightValue(pos, lightValue);
 
     world.floodLight([pos], () => {
       const chunksToUpdateSet = new Set<string>();
-      const startingChunkId = world.computeChunkId(...pos);
+      const startingChunkId = world.computeChunkIndex(pos);
       surroundingOffsets.forEach((offset) => {
         const chunkIdWithOffset = startingChunkId
           .split(",")
@@ -128,11 +129,7 @@ function placeVoxel(event) {
         const chunkCoordinates = chunkId
           .split(",")
           .map((coord) => parseInt(coord)) as [number, number, number];
-        world.updateChunkGeometry(
-          chunkCoordinates[0],
-          chunkCoordinates[1],
-          chunkCoordinates[2]
-        );
+        world.updateChunkGeometry(chunkCoordinates);
       });
       // world.updateVoxelGeometry(...pos);
       requestRenderIfNotRequested();

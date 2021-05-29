@@ -10,6 +10,7 @@ import { Vector3 } from "three";
 export function copy(vec: THREE.Vector3) {
   return new THREE.Vector3().copy(vec);
 }
+export const maxHeight = 128;
 
 export const stone = 12;
 export const grass = 1;
