@@ -37,8 +37,11 @@ let player: Player;
 let renderer: WebGLRenderer;
 let renderRequested = false;
 const blocker = document.getElementById("blocker");
-const crosshairs = document.getElementById("crosshair-container");
+const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
+const inventory = document.getElementById("inventory");
+const hotbarContainer = document.getElementById("hotbarContainer");
+
 let menu = true;
 
 const loopSize = 3;
@@ -194,6 +197,7 @@ function init() {
     instructions.style.display = "none";
     blocker.style.display = "none";
     crosshairs.style.display = "flex";
+    inventory.style.display = "flex";
   });
 
   player.controls.addEventListener("unlock", function () {
@@ -201,6 +205,7 @@ function init() {
     blocker.style.display = "flex";
     instructions.style.display = "";
     crosshairs.style.display = "none";
+    inventory.style.display = "none";
   });
 
   const onKeyPress = (event) => {
@@ -230,8 +235,28 @@ function init() {
         break;
     }
   };
-
-  document.removeEventListener("keypress", onKeyPress);
+  let activeHotbarSlot = 1;
+  const onScroll = (event: WheelEvent) => {
+    if (event.deltaY > 0) {
+      activeHotbarSlot++;
+    } else {
+      activeHotbarSlot--;
+    }
+    if (activeHotbarSlot > 9) {
+      activeHotbarSlot = 1;
+    }
+    if (activeHotbarSlot < 1) {
+      activeHotbarSlot = 9;
+    }
+    for (let slot = 1; slot <= 9; slot++) {
+      if (slot === activeHotbarSlot) {
+        document.getElementById(`slot${slot}`).style.background = "white";
+      } else {
+        document.getElementById(`slot${slot}`).style.background = "grey";
+      }
+    }
+  };
+  document.addEventListener("wheel", onScroll);
   document.addEventListener("keypress", onKeyPress);
   window.addEventListener("click", placeVoxel);
 
