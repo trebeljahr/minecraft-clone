@@ -39,6 +39,26 @@ export const neighborOffsets = [
   new Vector3(0, 0, 1), // front
 ];
 
+let surroundingOffsets = [] as [number, number, number][];
+
+for (let z = -1; z <= 1; z++) {
+  for (let y = -1; y <= 1; y++) {
+    for (let x = -1; x <= 1; x++) {
+      surroundingOffsets.push([x, y, z]);
+    }
+  }
+}
+
+export { surroundingOffsets };
+
+const sum = (a: number, b: number) => a + b;
+export const surroundingOffsetsWithoutSelf = surroundingOffsets.filter(
+  (coords) => {
+    return coords.map(Math.abs).reduce(sum, 0) > 0;
+  }
+);
+
+export const glowingBlocks = [cactus];
 export const transparentBlocks = [air, cactus, foliage];
 
 // function getCurrentChunk(providedPos?: Vector3) {

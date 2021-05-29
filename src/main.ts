@@ -9,6 +9,9 @@ import {
   tileTextureWidth,
   tileTextureHeight,
   chunkSize,
+  neighborOffsets,
+  glowingBlocks,
+  surroundingOffsets,
 } from "./constants";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
@@ -54,8 +57,8 @@ function generateChunkAtPosition(pos: Vector3) {
 }
 
 function generateChunksAroundCamera() {
-  for (let x = 0; x <= 1; x++) {
-    for (let y = 0; y <= 1; y++) {
+  for (let x = -2; x <= 2; x++) {
+    for (let y = -2; y <= 2; y++) {
       for (let z = -1; z < 0; z++) {
         const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
         const newPos = player.position.add(offset);
@@ -99,10 +102,39 @@ function placeVoxel(event) {
     }
     console.log("Setting voxel at ", pos);
     world.setVoxel(...pos, voxelId);
-    const vectorPos = new Vector3(...pos);
-    world.setLightValue(vectorPos);
+    const vPos = new Vector3(...pos);
+    const emanatingLight = glowingBlocks.includes(voxelId) ? 15 : 0;
+    const neighborLight = neighborOffsets.reduce((maxLight, offset) => {
+      const neighborPos = copy(vPos).add(offset);
+      const { light } = world.getVoxel(...neighborPos.toArray());
+      return light > maxLight ? light : maxLight;
+    }, 0);
+    const lightValue = Math.max(emanatingLight, neighborLight - 1);
+    world.setLightValue(vPos, lightValue);
+
     world.floodLight([pos], () => {
-      world.updateVoxelGeometry(...pos);
+      const chunksToUpdateSet = new Set<string>();
+      const startingChunkId = world.computeChunkId(...pos);
+      surroundingOffsets.forEach((offset) => {
+        const chunkIdWithOffset = startingChunkId
+          .split(",")
+          .map((coord, idx) => (parseInt(coord) + offset[idx]) * chunkSize)
+          .join(",");
+        chunksToUpdateSet.add(chunkIdWithOffset);
+      });
+      console.log({ chunksToUpdateSet });
+      chunksToUpdateSet.forEach((chunkId) => {
+        // console.log(chunkCoordinates);
+        const chunkCoordinates = chunkId
+          .split(",")
+          .map((coord) => parseInt(coord)) as [number, number, number];
+        world.updateChunkGeometry(
+          chunkCoordinates[0],
+          chunkCoordinates[1],
+          chunkCoordinates[2]
+        );
+      });
+      // world.updateVoxelGeometry(...pos);
       requestRenderIfNotRequested();
     });
   }
@@ -213,7 +245,7 @@ function onWindowResize() {
 
 function render() {
   renderRequested = false;
-  // generateTerrain();
+  generateTerrain();
   renderer.render(scene, camera);
 }
 

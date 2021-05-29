@@ -21,6 +21,7 @@ import {
   dirt,
   chunkSize,
   air,
+  surroundingOffsets,
 } from "./constants";
 import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
@@ -158,7 +159,7 @@ export class World {
   setVoxel(x: number, y: number, z: number, type: number) {
     let chunk = this.getChunkForVoxel(x, y, z);
     if (!chunk) {
-      chunk = this.addChunkForVoxel(x, y, z);
+      chunk = this.addChunkForVoxel(x, y, z).chunk;
     }
     const voxelOffset = this.computeVoxelIndex(x, y, z);
     chunk[voxelOffset] = type;
@@ -178,11 +179,11 @@ export class World {
       // this.generateChunkData(new Vector3(x, y, z));
       this.chunks[chunkId] = chunk;
     }
-    return chunk;
+    return { chunk, chunkId };
   }
 
   getVoxel(x: number, y: number, z: number) {
-    const chunk = this.addChunkForVoxel(x, y, z);
+    const { chunk } = this.addChunkForVoxel(x, y, z);
     const voxelIndex = this.computeVoxelIndex(x, y, z);
     return {
       type: chunk[voxelIndex],
@@ -346,19 +347,20 @@ export class World {
     }
     return null;
   }
-  setLightValue({ x, y, z }: Vector3) {
-    const chunk = this.addChunkForVoxel(x, y, z);
+  setLightValue({ x, y, z }: Vector3, lightValue: number) {
+    const { chunk } = this.addChunkForVoxel(x, y, z);
     const blockIndex = this.computeVoxelIndex(x, y, z);
     console.log("Setting light value at pos: ", { x, y, z });
-    chunk[blockIndex + fields.light] = 15;
+    chunk[blockIndex + fields.light] = lightValue;
   }
-  floodLight(queue: [number, number, number][], callback) {
+  floodLight(queue: [number, number, number][], callback: () => void) {
     console.log("Calling flood light with", [...queue]);
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
-    console.log("Neighbors", neighbors);
+
+    console.log("Neighbors", [...neighbors.map((vec) => copy(vec))]);
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
-      const chunk = this.addChunkForVoxel(x, y, z);
+      const { chunk } = this.addChunkForVoxel(x, y, z);
       const blockIndex = this.computeVoxelIndex(x, y, z);
       const blockLightValue = chunk[blockIndex + fields.light];
       const newLightValue = blockLightValue - 1;
@@ -368,7 +370,7 @@ export class World {
           const nx = x + offset.x;
           const ny = y + offset.y;
           const nz = z + offset.z;
-          const neighborsChunk = this.addChunkForVoxel(nx, ny, nz);
+          const { chunk: neighborsChunk } = this.addChunkForVoxel(nx, ny, nz);
           const neighborIndex = this.computeVoxelIndex(nx, ny, nz);
           let lightValueInNeighbor =
             neighborsChunk[neighborIndex + fields.light];
@@ -390,6 +392,7 @@ export class World {
         });
       }
     }
+
     callback();
   }
   generateChunkData(pos: Vector3) {
@@ -537,10 +540,10 @@ export class World {
       lightValues,
     } = this.generateGeometryDataForChunk(chunkX, chunkY, chunkZ);
 
-    console.log(
-      "Light Values other than 0:",
-      lightValues.filter((value) => value !== 0)
-    );
+    // console.log(
+    //   "Light Values other than 0:",
+    //   lightValues.filter((value) => value !== 0)
+    // );
     const positionNumComponents = 3;
     geometry.setAttribute(
       "position",
@@ -575,8 +578,8 @@ export class World {
       )
     );
 
-    console.log("Light Values Length: ", lightValues.length);
-    console.log("Geometry Vertices: ", geometry.getAttribute("position").count);
+    // console.log("Light Values Length: ", lightValues.length);
+    // console.log("Geometry Vertices: ", geometry.getAttribute("position").count);
 
     if (!mesh) {
       mesh = new Mesh(geometry, opaque);
