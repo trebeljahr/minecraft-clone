@@ -156,8 +156,7 @@ export class World {
     return this.chunks[this.computeChunkIndex(pos)];
   }
   computeChunkIndex(pos: Position) {
-    const [chunkX, chunkY, chunkZ] = this.computeChunkCoordinates(pos);
-    return `${chunkX},${chunkY},${chunkZ}`;
+    return this.computeChunkCoordinates(pos).join(",");
   }
   setVoxel(pos: Position, type: number) {
     let chunk = this.getChunkForVoxel(pos);
@@ -369,8 +368,6 @@ export class World {
   floodLight(queue: Position[], callback: () => void) {
     console.log("Calling flood light with", [...queue]);
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
-
-    console.log("Neighbors", [...neighbors.map((vec) => copy(vec))]);
     const isSunlight = false;
     const isGoingDown = false;
 
@@ -399,12 +396,6 @@ export class World {
             transparentBlocks.includes(neighborType)
           ) {
             neighborsChunk[neighborIndex + fields.light] = newLightValue;
-            // console.log(
-            //   "Set new light value in",
-            //   { nx, ny, nz },
-            //   "to:",
-            //   neighborsChunk[neighborIndex + fields.light]
-            // );
             queue.push([nx, ny, nz]);
           }
         });
@@ -423,7 +414,6 @@ export class World {
         for (let x = 0; x < chunkSize; ++x) {
           if (this.shouldPlaceBlock(pos.x + x, pos.y + y, pos.z + z)) {
             if (this.shouldSpawnGold(pos.x + x, pos.y + y, pos.z + z)) {
-              console.log("Spawning Gold");
               this.setVoxel([pos.x + x, pos.y + y, pos.z + z], gold);
             } else if (
               this.shouldSpawnGrass([pos.x + x, pos.y + y, pos.z + z])
@@ -544,6 +534,7 @@ export class World {
   }
 
   updateChunkGeometry(pos: Position) {
+    const chunkCoordinates = this.computeChunkCoordinates(pos);
     const chunkOffset = this.computeChunkOffset(pos);
     const chunkId = this.computeChunkIndex(pos);
 
@@ -556,12 +547,7 @@ export class World {
       uvs,
       indices,
       lightValues,
-    } = this.generateGeometryDataForChunk(chunkOffset);
-
-    // console.log(
-    //   "Light Values other than 0:",
-    //   lightValues.filter((value) => value !== 0)
-    // );
+    } = this.generateGeometryDataForChunk(chunkCoordinates);
     const positionNumComponents = 3;
     geometry.setAttribute(
       "position",
@@ -596,15 +582,12 @@ export class World {
       )
     );
 
-    // console.log("Light Values Length: ", lightValues.length);
-    // console.log("Geometry Vertices: ", geometry.getAttribute("position").count);
-
     if (!mesh) {
       mesh = new Mesh(geometry, opaque);
       mesh.name = chunkId;
       chunkIdToMesh[chunkId] = mesh;
       this.scene.add(mesh);
-      mesh.position.set(...chunkOffset.map((coord) => coord * chunkSize));
+      mesh.position.set(chunkOffset[0], chunkOffset[1], chunkOffset[2]);
     }
   }
 }

@@ -102,6 +102,7 @@ function placeVoxel(event) {
       return;
     }
     console.log("Setting voxel at ", pos);
+    console.log("Voxel at mouse click", world.getVoxel(pos));
     world.setVoxel(pos, voxelId);
     const emanatingLight = glowingBlocks.includes(voxelId) ? 15 : 0;
     const neighborLight = neighborOffsets.reduce((maxLight, offset) => {
@@ -116,23 +117,21 @@ function placeVoxel(event) {
 
     world.floodLight([pos], () => {
       const chunksToUpdateSet = new Set<string>();
-      const startingChunkId = world.computeChunkIndex(pos);
-      surroundingOffsets.forEach((offset) => {
-        const chunkIdWithOffset = startingChunkId
-          .split(",")
-          .map((coord, idx) => (parseInt(coord) + offset[idx]) * chunkSize)
-          .join(",");
-        chunksToUpdateSet.add(chunkIdWithOffset);
+      surroundingOffsets.forEach((dir) => {
+        const positionWithChunkOffset = pos.map(
+          (coord, i) => coord + dir[i] * (chunkSize - 2)
+        ) as Position;
+
+        const chunkIndex = world.computeChunkIndex(positionWithChunkOffset);
+        chunksToUpdateSet.add(chunkIndex);
       });
       console.log({ chunksToUpdateSet });
       chunksToUpdateSet.forEach((chunkId) => {
-        // console.log(chunkCoordinates);
         const chunkCoordinates = chunkId
           .split(",")
-          .map((coord) => parseInt(coord)) as Position;
+          .map((coord) => parseInt(coord) * chunkSize) as Position;
         world.updateChunkGeometry(chunkCoordinates);
       });
-      // world.updateVoxelGeometry(...pos);
       requestRenderIfNotRequested();
     });
   }
@@ -243,7 +242,7 @@ function onWindowResize() {
 
 function render() {
   renderRequested = false;
-  generateTerrain();
+  // generateTerrain();
   renderer.render(scene, camera);
 }
 

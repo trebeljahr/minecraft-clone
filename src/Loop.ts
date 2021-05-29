@@ -45,11 +45,6 @@ class Loop {
     this.stats.update();
 
     for (const object of this.updatables) {
-      // if ((object as Player).position) {
-      //   if (this.renderer.info.render.frame % 5 === 0) {
-      //     console.log((object as Player).position);
-      //   }
-      // }
       object.tick(delta);
     }
   }
