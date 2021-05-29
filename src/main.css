@@ -2,11 +2,15 @@
   margin: 0;
   padding: 0;
 }
+#slot1 {
+  background-image: url("../assets/birchwood-block.png") !important;
+}
 
 #hotbarContainer > div {
   width: 5vw;
   height: 5vw;
   background: grey;
+  background-size: 5vw 5vw;
   /* border: 6px solid rgb(68, 64, 64); */
 }
 

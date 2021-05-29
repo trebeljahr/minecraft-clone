@@ -19,6 +19,8 @@ import { Loop } from "./Loop";
 import { Player } from "./Player";
 import { initSky } from "./sky";
 
+// require("../assets/birchwood-block.png");
+
 import {
   ACESFilmicToneMapping,
   Color,
