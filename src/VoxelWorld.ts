@@ -299,7 +299,8 @@ export class World {
   floodLight(queue: Position[], callback: () => void, isSunlight = false) {
     console.log("Calling flood light with", [...queue]);
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
-
+    const maxPropagations = 50000;
+    let propagations = 0;
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
       const { chunk } = this.addChunkForVoxel([x, y, z]);
@@ -328,7 +329,13 @@ export class World {
             ny >= 0 &&
             ny <= maxHeight) ||
           (newLightValue > lightValueInNeighbor && newLightValue > 0);
-        if (shouldPropagate && transparentBlocks.includes(neighborType)) {
+
+        if (
+          shouldPropagate &&
+          transparentBlocks.includes(neighborType) &&
+          propagations < maxPropagations
+        ) {
+          propagations++;
           neighborsChunk[neighborIndex + fields.light] = newLightValue;
           queue.push([nx, ny, nz]);
         }

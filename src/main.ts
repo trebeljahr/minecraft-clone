@@ -74,8 +74,8 @@ function generateChunkAtPosition(pos: Vector3) {
 }
 
 function generateChunksAroundCamera() {
-  for (let x = 0; x <= 0; x++) {
-    for (let y = -0; y <= 0; y++) {
+  for (let x = -2; x <= 2; x++) {
+    for (let y = -2; y <= 2; y++) {
       for (let z = -1; z < 0; z++) {
         const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
         const newPos = player.position.add(offset);
