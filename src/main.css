@@ -5,6 +5,9 @@
 #slot1 {
   background-image: url("../assets/birchwood-block.png") !important;
 }
+#slot2 {
+  background-image: url("../assets/oakwood-block.png") !important;
+}
 
 #hotbarContainer > div {
   width: 5vw;

@@ -13,13 +13,13 @@ import {
   glowingBlocks,
   surroundingOffsets,
   Position,
+  birchwood,
+  oakwood,
 } from "./constants";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
 import { Player } from "./Player";
 import { initSky } from "./sky";
-
-// require("../assets/birchwood-block.png");
 
 import {
   ACESFilmicToneMapping,
@@ -42,9 +42,10 @@ const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
 const inventory = document.getElementById("inventory");
-const hotbarContainer = document.getElementById("hotbarContainer");
 
 let menu = true;
+let activeHotbarSlot = 1;
+const hotbar = [birchwood, oakwood];
 
 const loopSize = 3;
 let minX = -loopSize;
@@ -98,7 +99,8 @@ function placeVoxel(event) {
 
   const intersection = world.intersectRay(start, end);
   if (intersection) {
-    const voxelId = event.button === 0 ? 0 : cactus;
+    const selectedBlock = hotbar[activeHotbarSlot - 1] || cactus;
+    const voxelId = event.button === 0 ? 0 : selectedBlock;
     const pos = intersection.position
       .map((v, ndx) => {
         return v + intersection.normal[ndx] * (voxelId > 0 ? 0.5 : -0.5);
@@ -237,7 +239,6 @@ function init() {
         break;
     }
   };
-  let activeHotbarSlot = 1;
   const onScroll = (event: WheelEvent) => {
     if (event.deltaY > 0) {
       activeHotbarSlot++;
