@@ -105,7 +105,7 @@ export class Player {
   }
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
-    const collision = this.world.getVoxel(x, y, z);
+    const { type: collision } = this.world.getVoxel(x, y, z);
     if (collision !== 0) return true;
     return false;
   }

@@ -1,5 +1,5 @@
-import { chunkSize } from "./createChunk";
-
+export const chunkSize = 16;
+export const halfChunk = chunkSize / 2;
 export const surface = 5 * chunkSize;
 export const terrainHeight = surface;
 export const blockLength = 100;
@@ -24,7 +24,7 @@ export const birchwood = 20;
 export const oakwood = 3;
 export const foliage = 2;
 export const cactus = 18;
-
+export const air = 0;
 export const tileSize = 16;
 export const tileTextureWidth = 320;
 export const tileTextureHeight = 48;
@@ -39,4 +39,30 @@ export const neighborOffsets = [
   new Vector3(0, 0, 1), // front
 ];
 
-export const transparentBlocks = [cactus, foliage];
+export const transparentBlocks = [air, cactus, foliage];
+
+// function getCurrentChunk(providedPos?: Vector3) {
+//   const pos = providedPos || player.position;
+//   return copy(pos).divideScalar(chunkSize).floor();
+// }
+// function generateChunksInMovementDirection() {
+//   const currentChunk = getCurrentChunk();
+//   if (lastChunk === currentChunk) return;
+//   lastChunk = currentChunk;
+//   const dir = currentChunk.sub(lastChunk);
+
+//   var axis = new Vector3(0, 1, 0);
+//   var angle = Math.PI / 2;
+
+//   const rotatedOffset = copy(dir)
+//     .applyAxisAngle(axis, angle)
+//     .multiplyScalar(chunkSize);
+
+//   const offset = dir
+//     .multiplyScalar(chunkSize)
+//     .add(new Vector3(0, -chunkSize, 0));
+//   const newPos = player.position.add(offset);
+//   generateChunkAtPosition(newPos);
+//   generateChunkAtPosition(copy(newPos).add(rotatedOffset));
+//   generateChunkAtPosition(copy(newPos).sub(rotatedOffset));
+// }
