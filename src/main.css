@@ -7,6 +7,7 @@
   width: 5vw;
   height: 5vw;
   background: grey;
+  /* border: 6px solid rgb(68, 64, 64); */
 }
 
 #hotbarContainer {
@@ -14,9 +15,9 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  background: rgb(68, 64, 64);
   gap: 5px;
   padding: 5px;
+  background: rgb(68, 64, 64);
 }
 
 #inventory {

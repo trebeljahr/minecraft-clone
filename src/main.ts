@@ -250,9 +250,10 @@ function init() {
     }
     for (let slot = 1; slot <= 9; slot++) {
       if (slot === activeHotbarSlot) {
-        document.getElementById(`slot${slot}`).style.background = "white";
+        document.getElementById(`slot${slot}`).style.outline =
+          "solid 5px white";
       } else {
-        document.getElementById(`slot${slot}`).style.background = "grey";
+        document.getElementById(`slot${slot}`).style.outline = "";
       }
     }
   };
