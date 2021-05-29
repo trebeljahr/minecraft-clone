@@ -21,6 +21,7 @@ import {
   dirt,
   chunkSize,
   maxHeight,
+  Position,
 } from "./constants";
 import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
@@ -133,38 +134,32 @@ export class World {
     this.chunkSliceSize = chunkSize * chunkSize;
     this.chunks = {};
   }
-  computeChunkOffset(pos: [number, number, number]): [number, number, number] {
+  computeChunkOffset(pos: Position): Position {
     return this.computeChunkCoordinates(pos).map(
       (coord) => coord * chunkSize
-    ) as [number, number, number];
+    ) as Position;
   }
-  computeChunkCoordinates(
-    pos: [number, number, number]
-  ): [number, number, number] {
-    return pos.map((coord) => coord / chunkSize).map(Math.floor) as [
-      number,
-      number,
-      number
-    ];
+  computeChunkCoordinates(pos: Position): Position {
+    return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
   }
   computeVoxelCoordinates(pos: Vector3) {
     return copy(pos).floor();
   }
-  computeVoxelIndex(pos: [number, number, number]) {
+  computeVoxelIndex(pos: Position) {
     const { chunkSize, chunkSliceSize } = this;
     const [x, y, z] = pos
       .map((coord) => MathUtils.euclideanModulo(coord, chunkSize))
       .map((value) => value | 0);
     return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
   }
-  getChunkForVoxel(pos: [number, number, number]) {
+  getChunkForVoxel(pos: Position) {
     return this.chunks[this.computeChunkIndex(pos)];
   }
-  computeChunkIndex(pos: [number, number, number]) {
+  computeChunkIndex(pos: Position) {
     const [chunkX, chunkY, chunkZ] = this.computeChunkCoordinates(pos);
     return `${chunkX},${chunkY},${chunkZ}`;
   }
-  setVoxel(pos: [number, number, number], type: number) {
+  setVoxel(pos: Position, type: number) {
     let chunk = this.getChunkForVoxel(pos);
     if (!chunk) {
       chunk = this.addChunkForVoxel(pos).chunk;
@@ -178,7 +173,7 @@ export class World {
     chunk[voxelOffset + fields.sunlight] = 0;
   }
 
-  addChunkForVoxel(pos: [number, number, number]) {
+  addChunkForVoxel(pos: Position) {
     const chunkId = this.computeChunkIndex(pos);
     let chunk = this.chunks[chunkId];
     if (!chunk) {
@@ -190,7 +185,7 @@ export class World {
     return { chunk, chunkId };
   }
 
-  getVoxel(pos: [number, number, number]) {
+  getVoxel(pos: Position) {
     const { chunk } = this.addChunkForVoxel(pos);
     const voxelIndex = this.computeVoxelIndex(pos);
     return {
@@ -200,7 +195,7 @@ export class World {
     };
   }
 
-  generateGeometryDataForChunk(chunkOffset: [number, number, number]) {
+  generateGeometryDataForChunk(chunkOffset: Position) {
     const {
       chunkSize: chunkSize,
       tileSize,
@@ -282,8 +277,8 @@ export class World {
     end: Vector3,
     velocity = 6
   ): {
-    position: [number, number, number];
-    normal: [number, number, number];
+    position: Position;
+    normal: Position;
     voxel: number;
   } {
     const { x: dx, y: dy, z: dz } = new Vector3()
@@ -355,7 +350,7 @@ export class World {
     }
     return null;
   }
-  sunLightChunkAt(pos: [number, number, number]) {
+  sunLightChunkAt(pos: Position) {
     const [cx, _cy, cz] = this.computeChunkOffset(pos);
     const queue = [];
     for (let xOff = 0; xOff <= chunkSize; xOff++) {
@@ -366,12 +361,12 @@ export class World {
     this.floodLight(queue, () => {});
   }
 
-  setLightValue(pos: [number, number, number], lightValue: number) {
+  setLightValue(pos: Position, lightValue: number) {
     const { chunk } = this.addChunkForVoxel(pos);
     const blockIndex = this.computeVoxelIndex(pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
-  floodLight(queue: [number, number, number][], callback: () => void) {
+  floodLight(queue: Position[], callback: () => void) {
     console.log("Calling flood light with", [...queue]);
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
 
@@ -462,7 +457,7 @@ export class World {
     return false;
   }
 
-  shouldSpawnGrass(pos: [number, number, number]) {
+  shouldSpawnGrass(pos: Position) {
     return !this.wouldPlaceBlockAbove(...pos);
   }
 
@@ -534,14 +529,12 @@ export class World {
     this.updateVoxelGeometry(pos.toArray());
   }
 
-  updateVoxelGeometry(pos: [number, number, number]) {
+  updateVoxelGeometry(pos: Position) {
     const updatedChunkIds = {};
     for (const offset of neighborOffsets) {
-      const offsetPos = pos.map((coord, i) => coord + offset.toArray()[i]) as [
-        number,
-        number,
-        number
-      ];
+      const offsetPos = pos.map(
+        (coord, i) => coord + offset.toArray()[i]
+      ) as Position;
       const chunkId = this.computeChunkIndex(offsetPos);
       if (!updatedChunkIds[chunkId]) {
         updatedChunkIds[chunkId] = true;
@@ -550,7 +543,7 @@ export class World {
     }
   }
 
-  updateChunkGeometry(pos: [number, number, number]) {
+  updateChunkGeometry(pos: Position) {
     const chunkOffset = this.computeChunkOffset(pos);
     const chunkId = this.computeChunkIndex(pos);
 

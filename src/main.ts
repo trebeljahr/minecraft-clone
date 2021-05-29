@@ -12,6 +12,7 @@ import {
   neighborOffsets,
   glowingBlocks,
   surroundingOffsets,
+  Position,
 } from "./constants";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
@@ -87,7 +88,7 @@ function placeVoxel(event) {
       .map((v, ndx) => {
         return v + intersection.normal[ndx] * (voxelId > 0 ? 0.5 : -0.5);
       })
-      .map((coord) => Math.floor(coord)) as [number, number, number];
+      .map((coord) => Math.floor(coord)) as Position;
 
     const distanceFromPlayerHead = new Vector3(...pos).sub(player.pos).length();
     const distanceFromPlayerFeet = new Vector3(...pos)
@@ -106,7 +107,7 @@ function placeVoxel(event) {
     const neighborLight = neighborOffsets.reduce((maxLight, offset) => {
       const neighborPos = pos.map(
         (coord, i) => coord + offset.toArray()[i]
-      ) as [number, number, number];
+      ) as Position;
       const { light } = world.getVoxel(neighborPos);
       return light > maxLight ? light : maxLight;
     }, 0);
@@ -128,7 +129,7 @@ function placeVoxel(event) {
         // console.log(chunkCoordinates);
         const chunkCoordinates = chunkId
           .split(",")
-          .map((coord) => parseInt(coord)) as [number, number, number];
+          .map((coord) => parseInt(coord)) as Position;
         world.updateChunkGeometry(chunkCoordinates);
       });
       // world.updateVoxelGeometry(...pos);

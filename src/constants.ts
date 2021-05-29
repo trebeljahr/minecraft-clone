@@ -7,6 +7,7 @@ export const blockLength = 100;
 import * as THREE from "three";
 import { Vector3 } from "three";
 
+export type Position = [number, number, number];
 export function copy(vec: THREE.Vector3) {
   return new THREE.Vector3().copy(vec);
 }
@@ -40,7 +41,7 @@ export const neighborOffsets = [
   new Vector3(0, 0, 1), // front
 ];
 
-let surroundingOffsets = [] as [number, number, number][];
+let surroundingOffsets = [] as Position[];
 
 for (let z = -1; z <= 1; z++) {
   for (let y = -1; y <= 1; y++) {
