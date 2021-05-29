@@ -232,8 +232,6 @@ export class World {
                 transparentBlocks.includes(voxel)
               ) {
                 const ndx = positions.length / 3;
-                lightValues.push(neighborLight);
-                sunlightValues.push(neighbourSunLight);
 
                 for (const { pos, uv } of corners) {
                   if (voxel === cactus) {
@@ -246,6 +244,8 @@ export class World {
                     positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
                   }
 
+                  lightValues.push(neighborLight);
+                  sunlightValues.push(neighbourSunLight);
                   normals.push(...dir);
                   uvs.push(
                     ((uvVoxel + uv[0]) * tileSize) / tileTextureWidth,
@@ -354,7 +354,8 @@ export class World {
   }
   floodLight(queue: [number, number, number][], callback) {
     console.log("Calling flood light with", [...queue]);
-    const neighbors = [...neighborOffsets].slice(1, -1);
+    const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
+    console.log("Neighbors", neighbors);
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
       const chunk = this.addChunkForVoxel(x, y, z);
