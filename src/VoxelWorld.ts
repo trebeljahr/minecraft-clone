@@ -7,18 +7,11 @@ import {
   Mesh,
 } from "three";
 import {
-  cactus,
+  blocks,
   copy,
   neighborOffsets,
   terrainHeight,
   transparentBlocks,
-  birchwood,
-  foliage,
-  oakwood,
-  gold,
-  stone,
-  grass,
-  dirt,
   chunkSize,
   maxHeight,
   Position,
@@ -30,6 +23,19 @@ import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
 import { Noise } from "./noise";
 
+const {
+  cactus,
+  emerald,
+  lapis,
+  diamonds,
+  birchwood,
+  foliage,
+  oakwood,
+  gold,
+  stone,
+  grass,
+  dirt,
+} = blocks;
 const noise = new Noise();
 
 const chunkIdToMesh = {};
@@ -205,10 +211,11 @@ export class World {
     normal: Position;
     voxel: number;
   } {
-    const { x: dx, y: dy, z: dz } = new Vector3()
-      .copy(end)
-      .sub(start)
-      .normalize();
+    const {
+      x: dx,
+      y: dy,
+      z: dz,
+    } = new Vector3().copy(end).sub(start).normalize();
 
     let t = 0.0;
     let { x: ix, y: iy, z: iz } = new Vector3().copy(start).floor();
@@ -356,6 +363,12 @@ export class World {
           if (this.shouldPlaceBlock(...offsetPos)) {
             if (this.shouldSpawnGold(...offsetPos)) {
               this.setVoxel(offsetPos, gold);
+            } else if (this.shouldSpawnDiamonds(...offsetPos)) {
+              this.setVoxel(offsetPos, diamonds);
+            } else if (this.shouldSpawnLapis(...offsetPos)) {
+              this.setVoxel(offsetPos, lapis);
+            } else if (this.shouldSpawnEmeralds(...offsetPos)) {
+              this.setVoxel(offsetPos, emerald);
             } else if (this.shouldSpawnGrass(offsetPos)) {
               this.setVoxel(offsetPos, grass);
               if (this.shouldSpawnTree()) {
@@ -388,6 +401,30 @@ export class World {
 
   shouldSpawnGrass(pos: Position) {
     return !this.wouldPlaceBlockAbove(...pos);
+  }
+
+  shouldSpawnLapis(_x: number, currentY: number, _z: number) {
+    if (currentY > 40) return false;
+    // for (let offset in neighborOffsets) {
+    //   getVoxel()
+    // }
+    return Math.random() < 0.01;
+  }
+
+  shouldSpawnDiamonds(_x: number, currentY: number, _z: number) {
+    if (currentY > 40) return false;
+    // for (let offset in neighborOffsets) {
+    //   getVoxel()
+    // }
+    return Math.random() < 0.01;
+  }
+
+  shouldSpawnEmeralds(_x: number, currentY: number, _z: number) {
+    if (currentY > 40) return false;
+    // for (let offset in neighborOffsets) {
+    //   getVoxel()
+    // }
+    return Math.random() < 0.01;
   }
 
   shouldSpawnGold(_x: number, currentY: number, _z: number) {
@@ -483,13 +520,8 @@ export class World {
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
-    const {
-      positions,
-      normals,
-      uvs,
-      indices,
-      lightValues,
-    } = this.generateGeometryDataForChunk(chunkCoordinates);
+    const { positions, normals, uvs, indices, lightValues } =
+      this.generateGeometryDataForChunk(chunkCoordinates);
     const positionNumComponents = 3;
     geometry.setAttribute(
       "position",

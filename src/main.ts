@@ -1,7 +1,7 @@
 import "./main.css";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
-  cactus,
+  blocks,
   copy,
   surface,
   terrainHeight,
@@ -13,8 +13,6 @@ import {
   glowingBlocks,
   surroundingOffsets,
   Position,
-  birchwood,
-  oakwood,
 } from "./constants";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
@@ -45,7 +43,29 @@ const inventory = document.getElementById("inventory");
 
 let menu = true;
 let activeHotbarSlot = 1;
-const hotbar = [birchwood, oakwood];
+const {
+  gold,
+  birchwood,
+  oakwood,
+  stone,
+  iron,
+  lapis,
+  cactus,
+  emerald,
+  foliage,
+} = blocks;
+
+const hotbar = [
+  birchwood,
+  oakwood,
+  stone,
+  iron,
+  lapis,
+  gold,
+  emerald,
+  cactus,
+  foliage,
+];
 
 const loopSize = 3;
 let minX = -loopSize;

@@ -13,23 +13,48 @@ export function copy(vec: THREE.Vector3) {
 }
 export const maxHeight = terrainHeight + chunkSize / 2;
 
-export const stone = 12;
-export const grass = 1;
-export const dirt = 14;
-export const gold = 6;
-export const coal = 7;
-export const lapis = 9;
-export const diamonds = 15;
-export const emerald = 17;
-export const iron = 19;
-export const birchwood = 20;
-export const oakwood = 3;
-export const foliage = 2;
-export const cactus = 18;
-export const air = 0;
+export const blocks = {
+  stone: 12,
+  grass: 1,
+  dirt: 14,
+  gold: 6,
+  coal: 7,
+  lapis: 9,
+  diamonds: 15,
+  emerald: 17,
+  iron: 19,
+  birchwood: 20,
+  oakwood: 3,
+  foliage: 2,
+  cactus: 18,
+  air: 0,
+};
+
+const { air, cactus, foliage } = blocks;
 export const tileSize = 16;
 export const tileTextureWidth = 320;
 export const tileTextureHeight = 48;
+
+export const tools = {
+  axe: 0,
+  pickaxe: 1,
+  shovel: 2,
+};
+
+export const hardness: Record<number, number> = {
+  [blocks.grass]: tools.shovel,
+  [blocks.dirt]: tools.shovel,
+  [blocks.stone]: tools.pickaxe,
+  [blocks.gold]: tools.pickaxe,
+  [blocks.lapis]: tools.pickaxe,
+  [blocks.diamonds]: tools.pickaxe,
+  [blocks.emerald]: tools.pickaxe,
+  [blocks.iron]: tools.pickaxe,
+  [blocks.birchwood]: tools.pickaxe,
+  [blocks.oakwood]: tools.axe,
+  [blocks.foliage]: tools.axe,
+  [blocks.cactus]: tools.axe,
+};
 
 export const neighborOffsets = [
   new Vector3(0, 0, 0), // self
