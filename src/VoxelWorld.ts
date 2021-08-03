@@ -6,8 +6,8 @@ import {
   BufferGeometry,
   Mesh,
 } from "three";
+import { blocks } from "./blocks";
 import {
-  blocks,
   copy,
   neighborOffsets,
   terrainHeight,

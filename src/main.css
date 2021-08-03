@@ -9,6 +9,23 @@
   background-image: url("../assets/oakwood-block.png") !important;
 }
 
+#inventory {
+  position: absolute;
+  top: 0;
+  height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+#inventoryContainer {
+  width: 70vw;
+  height: 60vw;
+  background: grey;
+}
+
 #hotbarContainer > div {
   width: 5vw;
   height: 5vw;
@@ -27,7 +44,7 @@
   background: rgb(68, 64, 64);
 }
 
-#inventory {
+#hotbar {
   position: absolute;
   bottom: 0;
   width: 100%;

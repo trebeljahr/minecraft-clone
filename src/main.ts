@@ -1,7 +1,8 @@
 import "./main.css";
+import { Hotbar, Inventory } from "./inventory";
+import { blocks } from "./blocks";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
-  blocks,
   copy,
   surface,
   terrainHeight,
@@ -29,6 +30,16 @@ import {
   WebGLRenderer,
 } from "three";
 
+const blocker = document.getElementById("blocker");
+const crosshairs = document.getElementById("crosshairContainer");
+const instructions = document.getElementById("instructions");
+const inventory = new Inventory();
+const hotbar = new Hotbar();
+const loopSize = 3;
+const leftMouse = 0;
+const rightMouse = 2;
+const { air } = blocks;
+
 let camera: PerspectiveCamera;
 let scene: Scene;
 let canvas: HTMLCanvasElement;
@@ -36,38 +47,7 @@ let world: World;
 let player: Player;
 let renderer: WebGLRenderer;
 let renderRequested = false;
-const blocker = document.getElementById("blocker");
-const crosshairs = document.getElementById("crosshairContainer");
-const instructions = document.getElementById("instructions");
-const inventory = document.getElementById("inventory");
-
 let menu = true;
-let activeHotbarSlot = 1;
-const {
-  gold,
-  birchwood,
-  oakwood,
-  stone,
-  iron,
-  lapis,
-  cactus,
-  emerald,
-  foliage,
-} = blocks;
-
-const hotbar = [
-  birchwood,
-  oakwood,
-  stone,
-  iron,
-  lapis,
-  gold,
-  emerald,
-  cactus,
-  foliage,
-];
-
-const loopSize = 3;
 let minX = -loopSize;
 let maxX = loopSize;
 let x = minX;
@@ -105,12 +85,25 @@ function generateChunksAroundCamera() {
   }
 }
 
+function isRightMouse(event) {
+  return event.button === rightMouse;
+}
+
+function isLeftMouse(event) {
+  return event.button === leftMouse;
+}
+
 function placeVoxel(event) {
-  if ((event.button !== 0 && event.button !== 2) || menu) return;
+  if ((!isLeftMouse(event) && !isRightMouse(event)) || menu) return;
+  const selectedBlock = hotbar.select();
+  if (selectedBlock === air && isLeftMouse(event)) {
+    console.log("Skipping because trying to place air block");
+    return;
+  }
 
   const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   const x = (pos.x / window.innerWidth) * 2 - 1;
-  const y = (pos.y / window.innerHeight) * -2 + 1; // note we flip Y
+  const y = (pos.y / window.innerHeight) * -2 + 1;
 
   const start = new Vector3();
   const end = new Vector3();
@@ -119,7 +112,6 @@ function placeVoxel(event) {
 
   const intersection = world.intersectRay(start, end);
   if (intersection) {
-    const selectedBlock = hotbar[activeHotbarSlot - 1] || cactus;
     const voxelId = event.button === 0 ? 0 : selectedBlock;
     const pos = intersection.position
       .map((v, ndx) => {
@@ -221,15 +213,17 @@ function init() {
     instructions.style.display = "none";
     blocker.style.display = "none";
     crosshairs.style.display = "flex";
-    inventory.style.display = "flex";
+    inventory.element.style.display = "flex";
+    hotbar.element.style.display = "flex";
   });
 
   player.controls.addEventListener("unlock", function () {
     menu = true;
     blocker.style.display = "flex";
-    instructions.style.display = "";
+    instructions.style.display = "none";
     crosshairs.style.display = "none";
-    inventory.style.display = "none";
+    inventory.element.style.display = "none";
+    hotbar.element.style.display = "none";
   });
 
   const onKeyPress = (event) => {
@@ -237,6 +231,9 @@ function init() {
       return;
     }
     switch (event.code) {
+      case "KeyE":
+        inventory.toggle();
+        break;
       case "KeyF":
         console.log("Pressed F");
         const pos = player.controls.getObject().position;
@@ -260,19 +257,11 @@ function init() {
     }
   };
   const onScroll = (event: WheelEvent) => {
-    if (event.deltaY > 0) {
-      activeHotbarSlot++;
-    } else {
-      activeHotbarSlot--;
-    }
-    if (activeHotbarSlot > 9) {
-      activeHotbarSlot = 1;
-    }
-    if (activeHotbarSlot < 1) {
-      activeHotbarSlot = 9;
-    }
+    const direction = event.deltaY < 0;
+    hotbar.cycle(direction);
+
     for (let slot = 1; slot <= 9; slot++) {
-      if (slot === activeHotbarSlot) {
+      if (slot === hotbar.getActiveSlot()) {
         document.getElementById(`slot${slot}`).style.outline =
           "solid 5px white";
       } else {
