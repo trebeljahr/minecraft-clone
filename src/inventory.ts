@@ -42,7 +42,7 @@ interface InventorySlot {
   blockType: number;
 }
 
-const inventoryRows = 3;
+const inventoryRows = 5;
 const inventoryCols = 9;
 const maxItemStack = 128;
 
@@ -54,6 +54,14 @@ export class Inventory {
       blockType: air,
       amount: 0,
     });
+    for (let _ in this.slots) {
+      const node = document.createElement("div");
+      this.inventoryDomContainer.appendChild(node);
+    }
+  }
+
+  get inventoryDomContainer() {
+    return document.getElementById("inventoryContainer");
   }
 
   get element() {

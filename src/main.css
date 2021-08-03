@@ -21,14 +21,22 @@
 }
 
 #inventoryContainer {
-  width: 70vw;
-  height: 60vw;
-  background: grey;
+  margin-top: -10vh;
+  max-width: calc(72vw + 50px);
+  padding: 5px 0px;
+  flex-wrap: wrap;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  background: rgb(68, 64, 64);
 }
 
-#hotbarContainer > div {
-  width: 5vw;
-  height: 5vw;
+#hotbarContainer > div,
+#inventoryContainer > div {
+  width: 8vw;
+  height: 8vw;
   background: grey;
   background-size: 5vw 5vw;
   /* border: 6px solid rgb(68, 64, 64); */
