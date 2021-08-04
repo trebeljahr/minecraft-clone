@@ -1,4 +1,5 @@
 import { blocks } from "./blocks";
+import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
 
 const {
   gold,
@@ -48,8 +49,10 @@ const maxItemStack = 128;
 
 export class Inventory {
   private slots: InventorySlot[];
-  private isOpen = false;
-  constructor() {
+  private controls;
+  public isOpen = false;
+  constructor(controls: PointerLockControls) {
+    this.controls = controls;
     this.slots = Array(inventoryRows * inventoryCols).fill({
       blockType: air,
       amount: 0,
@@ -76,6 +79,11 @@ export class Inventory {
   toggle() {
     this.element.style.display = this.isOpen ? "flex" : "none";
     this.isOpen = !this.isOpen;
+    if (!this.isOpen) {
+      this.controls.unlock();
+    } else {
+      this.controls.lock();
+    }
   }
 
   canFitIntoSameSlot() {}

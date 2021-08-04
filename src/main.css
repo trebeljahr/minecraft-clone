@@ -13,7 +13,7 @@
   position: absolute;
   top: 0;
   height: 0;
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   width: 100vw;
@@ -22,7 +22,7 @@
 
 #inventoryContainer {
   margin-top: -10vh;
-  max-width: calc(72vw + 50px);
+  max-width: calc(45vw + 50px);
   padding: 5px 0px;
   flex-wrap: wrap;
   display: flex;
@@ -35,8 +35,8 @@
 
 #hotbarContainer > div,
 #inventoryContainer > div {
-  width: 8vw;
-  height: 8vw;
+  width: 5vw;
+  height: 5vw;
   background: grey;
   background-size: 5vw 5vw;
   /* border: 6px solid rgb(68, 64, 64); */

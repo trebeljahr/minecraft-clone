@@ -33,7 +33,6 @@ import {
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
-const inventory = new Inventory();
 const hotbar = new Hotbar();
 const loopSize = 3;
 const leftMouse = 0;
@@ -42,6 +41,7 @@ const { air } = blocks;
 
 let camera: PerspectiveCamera;
 let scene: Scene;
+let inventory: Inventory;
 let canvas: HTMLCanvasElement;
 let world: World;
 let player: Player;
@@ -198,6 +198,7 @@ function init() {
 
   const loop = new Loop(camera, scene, renderer);
   player = new Player(new PointerLockControls(camera, document.body), world);
+  inventory = new Inventory(player.controls);
   loop.register(player);
   // loop.register({
   //   tick: (_delta: number) => generateChunksInMovementDirection(),
@@ -213,16 +214,17 @@ function init() {
     instructions.style.display = "none";
     blocker.style.display = "none";
     crosshairs.style.display = "flex";
-    inventory.element.style.display = "flex";
     hotbar.element.style.display = "flex";
   });
 
   player.controls.addEventListener("unlock", function () {
     menu = true;
-    blocker.style.display = "flex";
+    if (!inventory.isOpen) {
+      blocker.style.display = "flex";
+      inventory.element.style.display = "none";
+    }
     instructions.style.display = "none";
     crosshairs.style.display = "none";
-    inventory.element.style.display = "none";
     hotbar.element.style.display = "none";
   });
 
