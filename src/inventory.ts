@@ -24,7 +24,7 @@ const hotbar = [
   emerald,
   cactus,
   foliage,
-];
+] as HotbarContents;
 
 type HotbarContents = [
   number,
@@ -49,10 +49,8 @@ const maxItemStack = 128;
 
 export class Inventory {
   private slots: InventorySlot[];
-  private controls;
   public isOpen = false;
-  constructor(controls: PointerLockControls) {
-    this.controls = controls;
+  constructor() {
     this.slots = Array(inventoryRows * inventoryCols).fill({
       blockType: air,
       amount: 0,
@@ -77,13 +75,8 @@ export class Inventory {
   }
 
   toggle() {
-    this.element.style.display = this.isOpen ? "flex" : "none";
+    this.element.style.display = this.isOpen ? "none" : "flex";
     this.isOpen = !this.isOpen;
-    if (!this.isOpen) {
-      this.controls.unlock();
-    } else {
-      this.controls.lock();
-    }
   }
 
   canFitIntoSameSlot() {}
@@ -100,7 +93,7 @@ export class Hotbar {
   private content: HotbarContents;
   private activeSlot = 1;
   constructor() {
-    this.content = Array(9).fill(air) as HotbarContents;
+    this.content = hotbar; // Array(9).fill(air) as HotbarContents;
   }
   changeItem(block: number, hotbarIndex: number) {
     this.content[hotbarIndex] = block;

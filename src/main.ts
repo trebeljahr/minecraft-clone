@@ -198,7 +198,7 @@ function init() {
 
   const loop = new Loop(camera, scene, renderer);
   player = new Player(new PointerLockControls(camera, document.body), world);
-  inventory = new Inventory(player.controls);
+  inventory = new Inventory();
   loop.register(player);
   // loop.register({
   //   tick: (_delta: number) => generateChunksInMovementDirection(),
@@ -213,19 +213,20 @@ function init() {
     menu = false;
     instructions.style.display = "none";
     blocker.style.display = "none";
-    crosshairs.style.display = "flex";
-    hotbar.element.style.display = "flex";
+    if (!inventory.isOpen) {
+      crosshairs.style.display = "flex";
+      hotbar.element.style.display = "flex";
+    }
   });
 
   player.controls.addEventListener("unlock", function () {
     menu = true;
     if (!inventory.isOpen) {
       blocker.style.display = "flex";
-      inventory.element.style.display = "none";
+      instructions.style.display = "block";
+      hotbar.element.style.display = "none";
     }
-    instructions.style.display = "none";
     crosshairs.style.display = "none";
-    hotbar.element.style.display = "none";
   });
 
   const onKeyPress = (event) => {
@@ -234,7 +235,15 @@ function init() {
     }
     switch (event.code) {
       case "KeyE":
+        if (!player.controls.isLocked && !inventory.isOpen) return;
         inventory.toggle();
+        if (inventory.isOpen) {
+          console.log("Unlocking controls");
+          player.controls.unlock();
+        } else {
+          console.log("Locking controls");
+          player.controls.lock();
+        }
         break;
       case "KeyF":
         console.log("Pressed F");
