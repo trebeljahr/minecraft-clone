@@ -35,8 +35,6 @@ const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
 const hotbar = new Hotbar();
 const loopSize = 3;
-const leftMouse = 0;
-const rightMouse = 2;
 const { air } = blocks;
 
 let camera: PerspectiveCamera;
@@ -85,18 +83,27 @@ function generateChunksAroundCamera() {
   }
 }
 
-function isRightMouse(event) {
-  return event.button === rightMouse;
+const leftMouse = 0;
+const rightMouse = 2;
+
+class MouseClickEvent {
+  public event: MouseEvent;
+  constructor(event: MouseEvent) {
+    this.event = event;
+  }
+  get left() {
+    return this.event.button === leftMouse;
+  }
+  get right() {
+    return this.event.button === rightMouse;
+  }
 }
 
-function isLeftMouse(event) {
-  return event.button === leftMouse;
-}
-
-function placeVoxel(event) {
-  if ((!isLeftMouse(event) && !isRightMouse(event)) || menu) return;
+function placeVoxel(event: MouseEvent) {
+  const mouseClick = new MouseClickEvent(event);
+  if (!(mouseClick.right || mouseClick.left) || menu === true) return;
   const selectedBlock = hotbar.select();
-  if (selectedBlock === air && isLeftMouse(event)) {
+  if (selectedBlock === air && mouseClick.right) {
     console.log("Skipping because trying to place air block");
     return;
   }
