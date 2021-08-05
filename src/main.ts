@@ -237,13 +237,7 @@ function init() {
       case "KeyE":
         if (!player.controls.isLocked && !inventory.isOpen) return;
         inventory.toggle();
-        if (inventory.isOpen) {
-          console.log("Unlocking controls");
-          player.controls.unlock();
-        } else {
-          console.log("Locking controls");
-          player.controls.lock();
-        }
+        inventory.isOpen ? player.controls.unlock() : player.controls.lock();
         break;
       case "KeyF":
         console.log("Pressed F");
