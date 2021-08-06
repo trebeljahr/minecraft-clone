@@ -2,11 +2,11 @@
   margin: 0;
   padding: 0;
 }
-#slot1 {
-  background-image: url("../assets/birchwood-block.png") !important;
-}
-#slot2 {
-  background-image: url("../assets/oakwood-block.png") !important;
+
+.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #inventory {
@@ -19,7 +19,11 @@
   width: 100vw;
   height: 100vh;
 }
-
+.inventoryItem {
+  display: block;
+  width: 5vw;
+  height: 5vw;
+}
 #inventoryContainer {
   margin-top: -10vh;
   max-width: calc(45vw + 50px);

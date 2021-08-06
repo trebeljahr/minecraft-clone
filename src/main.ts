@@ -1,5 +1,5 @@
 import "./main.css";
-import { Hotbar, Inventory } from "./inventory";
+import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -33,7 +33,6 @@ import {
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
-const hotbar = new Hotbar();
 const loopSize = 3;
 const { air } = blocks;
 
@@ -102,7 +101,7 @@ class MouseClickEvent {
 function placeVoxel(event: MouseEvent) {
   const mouseClick = new MouseClickEvent(event);
   if (!(mouseClick.right || mouseClick.left) || menu === true) return;
-  const selectedBlock = hotbar.select();
+  const selectedBlock = inventory.selectFromActiveHotbarSlot();
   if (selectedBlock === air && mouseClick.right) {
     console.log("Skipping because trying to place air block");
     return;
@@ -222,7 +221,7 @@ function init() {
     blocker.style.display = "none";
     if (!inventory.isOpen) {
       crosshairs.style.display = "flex";
-      hotbar.element.style.display = "flex";
+      inventory.hotbarElement.style.display = "flex";
     }
   });
 
@@ -231,7 +230,7 @@ function init() {
     if (!inventory.isOpen) {
       blocker.style.display = "flex";
       instructions.style.display = "block";
-      hotbar.element.style.display = "none";
+      inventory.hotbarElement.style.display = "none";
     }
     crosshairs.style.display = "none";
   });
@@ -270,10 +269,10 @@ function init() {
   };
   const onScroll = (event: WheelEvent) => {
     const direction = event.deltaY < 0;
-    hotbar.cycle(direction);
+    inventory.cycleHotbar(direction);
 
     for (let slot = 1; slot <= 9; slot++) {
-      if (slot === hotbar.getActiveSlot()) {
+      if (slot === inventory.getActiveHotbarSlot()) {
         document.getElementById(`slot${slot}`).style.outline =
           "solid 5px white";
       } else {

@@ -9,6 +9,7 @@
     "build": "webpack --config webpack.prod.js"
   },
   "dependencies": {
+    "@shopify/draggable": "^1.0.0-beta.8",
     "@types/dat.gui": "^0.7.6",
     "@types/three": "^0.127.1",
     "dat.gui": "^0.7.7",
