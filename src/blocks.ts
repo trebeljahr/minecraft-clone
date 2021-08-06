@@ -35,3 +35,18 @@ export const hardness: Record<number, number> = {
   [blocks.foliage]: tools.axe,
   [blocks.cactus]: tools.axe,
 };
+
+export const itemImages: Record<number, string> = {
+  [blocks.grass]: "",
+  [blocks.dirt]: "",
+  [blocks.stone]: "",
+  [blocks.gold]: "",
+  [blocks.lapis]: "",
+  [blocks.diamonds]: "",
+  [blocks.emerald]: "",
+  [blocks.iron]: "",
+  [blocks.birchwood]: "assets/birchwood-item.png",
+  [blocks.oakwood]: "",
+  [blocks.foliage]: "",
+  [blocks.cactus]: "",
+};

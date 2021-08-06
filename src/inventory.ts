@@ -1,4 +1,4 @@
-import { blocks } from "./blocks";
+import { blocks, itemImages } from "./blocks";
 import { Swappable } from "@shopify/draggable";
 
 const {
@@ -15,27 +15,27 @@ const {
 } = blocks;
 
 const initialHotbar = [
-  birchwood,
-  oakwood,
-  stone,
-  iron,
-  lapis,
-  gold,
-  emerald,
-  cactus,
-  foliage,
+  { blockType: birchwood, amount: 0 },
+  { blockType: oakwood, amount: 0 },
+  { blockType: stone, amount: 0 },
+  { blockType: iron, amount: 0 },
+  { blockType: lapis, amount: 0 },
+  { blockType: gold, amount: 0 },
+  { blockType: emerald, amount: 0 },
+  { blockType: cactus, amount: 0 },
+  { blockType: foliage, amount: 0 },
 ] as HotbarContents;
 
 type HotbarContents = [
-  number,
-  number,
-  number,
-  number,
-  number,
-  number,
-  number,
-  number,
-  number
+  InventorySlot,
+  InventorySlot,
+  InventorySlot,
+  InventorySlot,
+  InventorySlot,
+  InventorySlot,
+  InventorySlot,
+  InventorySlot,
+  InventorySlot
 ];
 
 interface InventorySlot {
@@ -56,17 +56,22 @@ function getRandomColor() {
   return color;
 }
 
-const makeInventoryNode = () => {
+const makeInventoryNode = (itemType: number) => {
   const node = document.createElement("div");
   const secondNode = document.createElement("span");
 
   node.setAttribute("class", "centered");
   secondNode.setAttribute("class", "inventoryItem");
-  secondNode.style.background = getRandomColor();
+  const imageUrl = itemImages.hasOwnProperty(itemType)
+    ? itemImages[itemType]
+    : "";
+  secondNode.style.background =
+    imageUrl !== "" ? `url(${imageUrl})` : getRandomColor();
   node.appendChild(secondNode);
 
   return node;
 };
+
 export class Inventory {
   private slots: InventorySlot[];
   public isOpen = false;
@@ -77,12 +82,12 @@ export class Inventory {
     });
     this.hotbarSlots = initialHotbar;
 
-    for (let _ in this.slots) {
-      const node = makeInventoryNode();
+    for (let slot of this.slots) {
+      const node = makeInventoryNode(slot.blockType);
       this.containerElement.appendChild(node);
     }
-    for (let _ in this.hotbarSlots) {
-      const node = makeInventoryNode();
+    for (let hotbarSlot of this.hotbarSlots) {
+      const node = makeInventoryNode(hotbarSlot.blockType);
       this.hotbarContainerElement.appendChild(node);
     }
     const swappableContainers = this.containerElement.children;
@@ -97,6 +102,7 @@ export class Inventory {
       ...this.hotbarContainerElement.children,
     ] as HTMLElement[];
 
+    hotbarItemboxElements[0].style.outline = "solid 5px white";
     const onScroll = (event: WheelEvent) => {
       const direction = event.deltaY < 0;
       this.cycleHotbar(direction);
@@ -141,10 +147,10 @@ export class Inventory {
   }
 
   private hotbarSlots: HotbarContents;
-  private activeHotbarSlot = 1;
+  private activeHotbarSlot = 0;
 
-  changeHotbarItem(block: number, hotbarIndex: number) {
-    this.hotbarSlots[hotbarIndex] = block;
+  changeHotbarItem(blockType: number, amount: number, hotbarIndex: number) {
+    this.hotbarSlots[hotbarIndex] = { blockType, amount };
   }
 
   get hotbarElement() {
@@ -172,6 +178,6 @@ export class Inventory {
     return this.activeHotbarSlot;
   }
   selectFromActiveHotbarSlot() {
-    return this.hotbarSlots[this.activeHotbarSlot - 1] || air;
+    return this.hotbarSlots[this.activeHotbarSlot].blockType || air;
   }
 }

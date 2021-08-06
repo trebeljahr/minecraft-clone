@@ -5,6 +5,7 @@ import { World } from "./VoxelWorld";
 
 const eyeLevel = 1.5;
 const maxSpeed = 10;
+const gravity = false; // can be set to disable/enable falling
 
 let moveForward = false;
 let moveBack = false;
@@ -69,7 +70,7 @@ export class Player {
       this.velocity.x = this.planarVelocity.x;
       this.velocity.z = this.planarVelocity.z;
 
-      if (this.velocity.y > -30 && !onGround)
+      if (this.velocity.y > -30 && !onGround && gravity)
         this.velocity.y -= 9.8 * 5 * delta;
 
       this.pos.y += this.velocity.y * delta;
