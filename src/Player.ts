@@ -5,7 +5,7 @@ import { World } from "./VoxelWorld";
 
 const eyeLevel = 1.5;
 const maxSpeed = 10;
-const gravity = false; // can be set to disable/enable falling
+const gravity = true; // can be set to disable/enable falling
 
 let moveForward = false;
 let moveBack = false;

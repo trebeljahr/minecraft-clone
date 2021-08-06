@@ -31,7 +31,6 @@ import {
 } from "three";
 
 const blocker = document.getElementById("blocker");
-blocker.style.display = "none";
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
 const loopSize = 3;
@@ -214,7 +213,7 @@ function init() {
   loop.start();
 
   blocker.addEventListener("click", function () {
-    // player.controls.lock();
+    player.controls.lock();
   });
 
   player.controls.addEventListener("lock", function () {
@@ -283,62 +282,39 @@ function init() {
   scene.add(player.controls.getObject());
 
   window.addEventListener("resize", onWindowResize);
-  // generateChunksAroundCamera();
+  generateChunksAroundCamera();
   // spawnSingleBlock();
 
-  const [x, y, z] = player.pos.toArray();
-  const initialBlockPos = [x, y - 2, z - 3] as Position;
+  // const [x, y, z] = player.pos.toArray();
+  // const initialBlockPos = [x, y - 2, z - 3] as Position;
   // const hardcodedCameraDirection = {
   //   x: -0.5757005393263303,
   //   y: -0.6186039666723383,
   //   z: -0.5346943252332317,
   // };
-  const hardcodedCameraPosition = {
-    x: 2.2839938822872243,
-    y: 85,
-    z: -0.8391258104030554,
-  };
-  camera.position.y = hardcodedCameraPosition.y;
-  camera.position.x = hardcodedCameraPosition.x;
-  camera.position.z = hardcodedCameraPosition.z;
+  // const hardcodedCameraPosition = {
+  //   x: 2.2839938822872243,
+  //   y: 85,
+  //   z: -0.8391258104030554,
+  // };
+  // camera.position.y = hardcodedCameraPosition.y;
+  // camera.position.x = hardcodedCameraPosition.x;
+  // camera.position.z = hardcodedCameraPosition.z;
 
-  const camDirection = new Vector3(...initialBlockPos);
-  camDirection.y -= 0.5;
-  camera.lookAt(camDirection);
-  world.setVoxel(initialBlockPos, blocks.coal);
-  world.sunLightChunkAt(initialBlockPos, () => {
-    world.updateChunkGeometry(initialBlockPos);
-    world.updateChunkGeometry(
-      copy(player.pos)
-        .setY(player.pos.y + chunkSize)
-        .toArray()
-    );
-
-    requestRenderIfNotRequested();
-  });
-  // world.sunLightChunkAt(player.pos.toArray(), () => {});
-  // world.floodLight([player.pos.toArray()], () => {
-  //   const chunksToUpdateSet = new Set<string>();
-  //   surroundingOffsets.forEach((dir) => {
-  //     const positionWithChunkOffset = player.pos
+  // const camDirection = new Vector3(...initialBlockPos);
+  // camDirection.y -= 0.5;
+  // camera.lookAt(camDirection);
+  // world.setVoxel(initialBlockPos, blocks.coal);
+  // world.sunLightChunkAt(initialBlockPos, () => {
+  //   world.updateChunkGeometry(initialBlockPos);
+  //   world.updateChunkGeometry(
+  //     copy(player.pos)
+  //       .setY(player.pos.y + chunkSize)
   //       .toArray()
-  //       .map((coord, i) => coord + dir[i] * (chunkSize - 2)) as Position;
+  //   );
 
-  //     const chunkIndex = world.computeChunkIndex(positionWithChunkOffset);
-  //     chunksToUpdateSet.add(chunkIndex);
-  //   });
-  //   console.log({ chunksToUpdateSet });
-  //   chunksToUpdateSet.forEach((chunkId) => {
-  //     const chunkCoordinates = chunkId
-  //       .split(",")
-  //       .map((coord) => parseInt(coord) * chunkSize) as Position;
-  //     world.updateChunkGeometry(chunkCoordinates);
-  //   });
   //   requestRenderIfNotRequested();
   // });
-  // world.updateVoxelGeometry(player.pos.toArray());
-
-  // initSky(camera, scene, renderer);
 }
 
 function onWindowResize() {
