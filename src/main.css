@@ -3,6 +3,10 @@
   padding: 0;
 }
 
+:root {
+  --item-box-size: 7vw;
+}
+
 .centered {
   display: flex;
   justify-content: center;
@@ -21,12 +25,15 @@
 }
 .inventoryItem {
   display: block;
-  width: 5vw;
-  height: 5vw;
+  width: var(--item-box-size);
+  height: var(--item-box-size);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 #inventoryContainer {
   margin-top: -10vh;
-  max-width: calc(45vw + 50px);
+  max-width: calc(9 * var(--item-box-size) + 50px);
   padding: 5px 0px;
   flex-wrap: wrap;
   display: flex;
@@ -39,10 +46,10 @@
 
 #hotbarContainer > div,
 #inventoryContainer > div {
-  width: 5vw;
-  height: 5vw;
-  background: grey;
-  background-size: 5vw 5vw;
+  width: var(--item-box-size);
+  height: var(--item-box-size);
+  background: rgb(139, 139, 139);
+  background-size: var(--item-box-size) var(--item-box-size);
   /* border: 6px solid rgb(68, 64, 64); */
 }
 

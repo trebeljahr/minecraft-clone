@@ -62,11 +62,13 @@ const makeInventoryNode = (itemType: number) => {
 
   node.setAttribute("class", "centered");
   secondNode.setAttribute("class", "inventoryItem");
-  const imageUrl = itemImages.hasOwnProperty(itemType)
-    ? itemImages[itemType]
-    : "";
-  secondNode.style.background =
-    imageUrl !== "" ? `url(${imageUrl})` : getRandomColor();
+  const image = itemImages[itemType];
+  image !== "" &&
+    image !== undefined &&
+    console.log("This is the asset url", image);
+  if (image !== undefined && image !== "") {
+    secondNode.style.backgroundImage = `url(${image})`;
+  }
   node.appendChild(secondNode);
 
   return node;

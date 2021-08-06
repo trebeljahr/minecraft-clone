@@ -36,7 +36,7 @@ export const hardness: Record<number, number> = {
   [blocks.cactus]: tools.axe,
 };
 
-export const itemImages: Record<number, string> = {
+export const itemImages = {
   [blocks.grass]: "",
   [blocks.dirt]: "",
   [blocks.stone]: "",
@@ -45,7 +45,7 @@ export const itemImages: Record<number, string> = {
   [blocks.diamonds]: "",
   [blocks.emerald]: "",
   [blocks.iron]: "",
-  [blocks.birchwood]: "assets/birchwood-item.png",
+  [blocks.birchwood]: require("../assets/birchwood-item.png"),
   [blocks.oakwood]: "",
   [blocks.foliage]: "",
   [blocks.cactus]: "",
