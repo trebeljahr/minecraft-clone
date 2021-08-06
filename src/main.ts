@@ -267,20 +267,6 @@ function init() {
         break;
     }
   };
-  const onScroll = (event: WheelEvent) => {
-    const direction = event.deltaY < 0;
-    inventory.cycleHotbar(direction);
-
-    for (let slot = 1; slot <= 9; slot++) {
-      if (slot === inventory.getActiveHotbarSlot()) {
-        document.getElementById(`slot${slot}`).style.outline =
-          "solid 5px white";
-      } else {
-        document.getElementById(`slot${slot}`).style.outline = "";
-      }
-    }
-  };
-  document.addEventListener("wheel", onScroll);
   document.addEventListener("keypress", onKeyPress);
   window.addEventListener("click", placeVoxel);
 

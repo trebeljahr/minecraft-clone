@@ -56,6 +56,17 @@ function getRandomColor() {
   return color;
 }
 
+const makeInventoryNode = () => {
+  const node = document.createElement("div");
+  const secondNode = document.createElement("span");
+
+  node.setAttribute("class", "centered");
+  secondNode.setAttribute("class", "inventoryItem");
+  secondNode.style.background = getRandomColor();
+  node.appendChild(secondNode);
+
+  return node;
+};
 export class Inventory {
   private slots: InventorySlot[];
   public isOpen = false;
@@ -67,30 +78,39 @@ export class Inventory {
     this.hotbarSlots = initialHotbar;
 
     for (let _ in this.slots) {
-      const node = document.createElement("div");
-      const secondNode = document.createElement("span");
-
-      node.setAttribute("class", "centered");
-      secondNode.setAttribute("class", "inventoryItem");
-      secondNode.style.background = getRandomColor();
-      node.appendChild(secondNode);
+      const node = makeInventoryNode();
       this.containerElement.appendChild(node);
     }
     for (let _ in this.hotbarSlots) {
-      const node = document.createElement("div");
-      const secondNode = document.createElement("span");
-
-      node.setAttribute("class", "centered");
-      secondNode.setAttribute("class", "inventoryItem");
-      secondNode.style.background = getRandomColor();
-      node.appendChild(secondNode);
+      const node = makeInventoryNode();
       this.hotbarContainerElement.appendChild(node);
     }
     const swappableContainers = this.containerElement.children;
     const swappableHotbarContainers = this.hotbarContainerElement.children;
+
     new Swappable([...swappableContainers, ...swappableHotbarContainers], {
       draggable: "span",
     });
+
+    // attach scroll handlers to hotbar
+    const hotbarItemboxElements = [
+      ...this.hotbarContainerElement.children,
+    ] as HTMLElement[];
+
+    const onScroll = (event: WheelEvent) => {
+      const direction = event.deltaY < 0;
+      this.cycleHotbar(direction);
+
+      for (let slot = 0; slot <= 8; slot++) {
+        if (slot === this.getActiveHotbarSlot()) {
+          console.log();
+          hotbarItemboxElements[slot].style.outline = "solid 5px white";
+        } else {
+          hotbarItemboxElements[slot].style.outline = "";
+        }
+      }
+    };
+    document.addEventListener("wheel", onScroll);
   }
 
   get containerElement() {
@@ -141,11 +161,11 @@ export class Inventory {
     } else {
       this.activeHotbarSlot++;
     }
-    if (this.activeHotbarSlot > 9) {
-      this.activeHotbarSlot = 1;
+    if (this.activeHotbarSlot > inventoryCols - 1) {
+      this.activeHotbarSlot = 0;
     }
-    if (this.activeHotbarSlot < 1) {
-      this.activeHotbarSlot = 9;
+    if (this.activeHotbarSlot < 0) {
+      this.activeHotbarSlot = inventoryCols - 1;
     }
   }
   getActiveHotbarSlot() {
@@ -155,38 +175,3 @@ export class Inventory {
     return this.hotbarSlots[this.activeHotbarSlot - 1] || air;
   }
 }
-
-// export class Hotbar {
-//   private content: HotbarContents;
-//   private activeSlot = 1;
-//   constructor() {
-//     this.content = hotbar; // Array(9).fill(air) as HotbarContents;
-//   }
-//   changeItem(block: number, hotbarIndex: number) {
-//     this.content[hotbarIndex] = block;
-//   }
-
-//   get element() {
-//     return document.getElementById("hotbar");
-//   }
-
-//   cycle(reverse: boolean) {
-//     if (reverse) {
-//       this.activeSlot--;
-//     } else {
-//       this.activeSlot++;
-//     }
-//     if (this.activeSlot > 9) {
-//       this.activeSlot = 1;
-//     }
-//     if (this.activeSlot < 1) {
-//       this.activeSlot = 9;
-//     }
-//   }
-//   getActiveSlot() {
-//     return this.activeSlot;
-//   }
-//   select() {
-//     return this.content[this.activeSlot - 1] || air;
-//   }
-// }
