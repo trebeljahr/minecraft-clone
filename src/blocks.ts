@@ -45,6 +45,7 @@ export const itemImages = {
   [blocks.diamonds]: "",
   [blocks.emerald]: "",
   [blocks.iron]: "",
+  [blocks.coal]: require("../assets/coal-item.png"),
   [blocks.birchwood]: require("../assets/birchwood-item.png"),
   [blocks.oakwood]: "",
   [blocks.foliage]: "",
