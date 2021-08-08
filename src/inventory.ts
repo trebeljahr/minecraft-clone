@@ -8,22 +8,23 @@ const {
   stone,
   iron,
   lapis,
-  cactus,
+  grass,
   emerald,
-  foliage,
+  oakwood,
   air,
 } = blocks;
 
+const maxItemStack = 128;
 const initialHotbar = [
-  { itemType: birchwood, amount: 0 },
-  { itemType: coal, amount: 0 },
-  { itemType: stone, amount: 0 },
-  { itemType: iron, amount: 0 },
-  { itemType: lapis, amount: 0 },
-  { itemType: gold, amount: 0 },
-  { itemType: emerald, amount: 0 },
-  { itemType: cactus, amount: 0 },
-  { itemType: foliage, amount: 0 },
+  { itemType: oakwood, amount: maxItemStack },
+  { itemType: birchwood, amount: maxItemStack },
+  { itemType: coal, amount: maxItemStack },
+  { itemType: stone, amount: maxItemStack },
+  { itemType: iron, amount: maxItemStack },
+  { itemType: lapis, amount: maxItemStack },
+  { itemType: gold, amount: maxItemStack },
+  { itemType: emerald, amount: maxItemStack },
+  { itemType: grass, amount: maxItemStack },
 ] as HotbarContents;
 
 type HotbarContents = [
@@ -45,16 +46,15 @@ interface InventorySlot {
 
 const inventoryRows = 5;
 const inventoryCols = 9;
-const maxItemStack = 128;
 
-function getRandomColor() {
-  var letters = "0123456789ABCDEF";
-  var color = "#";
-  for (var i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
-}
+// function getRandomColor() {
+//   var letters = "0123456789ABCDEF";
+//   var color = "#";
+//   for (var i = 0; i < 6; i++) {
+//     color += letters[Math.floor(Math.random() * 16)];
+//   }
+//   return color;
+// }
 
 const makeInventoryNode = (itemType: number, amount: number) => {
   const node = document.createElement("div");

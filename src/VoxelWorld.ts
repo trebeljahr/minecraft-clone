@@ -27,7 +27,7 @@ const {
   cactus,
   emerald,
   lapis,
-  diamonds,
+  diamond,
   birchwood,
   foliage,
   oakwood,
@@ -364,7 +364,7 @@ export class World {
             if (this.shouldSpawnGold(...offsetPos)) {
               this.setVoxel(offsetPos, gold);
             } else if (this.shouldSpawnDiamonds(...offsetPos)) {
-              this.setVoxel(offsetPos, diamonds);
+              this.setVoxel(offsetPos, diamond);
             } else if (this.shouldSpawnLapis(...offsetPos)) {
               this.setVoxel(offsetPos, lapis);
             } else if (this.shouldSpawnEmeralds(...offsetPos)) {
