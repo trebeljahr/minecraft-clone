@@ -23,8 +23,19 @@
   width: 100vw;
   height: 100vh;
 }
+
+[data-amount]::before {
+  content: attr(data-amount);
+  position: absolute;
+  bottom: -8%;
+  right: 1%;
+  color: white;
+  font-size: 2.5em;
+}
+
 .inventoryItem {
   display: block;
+  position: relative;
   width: var(--item-box-size);
   height: var(--item-box-size);
   background-position: center;

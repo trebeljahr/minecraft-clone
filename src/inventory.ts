@@ -47,34 +47,24 @@ interface InventorySlot {
 const inventoryRows = 5;
 const inventoryCols = 9;
 
-// function getRandomColor() {
-//   var letters = "0123456789ABCDEF";
-//   var color = "#";
-//   for (var i = 0; i < 6; i++) {
-//     color += letters[Math.floor(Math.random() * 16)];
-//   }
-//   return color;
-// }
-
 const makeInventoryNode = (itemType: number, amount: number) => {
-  const node = document.createElement("div");
-  const secondNode = document.createElement("span");
+  const inventorySlotNode = document.createElement("div");
+  const itemNode = document.createElement("span");
 
-  node.setAttribute("class", "centered");
-  secondNode.setAttribute("class", "inventoryItem");
-  secondNode.dataset.amount = `${amount}`;
-  secondNode.dataset.itemType = `${itemType}`;
+  inventorySlotNode.setAttribute("class", "centered");
+  itemNode.setAttribute("class", "inventoryItem");
+  if (itemType !== air) {
+    itemNode.dataset.amount = `${amount}`;
+    itemNode.dataset.itemType = `${itemType}`;
+  }
 
   const image = itemImages[itemType];
-  image !== "" &&
-    image !== undefined &&
-    console.log("This is the asset url", image);
   if (image !== undefined && image !== "") {
-    secondNode.style.backgroundImage = `url(${image})`;
+    itemNode.style.backgroundImage = `url(${image})`;
   }
-  node.appendChild(secondNode);
+  inventorySlotNode.appendChild(itemNode);
 
-  return node;
+  return inventorySlotNode;
 };
 
 export class Inventory {

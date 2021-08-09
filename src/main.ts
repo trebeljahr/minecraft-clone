@@ -160,7 +160,6 @@ function placeVoxel(event: MouseEvent) {
         const chunkIndex = world.computeChunkIndex(positionWithChunkOffset);
         chunksToUpdateSet.add(chunkIndex);
       });
-      console.log({ chunksToUpdateSet });
       chunksToUpdateSet.forEach((chunkId) => {
         const chunkCoordinates = chunkId
           .split(",")

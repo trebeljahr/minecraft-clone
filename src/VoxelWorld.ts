@@ -285,7 +285,6 @@ export class World {
     let chunkHasSunlight = this.sunlightedChunksColumns[`${pos[0]} ${pos[2]}`];
     if (!chunkHasSunlight) {
       this.sunlightedChunksColumns[`${pos[0]} ${pos[2]}`] = true;
-      console.log("Sunlighting chunk at ", pos);
       const [cx, _, cz] = this.computeChunkOffset(pos);
       const queue = [];
       for (let xOff = 0; xOff < chunkSize; xOff++) {
@@ -304,7 +303,6 @@ export class World {
     chunk[blockIndex + fields.light] = lightValue;
   }
   floodLight(queue: Position[], callback: () => void, isSunlight = false) {
-    console.log("Calling flood light with", [...queue]);
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
     const maxPropagations = 50000;
     let propagations = 0;
