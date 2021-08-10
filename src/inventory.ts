@@ -16,7 +16,7 @@ const {
 
 const maxItemStack = 128;
 const initialHotbar = [
-  { itemType: oakwood, amount: maxItemStack },
+  { itemType: oakwood, amount: 1 },
   { itemType: birchwood, amount: maxItemStack },
   { itemType: coal, amount: maxItemStack },
   { itemType: stone, amount: maxItemStack },
@@ -184,20 +184,21 @@ export class Inventory {
   get activeHotbarElement() {
     return this.getHotbarSlot(this.activeHotbarSlot);
   }
-  selectFromActiveHotbarSlot() {
-    const hotbarItems = this.hotbarItemSlotElements
-      .map((element) => element.firstChild as HTMLElement)
-      .map(({ dataset: { itemType, amount: amountString } }, index) => {
-        const amount = parseInt(amountString);
-        if (index === this.activeHotbarSlot) {
-          this.activeHotbarElement.dataset.amount = `${amount - 1}`;
-        }
-        return {
-          itemType: itemType ? itemType : air,
-          amount: amount,
-        } as InventorySlot;
-      }) as HotbarContents;
 
-    return hotbarItems[this.activeHotbarSlot].itemType;
+  selectFromActiveHotbarSlot() {
+    const amount = parseInt(this.activeHotbarElement.dataset.amount);
+    const itemType = parseInt(this.activeHotbarElement.dataset.itemType);
+    if (isNaN(itemType)) {
+      return air;
+    }
+    const newAmount = amount - 1;
+    if (newAmount === 0) {
+      delete this.activeHotbarElement.dataset.amount;
+      delete this.activeHotbarElement.dataset.itemType;
+      this.activeHotbarElement.style.backgroundImage = "";
+    } else {
+      this.activeHotbarElement.dataset.amount = `${amount - 1}`;
+    }
+    return itemType;
   }
 }
