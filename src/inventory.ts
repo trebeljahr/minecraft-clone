@@ -82,7 +82,7 @@ export class Inventory {
       this.containerElement.appendChild(node);
     }
     for (let hotbarSlot of this.hotbarSlots) {
-      const node = makeInventoryNode(hotbarSlot.itemType, 0);
+      const node = makeInventoryNode(hotbarSlot.itemType, hotbarSlot.amount);
       this.hotbarContainerElement.appendChild(node);
     }
     const swappableContainers = this.containerElement.children;
@@ -97,21 +97,13 @@ export class Inventory {
       ...this.hotbarContainerElement.children,
     ] as HTMLElement[];
 
-    console.log(hotbarItemboxElements);
-    console.log(
-      "elem dataset",
-      hotbarItemboxElements.map(
-        (elem) => (elem.firstChild as HTMLElement).dataset.amount
-      )
-    );
-
     hotbarItemboxElements[0].style.outline = "solid 5px white";
     const onScroll = (event: WheelEvent) => {
       const direction = event.deltaY < 0;
       this.cycleHotbar(direction);
 
       for (let slot = 0; slot <= 8; slot++) {
-        if (slot === this.getActiveHotbarSlot()) {
+        if (slot === this.activeHotbarSlot) {
           hotbarItemboxElements[slot].style.outline = "solid 5px white";
         } else {
           hotbarItemboxElements[slot].style.outline = "";
@@ -176,22 +168,36 @@ export class Inventory {
       this.activeHotbarSlot = inventoryCols - 1;
     }
   }
-  getActiveHotbarSlot() {
-    return this.activeHotbarSlot;
+  get hotbarItemSlotElements() {
+    return [...this.hotbarContainerElement.children] as HTMLElement[];
+  }
+  get inventoryItemSlotElements() {
+    return [...this.containerElement.children] as HTMLElement[];
+  }
+
+  getInventorySlot(index: number) {
+    return this.inventoryItemSlotElements[index].firstChild as HTMLElement;
+  }
+  getHotbarSlot(index: number) {
+    return this.hotbarItemSlotElements[index].firstChild as HTMLElement;
+  }
+  get activeHotbarElement() {
+    return this.getHotbarSlot(this.activeHotbarSlot);
   }
   selectFromActiveHotbarSlot() {
-    const hotbarSlots = (
-      [...this.hotbarContainerElement.children] as HTMLElement[]
-    )
+    const hotbarItems = this.hotbarItemSlotElements
       .map((element) => element.firstChild as HTMLElement)
-      .map(
-        (element) =>
-          ({
-            itemType: parseInt(element.dataset.itemType),
-            amount: parseInt(element.dataset.amount),
-          } as InventorySlot)
-      ) as HotbarContents;
+      .map(({ dataset: { itemType, amount: amountString } }, index) => {
+        const amount = parseInt(amountString);
+        if (index === this.activeHotbarSlot) {
+          this.activeHotbarElement.dataset.amount = `${amount - 1}`;
+        }
+        return {
+          itemType: itemType ? itemType : air,
+          amount: amount,
+        } as InventorySlot;
+      }) as HotbarContents;
 
-    return hotbarSlots[this.activeHotbarSlot].itemType;
+    return hotbarItems[this.activeHotbarSlot].itemType;
   }
 }
