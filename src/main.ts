@@ -1,6 +1,7 @@
 import "./main.css";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
+import { MouseClickEvent } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
   copy,
@@ -79,22 +80,6 @@ function generateChunksAroundCamera() {
         generateChunkAtPosition(newPos);
       }
     }
-  }
-}
-
-const leftMouse = 0;
-const rightMouse = 2;
-
-class MouseClickEvent {
-  public event: MouseEvent;
-  constructor(event: MouseEvent) {
-    this.event = event;
-  }
-  get left() {
-    return this.event.button === leftMouse;
-  }
-  get right() {
-    return this.event.button === rightMouse;
   }
 }
 

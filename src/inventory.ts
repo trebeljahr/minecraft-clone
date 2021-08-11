@@ -1,5 +1,6 @@
 import { blocks, itemImages } from "./blocks";
 import { Swappable } from "@shopify/draggable";
+import { MouseClickEvent } from "./helpers";
 
 const {
   gold,
@@ -44,29 +45,10 @@ interface InventorySlot {
   itemType: number;
 }
 
-const inventoryRows = 5;
+const inventoryRows = 3;
 const inventoryCols = 9;
 
-const makeInventoryNode = (itemType: number, amount: number) => {
-  const inventorySlotNode = document.createElement("div");
-  const itemNode = document.createElement("span");
-
-  inventorySlotNode.setAttribute("class", "centered");
-  itemNode.setAttribute("class", "inventoryItem");
-  if (itemType !== air) {
-    itemNode.dataset.amount = `${amount}`;
-    itemNode.dataset.itemType = `${itemType}`;
-  }
-
-  const image = itemImages[itemType];
-  if (image !== undefined && image !== "") {
-    itemNode.style.backgroundImage = `url(${image})`;
-  }
-  inventorySlotNode.appendChild(itemNode);
-
-  return inventorySlotNode;
-};
-
+type Remainder = number;
 export class Inventory {
   public isOpen = false;
   private slots: InventorySlot[];
@@ -81,11 +63,14 @@ export class Inventory {
     this.hotbarSlots = initialHotbar;
 
     for (let slot of this.slots) {
-      const node = makeInventoryNode(slot.itemType, 0);
+      const node = this.makeInventoryNode(slot.itemType, 0);
       this.containerElement.appendChild(node);
     }
     for (let hotbarSlot of this.hotbarSlots) {
-      const node = makeInventoryNode(hotbarSlot.itemType, hotbarSlot.amount);
+      const node = this.makeInventoryNode(
+        hotbarSlot.itemType,
+        hotbarSlot.amount
+      );
       this.hotbarContainerElement.appendChild(node);
     }
     const swappableContainers = this.containerElement.children;
@@ -115,6 +100,36 @@ export class Inventory {
     };
     document.addEventListener("wheel", onScroll);
   }
+  makeInventoryNode = (itemType: number, amount: number) => {
+    const inventorySlotNode = document.createElement("div");
+    const itemNode = document.createElement("span");
+
+    inventorySlotNode.setAttribute("class", "centered");
+    itemNode.setAttribute("class", "inventoryItem");
+    if (itemType !== air) {
+      itemNode.dataset.amount = `${amount}`;
+      itemNode.dataset.itemType = `${itemType}`;
+    }
+
+    itemNode.addEventListener("click", (event) => {
+      const mouseClick = new MouseClickEvent(event);
+      if (mouseClick.left) {
+        const { itemType } = this.parse(itemNode.dataset);
+        this.addIntoInventory(itemType, 100);
+      }
+    });
+    this.attachBlockImageTo(itemType, itemNode);
+    inventorySlotNode.appendChild(itemNode);
+
+    return inventorySlotNode;
+  };
+
+  attachBlockImageTo(itemType: number, itemNode: HTMLElement) {
+    const image = itemImages[itemType];
+    if (image !== undefined && image !== "") {
+      itemNode.style.backgroundImage = `url(${image})`;
+    }
+  }
 
   findFreeSlot() {
     const slot = this.slots.findIndex((item) => item.itemType === air);
@@ -126,8 +141,33 @@ export class Inventory {
     this.isOpen = !this.isOpen;
   }
 
-  canFitIntoSameSlot(index: number) {
-    this.getInventorySlot(index);
+  addIntoInventory(itemTypeToInsert: number, amountToInsert: number) {
+    let slot = 0;
+    let amountLeft = amountToInsert;
+    while (amountLeft > 0 && slot < inventoryCols * inventoryRows) {
+      amountLeft = this.addIntoSlot(slot, itemTypeToInsert, amountLeft);
+      slot++;
+    }
+  }
+  addIntoSlot(index: number, itemTypeToInsert: number, amountToInsert: number) {
+    const slot = this.getInventorySlot(index);
+    const { amount: amountPresent, itemType: slotType } = this.parse(
+      slot.dataset
+    );
+    console.log(itemTypeToInsert, slotType);
+    const canInsert = slotType === itemTypeToInsert || slotType === air;
+    if (!canInsert) return amountToInsert as Remainder;
+    if (slotType === air) {
+      slot.dataset.itemType = `${itemTypeToInsert}`;
+      const image = itemImages[itemTypeToInsert];
+      if (image !== undefined && image !== "") {
+        slot.style.backgroundImage = `url(${image})`;
+      }
+    }
+    const total = Math.min(maxItemStack, amountToInsert + amountPresent);
+    slot.dataset.amount = `${total}`;
+    const spaceLeft = maxItemStack - amountPresent;
+    return Math.abs(Math.min(spaceLeft - amountToInsert, 0)) as Remainder;
   }
 
   addTo(itemType: number, amount: number) {
@@ -155,16 +195,20 @@ export class Inventory {
     }
   }
 
-  parse({ amount, itemType }: Record<string, string>) {
-    return { amount: parseInt(amount), itemType: parseInt(itemType) };
+  parse({ amount: a, itemType: i }: Record<string, string>) {
+    const amount = parseInt(a);
+    const itemType = parseInt(i);
+    return {
+      amount: isNaN(amount) ? 0 : amount,
+      itemType: isNaN(itemType) ? air : itemType,
+    };
   }
 
   selectFromActiveHotbarSlot() {
     const { amount, itemType } = this.parse(this.activeHotbarElement.dataset);
 
-    if (isNaN(itemType)) {
-      return air;
-    }
+    if (itemType === air) return air;
+
     const newAmount = amount - 1;
     if (newAmount === 0) {
       delete this.activeHotbarElement.dataset.amount;
