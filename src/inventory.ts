@@ -68,8 +68,11 @@ const makeInventoryNode = (itemType: number, amount: number) => {
 };
 
 export class Inventory {
-  private slots: InventorySlot[];
   public isOpen = false;
+  private slots: InventorySlot[];
+  private hotbarSlots: HotbarContents;
+  private activeHotbarSlot = 0;
+
   constructor() {
     this.slots = Array(inventoryRows * inventoryCols).fill({
       itemType: air,
@@ -113,14 +116,6 @@ export class Inventory {
     document.addEventListener("wheel", onScroll);
   }
 
-  get containerElement() {
-    return document.getElementById("inventoryContainer");
-  }
-
-  get element() {
-    return document.getElementById("inventory");
-  }
-
   findFreeSlot() {
     const slot = this.slots.findIndex((item) => item.itemType === air);
     return { hasFreeSlot: slot !== 1, index: slot };
@@ -131,7 +126,9 @@ export class Inventory {
     this.isOpen = !this.isOpen;
   }
 
-  canFitIntoSameSlot() {}
+  canFitIntoSameSlot(index: number) {
+    this.getInventorySlot(index);
+  }
 
   addTo(itemType: number, amount: number) {
     const { hasFreeSlot, index } = this.findFreeSlot();
@@ -140,19 +137,8 @@ export class Inventory {
     }
   }
 
-  private hotbarSlots: HotbarContents;
-  private activeHotbarSlot = 0;
-
   changeHotbarItem(itemType: number, amount: number, hotbarIndex: number) {
     this.hotbarSlots[hotbarIndex] = { itemType, amount };
-  }
-
-  get hotbarElement() {
-    return document.getElementById("hotbar");
-  }
-
-  get hotbarContainerElement() {
-    return document.getElementById("hotbarContainer");
   }
 
   cycleHotbar(reverse: boolean) {
@@ -168,26 +154,14 @@ export class Inventory {
       this.activeHotbarSlot = inventoryCols - 1;
     }
   }
-  get hotbarItemSlotElements() {
-    return [...this.hotbarContainerElement.children] as HTMLElement[];
-  }
-  get inventoryItemSlotElements() {
-    return [...this.containerElement.children] as HTMLElement[];
-  }
 
-  getInventorySlot(index: number) {
-    return this.inventoryItemSlotElements[index].firstChild as HTMLElement;
-  }
-  getHotbarSlot(index: number) {
-    return this.hotbarItemSlotElements[index].firstChild as HTMLElement;
-  }
-  get activeHotbarElement() {
-    return this.getHotbarSlot(this.activeHotbarSlot);
+  parse({ amount, itemType }: Record<string, string>) {
+    return { amount: parseInt(amount), itemType: parseInt(itemType) };
   }
 
   selectFromActiveHotbarSlot() {
-    const amount = parseInt(this.activeHotbarElement.dataset.amount);
-    const itemType = parseInt(this.activeHotbarElement.dataset.itemType);
+    const { amount, itemType } = this.parse(this.activeHotbarElement.dataset);
+
     if (isNaN(itemType)) {
       return air;
     }
@@ -200,5 +174,38 @@ export class Inventory {
       this.activeHotbarElement.dataset.amount = `${amount - 1}`;
     }
     return itemType;
+  }
+
+  get containerElement() {
+    return document.getElementById("inventoryContainer");
+  }
+
+  get element() {
+    return document.getElementById("inventory");
+  }
+  get hotbarElement() {
+    return document.getElementById("hotbar");
+  }
+
+  get hotbarContainerElement() {
+    return document.getElementById("hotbarContainer");
+  }
+
+  get hotbarItemSlotElements() {
+    return [...this.hotbarContainerElement.children] as HTMLElement[];
+  }
+  get activeHotbarElement() {
+    return this.getHotbarSlot(this.activeHotbarSlot);
+  }
+
+  get inventoryItemSlotElements() {
+    return [...this.containerElement.children] as HTMLElement[];
+  }
+
+  getInventorySlot(index: number) {
+    return this.inventoryItemSlotElements[index].firstChild as HTMLElement;
+  }
+  getHotbarSlot(index: number) {
+    return this.hotbarItemSlotElements[index].firstChild as HTMLElement;
   }
 }
