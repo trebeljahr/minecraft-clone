@@ -55,12 +55,16 @@ let y = minY;
 init();
 
 async function generateChunkAtPosition(pos: Vector3) {
+  const start = Date.now();
   world.generateChunkData(pos);
+  console.log("Time for chunk geometry creation:", Date.now() - start);
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
+  const start = Date.now();
   await world.sunLightChunkColumnAt(pos.toArray());
-
+  const afterSunlighting = Date.now();
+  console.log("Time for sunlight propagation:", afterSunlighting - start);
   world.updateChunkGeometry(pos.toArray());
   world.updateChunkGeometry(
     copy(pos)
@@ -69,10 +73,12 @@ async function sunlightChunkAtPos(pos: Vector3) {
   );
 
   requestRenderIfNotRequested();
+  console.log("Time for geometry updates:", Date.now() - afterSunlighting);
 }
 
-function generateChunksAroundCamera() {
-  const initialWorldRadius = 1;
+async function generateChunksAroundCamera() {
+  const start = Date.now();
+  const initialWorldRadius = 10;
   let count = 0;
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
@@ -89,12 +95,16 @@ function generateChunksAroundCamera() {
       for (let z = 0; z >= -1; z--) {
         const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
         const newPos = player.position.add(offset);
-        sunlightChunkAtPos(newPos);
+        await sunlightChunkAtPos(newPos);
       }
     }
   }
 
   console.log("Number of chunks generated around camera: ", count);
+  console.log(
+    "Total time for generating and lighting chunks: ",
+    Date.now() - start
+  );
 }
 
 async function placeVoxel(event: MouseEvent) {
