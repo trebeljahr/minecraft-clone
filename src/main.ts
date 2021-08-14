@@ -19,7 +19,6 @@ import {
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
 import { Player } from "./Player";
-// import { initSky } from "./sky";
 
 import {
   ACESFilmicToneMapping,
