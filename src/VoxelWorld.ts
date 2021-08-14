@@ -294,18 +294,38 @@ export class World {
           queue.push(newPos);
         }
       }
-      this.floodLight(queue, callback, true);
+      this.propagateSunlight(queue, callback);
     }
   }
+
   setLightValue(pos: Position, lightValue: number) {
     const { chunk } = this.addChunkForVoxel(pos);
     const blockIndex = this.computeVoxelIndex(pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
-  floodLight(queue: Position[], callback: () => void, isSunlight = false) {
+
+  propagateSunlight(queue: Position[], callback = () => {}) {
+    const floodLightQueue = [...queue] as Position[];
+    while (queue.length > 0) {
+      const [x, y, z] = queue.shift();
+      const ny = y - 1;
+      const blockBelowIndex = this.computeVoxelIndex([x, ny, z]);
+      const { chunk: blockBelowChunk } = this.addChunkForVoxel([x, ny, z]);
+      const blockBelow = blockBelowChunk[blockBelowIndex];
+
+      const belowIsTransparent = transparentBlocks.includes(blockBelow);
+      const canPropagateSunlight = ny >= 0 && belowIsTransparent;
+      if (canPropagateSunlight) {
+        queue.push([x, ny, z]);
+        blockBelowChunk[blockBelowIndex + fields.light] = maxLight;
+        floodLightQueue.push([x, ny, z]);
+      }
+    }
+    this.floodLight(floodLightQueue, callback);
+  }
+
+  floodLight(queue: Position[], callback: () => void) {
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
-    const maxPropagations = 50000;
-    let propagations = 0;
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
       const { chunk } = this.addChunkForVoxel([x, y, z]);
@@ -317,30 +337,20 @@ export class World {
         const ny = y + offset.y;
         const nz = z + offset.z;
 
-        const isGoingDown = offset.y === -1;
-        const decrement =
-          isSunlight && isGoingDown && blockLightValue === maxLight ? 0 : 1;
-        const newLightValue = blockLightValue - decrement;
+        const newLightValue = blockLightValue - 1;
+
+        if (newLightValue <= 0) return;
 
         const { chunk: neighborsChunk } = this.addChunkForVoxel([nx, ny, nz]);
         const neighborIndex = this.computeVoxelIndex([nx, ny, nz]);
         let lightValueInNeighbor = neighborsChunk[neighborIndex + fields.light];
         let neighborType = neighborsChunk[neighborIndex];
 
-        const shouldPropagate =
-          (isSunlight &&
-            isGoingDown &&
-            blockLightValue === maxLight &&
-            ny >= 0 &&
-            ny <= maxHeight) ||
-          (newLightValue > lightValueInNeighbor && newLightValue > 0);
+        const lightIsBrighter = newLightValue > lightValueInNeighbor;
+        const neighborIsTransparent = transparentBlocks.includes(neighborType);
 
-        if (
-          shouldPropagate &&
-          transparentBlocks.includes(neighborType) &&
-          propagations < maxPropagations
-        ) {
-          propagations++;
+        const shouldPropagate = lightIsBrighter && neighborIsTransparent;
+        if (shouldPropagate) {
           neighborsChunk[neighborIndex + fields.light] = newLightValue;
           queue.push([nx, ny, nz]);
         }
