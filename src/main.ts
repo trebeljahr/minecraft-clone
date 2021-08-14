@@ -54,35 +54,50 @@ let y = minY;
 
 init();
 
-function generateChunkAtPosition(pos: Vector3) {
+async function generateChunkAtPosition(pos: Vector3) {
   world.generateChunkData(pos);
+}
 
-  world.sunLightChunkAt(pos.toArray(), () => {
-    console.log("Done with sunlighting");
-    world.updateChunkGeometry(pos.toArray());
-    world.updateChunkGeometry(
-      copy(pos)
-        .setY(pos.y + chunkSize)
-        .toArray()
-    );
+async function sunlightChunkAtPos(pos: Vector3) {
+  await world.sunLightChunkColumnAt(pos.toArray());
 
-    requestRenderIfNotRequested();
-  });
+  world.updateChunkGeometry(pos.toArray());
+  world.updateChunkGeometry(
+    copy(pos)
+      .setY(pos.y + chunkSize)
+      .toArray()
+  );
+
+  requestRenderIfNotRequested();
 }
 
 function generateChunksAroundCamera() {
-  for (let x = -2; x <= 2; x++) {
-    for (let y = -2; y <= 2; y++) {
-      for (let z = -1; z < 0; z++) {
+  const initialWorldRadius = 1;
+  let count = 0;
+  for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
+    for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
+      for (let z = 0; z >= -1; z--) {
+        count++;
         const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
         const newPos = player.position.add(offset);
         generateChunkAtPosition(newPos);
       }
     }
   }
+  for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
+    for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
+      for (let z = 0; z >= -1; z--) {
+        const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
+        const newPos = player.position.add(offset);
+        sunlightChunkAtPos(newPos);
+      }
+    }
+  }
+
+  console.log("Number of chunks generated around camera: ", count);
 }
 
-function placeVoxel(event: MouseEvent) {
+async function placeVoxel(event: MouseEvent) {
   const mouseClick = new MouseClickEvent(event);
   if (!(mouseClick.right || mouseClick.left) || menu === true) return;
   const selectedBlock = inventory.selectFromActiveHotbarSlot();
@@ -134,24 +149,23 @@ function placeVoxel(event: MouseEvent) {
     const lightValue = Math.max(emanatingLight, neighborLight - 1);
     world.setLightValue(pos, lightValue);
 
-    world.floodLight([pos], () => {
-      const chunksToUpdateSet = new Set<string>();
-      surroundingOffsets.forEach((dir) => {
-        const positionWithChunkOffset = pos.map(
-          (coord, i) => coord + dir[i] * (chunkSize - 2)
-        ) as Position;
+    await world.floodLight([pos]);
+    const chunksToUpdateSet = new Set<string>();
+    surroundingOffsets.forEach((dir) => {
+      const positionWithChunkOffset = pos.map(
+        (coord, i) => coord + dir[i] * (chunkSize - 2)
+      ) as Position;
 
-        const chunkIndex = world.computeChunkIndex(positionWithChunkOffset);
-        chunksToUpdateSet.add(chunkIndex);
-      });
-      chunksToUpdateSet.forEach((chunkId) => {
-        const chunkCoordinates = chunkId
-          .split(",")
-          .map((coord) => parseInt(coord) * chunkSize) as Position;
-        world.updateChunkGeometry(chunkCoordinates);
-      });
-      requestRenderIfNotRequested();
+      const chunkIndex = world.computeChunkIndex(positionWithChunkOffset);
+      chunksToUpdateSet.add(chunkIndex);
     });
+    chunksToUpdateSet.forEach((chunkId) => {
+      const chunkCoordinates = chunkId
+        .split(",")
+        .map((coord) => parseInt(coord) * chunkSize) as Position;
+      world.updateChunkGeometry(chunkCoordinates);
+    });
+    requestRenderIfNotRequested();
   }
 }
 

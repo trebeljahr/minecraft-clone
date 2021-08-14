@@ -232,7 +232,6 @@ export class World {
     const yDist = stepY > 0 ? iy + 1 - start.y : start.y - iy;
     const zDist = stepZ > 0 ? iz + 1 - start.z : start.z - iz;
 
-    // location of nearest voxel boundary, in units of t
     let txMax = txDelta < Infinity ? txDelta * xDist : Infinity;
     let tyMax = tyDelta < Infinity ? tyDelta * yDist : Infinity;
     let tzMax = tzDelta < Infinity ? tzDelta * zDist : Infinity;
@@ -281,10 +280,12 @@ export class World {
     }
     return null;
   }
-  sunLightChunkAt(pos: Position, callback: () => void) {
-    let chunkHasSunlight = this.sunlightedChunksColumns[`${pos[0]} ${pos[2]}`];
-    if (!chunkHasSunlight) {
-      this.sunlightedChunksColumns[`${pos[0]} ${pos[2]}`] = true;
+
+  async sunLightChunkColumnAt(pos: Position) {
+    const index = `${pos[0]} ${pos[2]}`;
+    let chunkColumnHasSunlight = this.sunlightedChunksColumns[index];
+    if (!chunkColumnHasSunlight) {
+      this.sunlightedChunksColumns[index] = true;
       const [cx, _, cz] = this.computeChunkOffset(pos);
       const queue = [];
       for (let xOff = 0; xOff < chunkSize; xOff++) {
@@ -294,7 +295,7 @@ export class World {
           queue.push(newPos);
         }
       }
-      this.propagateSunlight(queue, callback);
+      this.propagateSunlight(queue);
     }
   }
 
@@ -304,27 +305,37 @@ export class World {
     chunk[blockIndex + fields.light] = lightValue;
   }
 
-  propagateSunlight(queue: Position[], callback = () => {}) {
+  async propagateSunlight(queue: Position[], callback = () => {}) {
     const floodLightQueue = [...queue] as Position[];
+    console.log(
+      "Before propagating sunlight for chunk how much sunlighting is to do: ",
+      [...queue]
+    );
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
-      const ny = y - 1;
-      const blockBelowIndex = this.computeVoxelIndex([x, ny, z]);
-      const { chunk: blockBelowChunk } = this.addChunkForVoxel([x, ny, z]);
+
+      const yBelow = y - 1;
+      const blockBelowIndex = this.computeVoxelIndex([x, yBelow, z]);
+      const { chunk: blockBelowChunk } = this.addChunkForVoxel([x, yBelow, z]);
       const blockBelow = blockBelowChunk[blockBelowIndex];
 
       const belowIsTransparent = transparentBlocks.includes(blockBelow);
-      const canPropagateSunlight = ny >= 0 && belowIsTransparent;
+      const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
       if (canPropagateSunlight) {
-        queue.push([x, ny, z]);
-        blockBelowChunk[blockBelowIndex + fields.light] = maxLight;
-        floodLightQueue.push([x, ny, z]);
+        queue.push([x, yBelow, z]);
+        this.setLightValue([x, yBelow, z], 15);
+        floodLightQueue.push([x, yBelow, z]);
       }
     }
-    this.floodLight(floodLightQueue, callback);
+    console.log(
+      "After sunlight propagation how much floodlighting is to do?",
+      floodLightQueue.length
+    );
+    console.log([...floodLightQueue]);
+    await this.floodLight(floodLightQueue);
   }
 
-  floodLight(queue: Position[], callback: () => void) {
+  async floodLight(queue: Position[]) {
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
@@ -356,9 +367,8 @@ export class World {
         }
       });
     }
-
-    callback();
   }
+
   generateChunkData(pos: Vector3) {
     pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
     for (let y = chunkSize - 1; y >= 0; --y) {
