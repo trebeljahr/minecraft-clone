@@ -3,6 +3,15 @@
   padding: 0;
 }
 
+.draggable--original,
+.draggable-source--is-dragging {
+  background-image: none !important;
+}
+.draggable--original::before,
+.draggable-source--is-dragging::before {
+  display: none;
+}
+
 :root {
   --item-box-size: 7vw;
 }
