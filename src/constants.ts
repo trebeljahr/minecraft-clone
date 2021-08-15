@@ -1,6 +1,7 @@
 import { blocks } from "./blocks";
 export const chunkSize = 16;
 export const halfChunk = chunkSize / 2;
+export const chunkSliceSize = chunkSize * chunkSize;
 export const surface = 5 * chunkSize;
 export const terrainHeight = surface;
 export const blockLength = 100;

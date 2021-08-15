@@ -1,11 +1,5 @@
-import {
-  Vector3,
-  MathUtils,
-  Scene,
-  BufferAttribute,
-  BufferGeometry,
-  Mesh,
-} from "three";
+import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
+import { computeVoxelIndex } from "./helpers";
 import { blocks } from "./blocks";
 import {
   copy,
@@ -16,7 +10,6 @@ import {
   maxHeight,
   Position,
   fields,
-  maxLight,
   faces,
 } from "./constants";
 import { opaque } from "./voxelMaterial";
@@ -41,8 +34,6 @@ const noise = new Noise();
 const chunkIdToMesh = {};
 
 export class World {
-  private chunkSize: number;
-  private chunkSliceSize: number;
   public chunks: Record<string, Uint8Array>;
   private tileSize: number;
   private tileTextureWidth: number;
@@ -50,19 +41,15 @@ export class World {
   private scene: Scene;
   private sunlightedChunksColumns: Record<string, boolean>;
   constructor(options: {
-    chunkSize: number;
     tileSize: number;
     tileTextureWidth: number;
     tileTextureHeight: number;
     scene: Scene;
   }) {
     this.scene = options.scene;
-    this.chunkSize = options.chunkSize;
     this.tileSize = options.tileSize;
     this.tileTextureWidth = options.tileTextureWidth;
     this.tileTextureHeight = options.tileTextureHeight;
-    const { chunkSize } = this;
-    this.chunkSliceSize = chunkSize * chunkSize;
     this.chunks = {};
     this.sunlightedChunksColumns = {};
   }
@@ -90,13 +77,7 @@ export class World {
   computeVoxelCoordinates(pos: Vector3) {
     return copy(pos).floor();
   }
-  computeVoxelIndex(pos: Position) {
-    const { chunkSize, chunkSliceSize } = this;
-    const [x, y, z] = pos
-      .map((coord) => MathUtils.euclideanModulo(coord, chunkSize))
-      .map((value) => value | 0);
-    return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
-  }
+
   getChunkForVoxel(pos: Position) {
     return this.chunks[this.computeChunkIndex(pos)];
   }
@@ -108,7 +89,7 @@ export class World {
     if (!chunk) {
       chunk = this.addChunkForVoxel(pos).chunk;
     }
-    const voxelOffset = this.computeVoxelIndex(pos);
+    const voxelOffset = computeVoxelIndex(pos);
     chunk[voxelOffset] = type;
     chunk[voxelOffset + fields.r] = 0;
     chunk[voxelOffset + fields.g] = 0;
@@ -121,7 +102,6 @@ export class World {
     const chunkId = this.computeChunkIndex(pos);
     let chunk = this.chunks[chunkId];
     if (!chunk) {
-      const { chunkSize } = this;
       chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
       this.chunks[chunkId] = chunk;
     }
@@ -130,7 +110,7 @@ export class World {
 
   getVoxel(pos: Position) {
     const { chunk } = this.addChunkForVoxel(pos);
-    const voxelIndex = this.computeVoxelIndex(pos);
+    const voxelIndex = computeVoxelIndex(pos);
     return {
       type: chunk[voxelIndex],
       light: chunk[voxelIndex + fields.light],
@@ -139,12 +119,7 @@ export class World {
   }
 
   generateGeometryDataForChunk(chunkOffset: Position) {
-    const {
-      chunkSize: chunkSize,
-      tileSize,
-      tileTextureWidth,
-      tileTextureHeight,
-    } = this;
+    const { tileSize, tileTextureWidth, tileTextureHeight } = this;
     const positions: number[] = [];
     const lightValues: number[] = [];
     const sunlightValues: number[] = [];
@@ -314,7 +289,7 @@ export class World {
 
   setLightValue(pos: Position, lightValue: number) {
     const { chunk } = this.addChunkForVoxel(pos);
-    const blockIndex = this.computeVoxelIndex(pos);
+    const blockIndex = computeVoxelIndex(pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
 
@@ -328,7 +303,7 @@ export class World {
       const [x, y, z] = queue.shift();
 
       const yBelow = y - 1;
-      const blockBelowIndex = this.computeVoxelIndex([x, yBelow, z]);
+      const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
       const { chunk: blockBelowChunk } = this.addChunkForVoxel([x, yBelow, z]);
       const blockBelow = blockBelowChunk[blockBelowIndex];
 
@@ -353,7 +328,7 @@ export class World {
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
       const { chunk } = this.addChunkForVoxel([x, y, z]);
-      const blockIndex = this.computeVoxelIndex([x, y, z]);
+      const blockIndex = computeVoxelIndex([x, y, z]);
       const blockLightValue = chunk[blockIndex + fields.light];
 
       neighbors.forEach((offset) => {
@@ -366,7 +341,7 @@ export class World {
         if (newLightValue <= 0) return;
 
         const { chunk: neighborsChunk } = this.addChunkForVoxel([nx, ny, nz]);
-        const neighborIndex = this.computeVoxelIndex([nx, ny, nz]);
+        const neighborIndex = computeVoxelIndex([nx, ny, nz]);
         let lightValueInNeighbor = neighborsChunk[neighborIndex + fields.light];
         let neighborType = neighborsChunk[neighborIndex];
 

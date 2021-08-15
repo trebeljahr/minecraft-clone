@@ -1,10 +1,11 @@
 import { expose } from "threads/worker";
 import { World } from "../VoxelWorld";
+import { fields } from "./constants";
 
-function setLightValue(pos: Position, lightValue: number) {
-  const { chunk } = this.addChunkForVoxel(pos);
+function setLightValue(chunk: Uint8Array, pos: Position, lightValue: number) {
   const blockIndex = this.computeVoxelIndex(pos);
   chunk[blockIndex + fields.light] = lightValue;
+  return chunk;
 }
 
 async function propagateSunlight(queue: Position[]) {
