@@ -16,6 +16,7 @@ import {
   Position,
   fields,
   faces,
+  Chunks,
 } from "./constants";
 import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
@@ -40,7 +41,7 @@ const noise = new Noise();
 const chunkIdToMesh = {};
 
 export class World {
-  public chunks: Record<string, Uint8Array>;
+  public chunks: Chunks;
   private tileSize: number;
   private tileTextureWidth: number;
   private tileTextureHeight: number;

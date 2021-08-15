@@ -1,4 +1,11 @@
-import { fields, copy, chunkSize, chunkSliceSize, Position } from "./constants";
+import {
+  fields,
+  copy,
+  chunkSize,
+  chunkSliceSize,
+  Chunks,
+  Position,
+} from "./constants";
 import { MathUtils, Vector3 } from "three";
 
 const leftMouse = 0;
@@ -30,6 +37,26 @@ export function computeChunkDistanceFromPoint(
   const distance = chunkPos.distanceTo(pos);
   console.log("Distance from point", distance);
   return distance;
+}
+
+export function setLightValue(
+  chunks: Chunks,
+  pos: Position,
+  lightValue: number
+) {
+  const { addedChunk: chunk } = addChunkForVoxel(chunks, pos);
+  const blockIndex = computeVoxelIndex(pos);
+  chunk[blockIndex + fields.light] = lightValue;
+}
+
+export function addChunkForVoxel(chunks: Chunks, pos: Position) {
+  const chunkId = computeChunkIndex(pos);
+  let chunk = chunks[chunkId];
+  if (!chunk) {
+    chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
+    chunks[chunkId] = chunk;
+  }
+  return { addedChunk: chunk, addedChunkId: chunkId };
 }
 
 export function computeVoxelIndex(pos: Position) {

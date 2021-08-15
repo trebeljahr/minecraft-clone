@@ -131,6 +131,7 @@ export const faces = [
   },
 ];
 
+export type Chunks = Record<string, Uint8Array>;
 // function getCurrentChunk(providedPos?: Vector3) {
 //   const pos = providedPos || player.position;
 //   return copy(pos).divideScalar(chunkSize).floor();

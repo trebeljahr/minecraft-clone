@@ -1,40 +1,50 @@
 import { expose } from "threads/worker";
-import { World } from "../VoxelWorld";
-import { fields } from "./constants";
+import {
+  maxHeight,
+  Position,
+  chunkSize,
+  transparentBlocks,
+  neighborOffsets,
+  fields,
+  Chunks,
+} from "../constants";
+import {
+  computeChunkOffset,
+  computeVoxelIndex,
+  addChunkForVoxel,
+} from "../helpers";
 
-function setLightValue(chunk: Uint8Array, pos: Position, lightValue: number) {
-  const blockIndex = this.computeVoxelIndex(pos);
-  chunk[blockIndex + fields.light] = lightValue;
-  return chunk;
-}
-
-async function propagateSunlight(queue: Position[]) {
+async function propagateSunlight(chunks: Chunks, queue: Position[]) {
   const floodLightQueue = [...queue] as Position[];
   while (queue.length > 0) {
     const [x, y, z] = queue.shift();
 
     const yBelow = y - 1;
-    const blockBelowIndex = this.computeVoxelIndex([x, yBelow, z]);
-    const { chunk: blockBelowChunk } = this.addChunkForVoxel([x, yBelow, z]);
+    const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
+    const { addedChunk: blockBelowChunk } = addChunkForVoxel(chunks, [
+      x,
+      yBelow,
+      z,
+    ]);
     const blockBelow = blockBelowChunk[blockBelowIndex];
 
     const belowIsTransparent = transparentBlocks.includes(blockBelow);
     const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
     if (canPropagateSunlight) {
       queue.push([x, yBelow, z]);
-      this.setLightValue([x, yBelow, z], 15);
+      // setLightValue([x, yBelow, z], 15);
       floodLightQueue.push([x, yBelow, z]);
     }
   }
-  await this.floodLight(floodLightQueue);
+  return floodLight(chunks, floodLightQueue);
 }
 
-async function floodLight(queue: Position[]) {
+async function floodLight(chunks: Chunks, queue: Position[]) {
   const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
   while (queue.length > 0) {
     const [x, y, z] = queue.shift();
-    const { chunk } = this.addChunkForVoxel([x, y, z]);
-    const blockIndex = this.computeVoxelIndex([x, y, z]);
+    const { addedChunk: chunk } = addChunkForVoxel(chunks, [x, y, z]);
+    const blockIndex = computeVoxelIndex([x, y, z]);
     const blockLightValue = chunk[blockIndex + fields.light];
 
     neighbors.forEach((offset) => {
@@ -46,8 +56,12 @@ async function floodLight(queue: Position[]) {
 
       if (newLightValue <= 0) return;
 
-      const { chunk: neighborsChunk } = this.addChunkForVoxel([nx, ny, nz]);
-      const neighborIndex = this.computeVoxelIndex([nx, ny, nz]);
+      const { addedChunk: neighborsChunk } = addChunkForVoxel(chunks, [
+        nx,
+        ny,
+        nz,
+      ]);
+      const neighborIndex = computeVoxelIndex([nx, ny, nz]);
       let lightValueInNeighbor = neighborsChunk[neighborIndex + fields.light];
       let neighborType = neighborsChunk[neighborIndex];
 
@@ -61,20 +75,23 @@ async function floodLight(queue: Position[]) {
       }
     });
   }
+  return chunks;
 }
 
 expose({
-  floodLight(chunks: Record<string, Uint8Array>, queue: Position[]) {
-    const [cx, _, cz] = this.computeChunkOffset(pos);
-    const queue = [];
+  async sunlightChunkColumnAt(
+    pos: Position,
+    chunks: Record<string, Uint8Array>
+  ) {
+    const [cx, _, cz] = computeChunkOffset(pos);
+    const queue = [] as Position[];
     for (let xOff = 0; xOff < chunkSize; xOff++) {
       for (let zOff = 0; zOff < chunkSize; zOff++) {
         const newPos = [xOff + cx, maxHeight, zOff + cz] as Position;
         queue.push(newPos);
       }
     }
-    propagateSunlight(queue);
-
-    return chunks;
+    return await propagateSunlight(chunks, queue);
   },
+  floodLight,
 });

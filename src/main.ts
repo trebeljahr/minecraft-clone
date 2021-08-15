@@ -1,4 +1,5 @@
 import "./main.css";
+import { spawn, Thread, Worker } from "threads";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
 import { MouseClickEvent, computeChunkIndex } from "./helpers";
@@ -61,7 +62,14 @@ async function generateChunkAtPosition(pos: Vector3) {
 
 async function sunlightChunkAtPos(pos: Vector3) {
   const start = Date.now();
-  await world.sunLightChunkColumnAt(pos.toArray());
+  const floodLightThread = await spawn(new Worker("./workers/floodLight"));
+  const sunlitChunks = await floodLightThread.sunlightChunkColumnAt(
+    pos.toArray(),
+    world.chunks
+  );
+  await Thread.terminate(floodLightThread);
+  world.chunks = sunlitChunks;
+  // await world.sunLightChunkColumnAt(pos.toArray());
   const afterSunlighting = Date.now();
   console.log("Time for sunlight propagation:", afterSunlighting - start);
   world.updateChunkGeometry(pos.toArray());
