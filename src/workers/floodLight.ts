@@ -77,21 +77,24 @@ async function floodLight(chunks: Chunks, queue: Position[]) {
   }
   return chunks;
 }
-
-expose({
-  async sunlightChunkColumnAt(
-    pos: Position,
-    chunks: Record<string, Uint8Array>
-  ) {
-    const [cx, _, cz] = computeChunkOffset(pos);
-    const queue = [] as Position[];
-    for (let xOff = 0; xOff < chunkSize; xOff++) {
-      for (let zOff = 0; zOff < chunkSize; zOff++) {
-        const newPos = [xOff + cx, maxHeight, zOff + cz] as Position;
-        queue.push(newPos);
-      }
+async function sunlightChunkColumnAt(
+  pos: Position,
+  chunks: Record<string, Uint8Array>
+) {
+  const [cx, _, cz] = computeChunkOffset(pos);
+  const queue = [] as Position[];
+  for (let xOff = 0; xOff < chunkSize; xOff++) {
+    for (let zOff = 0; zOff < chunkSize; zOff++) {
+      const newPos = [xOff + cx, maxHeight, zOff + cz] as Position;
+      queue.push(newPos);
     }
-    return await propagateSunlight(chunks, queue);
-  },
+  }
+  return await propagateSunlight(chunks, queue);
+}
+
+const lightingWorker = {
+  sunlightChunkColumnAt,
   floodLight,
-});
+};
+
+expose(lightingWorker);
