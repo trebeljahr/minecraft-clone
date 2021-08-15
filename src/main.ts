@@ -27,8 +27,6 @@ import {
   sRGBEncoding,
   Vector3,
   WebGLRenderer,
-  Mesh,
-  Material,
 } from "three";
 
 const blocker = document.getElementById("blocker");
@@ -207,7 +205,6 @@ async function init() {
   scene.background = new Color("white");
 
   world = new World({
-    chunkSize,
     tileSize,
     tileTextureWidth,
     tileTextureHeight,
@@ -218,7 +215,7 @@ async function init() {
   player = new Player(new PointerLockControls(camera, document.body), world);
   inventory = new Inventory();
   loop.register(player);
-  loop.register({ tick: pruneChunks });
+  // loop.register({ tick: pruneChunks });
   loop.start();
 
   blocker.addEventListener("click", function () {
