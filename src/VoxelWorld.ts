@@ -66,6 +66,19 @@ export class World {
     this.chunks = {};
     this.sunlightedChunksColumns = {};
   }
+
+  computeChunkDistanceFromPoint(point: Position, chunkId: string) {
+    console.log(chunkId.split(",").map((elem) => parseInt(elem)));
+    const chunkPos = new Vector3(
+      ...chunkId.split(",").map((elem) => parseInt(elem))
+    );
+    const pos = new Vector3(...this.computeChunkCoordinates(point));
+    console.log(pos);
+    const distance = chunkPos.distanceTo(pos);
+    console.log("Distance from point", distance);
+    return distance;
+  }
+
   computeChunkOffset(pos: Position): Position {
     return this.computeChunkCoordinates(pos).map(
       (coord) => coord * chunkSize
@@ -305,12 +318,12 @@ export class World {
     chunk[blockIndex + fields.light] = lightValue;
   }
 
-  async propagateSunlight(queue: Position[], callback = () => {}) {
+  async propagateSunlight(queue: Position[]) {
     const floodLightQueue = [...queue] as Position[];
-    console.log(
-      "Before propagating sunlight for chunk how much sunlighting is to do: ",
-      [...queue]
-    );
+    // console.log(
+    //   "Before propagating sunlight for chunk how much sunlighting is to do: ",
+    //   [...queue]
+    // );
     while (queue.length > 0) {
       const [x, y, z] = queue.shift();
 
@@ -327,11 +340,11 @@ export class World {
         floodLightQueue.push([x, yBelow, z]);
       }
     }
-    console.log(
-      "After sunlight propagation how much floodlighting is to do?",
-      floodLightQueue.length
-    );
-    console.log([...floodLightQueue]);
+    // console.log(
+    //   "After sunlight propagation how much floodlighting is to do?",
+    //   floodLightQueue.length
+    // );
+    // console.log([...floodLightQueue]);
     await this.floodLight(floodLightQueue);
   }
 
@@ -577,6 +590,7 @@ export class World {
     if (!mesh) {
       mesh = new Mesh(geometry, opaque);
       mesh.name = chunkId;
+      console.log("Chunk Id in scene: ", chunkId);
       chunkIdToMesh[chunkId] = mesh;
       this.scene.add(mesh);
       mesh.position.set(chunkOffset[0], chunkOffset[1], chunkOffset[2]);

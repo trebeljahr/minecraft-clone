@@ -5,7 +5,6 @@ import { MouseClickEvent } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
   copy,
-  surface,
   terrainHeight,
   tileSize,
   tileTextureWidth,
@@ -28,12 +27,14 @@ import {
   sRGBEncoding,
   Vector3,
   WebGLRenderer,
+  Mesh,
+  Material,
 } from "three";
 
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
-const loopSize = 3;
+// const loopSize = 3;
 const { air } = blocks;
 
 let camera: PerspectiveCamera;
@@ -45,12 +46,12 @@ let player: Player;
 let renderer: WebGLRenderer;
 let renderRequested = false;
 let menu = true;
-let minX = -loopSize;
-let maxX = loopSize;
-let x = minX;
-let minY = -loopSize;
-let maxY = loopSize;
-let y = minY;
+// let minX = -loopSize;
+// let maxX = loopSize;
+// let x = minX;
+// let minY = -loopSize;
+// let maxY = loopSize;
+// let y = minY;
 
 init();
 
@@ -78,7 +79,7 @@ async function sunlightChunkAtPos(pos: Vector3) {
 
 async function generateChunksAroundCamera() {
   const start = Date.now();
-  const initialWorldRadius = 10;
+  const initialWorldRadius = 1;
   let count = 0;
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
@@ -90,6 +91,7 @@ async function generateChunksAroundCamera() {
       }
     }
   }
+
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
       for (let z = 0; z >= -1; z--) {
@@ -179,7 +181,9 @@ async function placeVoxel(event: MouseEvent) {
   }
 }
 
-function init() {
+async function init() {
+  const start = Date.now();
+  console.log("Init has been called");
   const near = 0.01;
   camera = new PerspectiveCamera(
     60,
@@ -214,6 +218,7 @@ function init() {
   player = new Player(new PointerLockControls(camera, document.body), world);
   inventory = new Inventory();
   loop.register(player);
+  loop.register({ tick: pruneChunks });
   // loop.register({
   //   tick: (_delta: number) => generateChunksInMovementDirection(),
   // });
@@ -289,39 +294,31 @@ function init() {
   scene.add(player.controls.getObject());
 
   window.addEventListener("resize", onWindowResize);
-  generateChunksAroundCamera();
+  await generateChunksAroundCamera();
   // spawnSingleBlock();
+  console.log("Total time for init function", Date.now() - start);
+}
 
-  // const [x, y, z] = player.pos.toArray();
-  // const initialBlockPos = [x, y - 2, z - 3] as Position;
-  // const hardcodedCameraDirection = {
-  //   x: -0.5757005393263303,
-  //   y: -0.6186039666723383,
-  //   z: -0.5346943252332317,
-  // };
-  // const hardcodedCameraPosition = {
-  //   x: 2.2839938822872243,
-  //   y: 85,
-  //   z: -0.8391258104030554,
-  // };
-  // camera.position.y = hardcodedCameraPosition.y;
-  // camera.position.x = hardcodedCameraPosition.x;
-  // camera.position.z = hardcodedCameraPosition.z;
-
-  // const camDirection = new Vector3(...initialBlockPos);
-  // camDirection.y -= 0.5;
-  // camera.lookAt(camDirection);
-  // world.setVoxel(initialBlockPos, blocks.coal);
-  // world.sunLightChunkAt(initialBlockPos, () => {
-  //   world.updateChunkGeometry(initialBlockPos);
-  //   world.updateChunkGeometry(
-  //     copy(player.pos)
-  //       .setY(player.pos.y + chunkSize)
-  //       .toArray()
-  //   );
-
-  //   requestRenderIfNotRequested();
-  // });
+function pruneChunks() {
+  if (renderer.info.render.frame % 5 !== 0) return;
+  Object.keys(world.chunks).forEach((chunkId) => {
+    console.log(chunkId);
+    const distance = world.computeChunkDistanceFromPoint(
+      player.position.toArray(),
+      chunkId
+    );
+    if (distance > 4) {
+      console.log("Deleting chunk out of range with chunkId: ", chunkId);
+      const object = scene.getObjectByProperty("uuid", chunkId) as Mesh;
+      object?.geometry?.dispose();
+      (object?.material as Material)?.dispose();
+      object && scene.remove(object);
+      renderer.renderLists.dispose();
+      delete world.chunks[chunkId];
+    }
+  });
+  console.log(Object.keys(world.chunks).length);
+  console.log(Object.keys(world.chunks));
 }
 
 function onWindowResize() {
@@ -333,6 +330,8 @@ function onWindowResize() {
 function render() {
   renderRequested = false;
   // generateTerrain();
+
+  pruneChunks();
   renderer.render(scene, camera);
 }
 
@@ -343,47 +342,78 @@ function requestRenderIfNotRequested() {
   }
 }
 
-function generateTerrain() {
-  if (maxX > 5) return;
+// function spawnSingleBlock() {
+// const [x, y, z] = player.pos.toArray();
+// const initialBlockPos = [x, y - 2, z - 3] as Position;
+// const hardcodedCameraDirection = {
+//   x: -0.5757005393263303,
+//   y: -0.6186039666723383,
+//   z: -0.5346943252332317,
+// };
+// const hardcodedCameraPosition = {
+//   x: 2.2839938822872243,
+//   y: 85,
+//   z: -0.8391258104030554,
+// };
+// camera.position.y = hardcodedCameraPosition.y;
+// camera.position.x = hardcodedCameraPosition.x;
+// camera.position.z = hardcodedCameraPosition.z;
+// const camDirection = new Vector3(...initialBlockPos);
+// camDirection.y -= 0.5;
+// camera.lookAt(camDirection);
+// world.setVoxel(initialBlockPos, blocks.coal);
+// world.sunLightChunkAt(initialBlockPos, () => {
+//   world.updateChunkGeometry(initialBlockPos);
+//   world.updateChunkGeometry(
+//     copy(player.pos)
+//       .setY(player.pos.y + chunkSize)
+//       .toArray()
+//   );
+//   requestRenderIfNotRequested();
+// });
+// }
 
-  if (renderer.info.render.frame % 5 === 0) {
-    const pos = new Vector3(x * chunkSize, surface - chunkSize, y * chunkSize);
+// function generateTerrain() {
+//   if (maxX > 5) return;
 
-    generateChunkAtPosition(pos);
-    generateChunkAtPosition(copy(pos).sub(new Vector3(0, 1 * chunkSize, 0)));
-    generateChunkAtPosition(copy(pos).sub(new Vector3(0, 2 * chunkSize, 0)));
+//   if (renderer.info.render.frame % 5 === 0) {
+//     const pos = new Vector3(x * chunkSize, surface - chunkSize, y * chunkSize);
 
-    if (y === maxY && x === maxX - 1) {
-      console.log("Finished loop");
-      minX--;
-      maxX++;
-      x = minX;
-      minY--;
-      maxY++;
-      y = minY;
-    } else {
-      if (y === maxY && x > minX && x < maxX) {
-        x++;
-      }
-      if (y === maxY && x === maxX) {
-        x = minX + 1;
-      }
-      if (y >= minY && y < maxY && x === maxX) {
-        y++;
-      }
+//     generateChunkAtPosition(pos);
+//     generateChunkAtPosition(copy(pos).sub(new Vector3(0, 1 * chunkSize, 0)));
+//     generateChunkAtPosition(copy(pos).sub(new Vector3(0, 2 * chunkSize, 0)));
 
-      if (x > minX && x < maxX && y === minY) {
-        x++;
-      }
+//     if (y === maxY && x === maxX - 1) {
+//       console.log("Finished loop");
+//       minX--;
+//       maxX++;
+//       x = minX;
+//       minY--;
+//       maxY++;
+//       y = minY;
+//     } else {
+//       if (y === maxY && x > minX && x < maxX) {
+//         x++;
+//       }
+//       if (y === maxY && x === maxX) {
+//         x = minX + 1;
+//       }
+//       if (y >= minY && y < maxY && x === maxX) {
+//         y++;
+//       }
 
-      if (x === minX) {
-        if (y === maxY) {
-          x++;
-          y = minY;
-        } else {
-          y++;
-        }
-      }
-    }
-  }
-}
+//       if (x > minX && x < maxX && y === minY) {
+//         x++;
+//       }
+
+//       if (x === minX) {
+//         if (y === maxY) {
+//           x++;
+//           y = minY;
+//         } else {
+//           y++;
+//         }
+//       }
+//     }
+//   }
+// }
