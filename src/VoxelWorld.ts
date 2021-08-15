@@ -1,5 +1,10 @@
 import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
-import { computeVoxelIndex } from "./helpers";
+import {
+  computeChunkIndex,
+  computeVoxelIndex,
+  computeChunkOffset,
+  computeChunkCoordinates,
+} from "./helpers";
 import { blocks } from "./blocks";
 import {
   copy,
@@ -29,6 +34,7 @@ const {
   grass,
   dirt,
 } = blocks;
+
 const noise = new Noise();
 
 const chunkIdToMesh = {};
@@ -54,36 +60,10 @@ export class World {
     this.sunlightedChunksColumns = {};
   }
 
-  computeChunkDistanceFromPoint(point: Position, chunkId: string) {
-    console.log(chunkId.split(",").map((elem) => parseInt(elem)));
-    const chunkPos = new Vector3(
-      ...chunkId.split(",").map((elem) => parseInt(elem))
-    );
-    const pos = new Vector3(...this.computeChunkCoordinates(point));
-    console.log(pos);
-    const distance = chunkPos.distanceTo(pos);
-    console.log("Distance from point", distance);
-    return distance;
-  }
-
-  computeChunkOffset(pos: Position): Position {
-    return this.computeChunkCoordinates(pos).map(
-      (coord) => coord * chunkSize
-    ) as Position;
-  }
-  computeChunkCoordinates(pos: Position): Position {
-    return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
-  }
-  computeVoxelCoordinates(pos: Vector3) {
-    return copy(pos).floor();
-  }
-
   getChunkForVoxel(pos: Position) {
-    return this.chunks[this.computeChunkIndex(pos)];
+    return this.chunks[computeChunkIndex(pos)];
   }
-  computeChunkIndex(pos: Position) {
-    return this.computeChunkCoordinates(pos).join(",");
-  }
+
   setVoxel(pos: Position, type: number) {
     let chunk = this.getChunkForVoxel(pos);
     if (!chunk) {
@@ -99,7 +79,7 @@ export class World {
   }
 
   addChunkForVoxel(pos: Position) {
-    const chunkId = this.computeChunkIndex(pos);
+    const chunkId = computeChunkIndex(pos);
     let chunk = this.chunks[chunkId];
     if (!chunk) {
       chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
@@ -274,7 +254,7 @@ export class World {
     let chunkColumnHasSunlight = this.sunlightedChunksColumns[index];
     if (!chunkColumnHasSunlight) {
       this.sunlightedChunksColumns[index] = true;
-      const [cx, _, cz] = this.computeChunkOffset(pos);
+      const [cx, _, cz] = computeChunkOffset(pos);
       const queue = [];
       for (let xOff = 0; xOff < chunkSize; xOff++) {
         for (let zOff = 0; zOff < chunkSize; zOff++) {
@@ -507,21 +487,22 @@ export class World {
       const offsetPos = pos.map(
         (coord, i) => coord + offset.toArray()[i]
       ) as Position;
-      const chunkId = this.computeChunkIndex(offsetPos);
+      const chunkId = computeChunkIndex(offsetPos);
       if (!updatedChunkIds[chunkId]) {
         updatedChunkIds[chunkId] = true;
         this.updateChunkGeometry(offsetPos);
       }
     }
   }
+
   hasSunlight(columnId: string) {
     return this.sunlightedChunksColumns[columnId];
   }
 
   updateChunkGeometry(pos: Position) {
-    const chunkCoordinates = this.computeChunkCoordinates(pos);
-    const chunkOffset = this.computeChunkOffset(pos);
-    const chunkId = this.computeChunkIndex(pos);
+    const chunkCoordinates = computeChunkCoordinates(pos);
+    const chunkOffset = computeChunkOffset(pos);
+    const chunkId = computeChunkIndex(pos);
 
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();

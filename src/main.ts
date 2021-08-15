@@ -1,7 +1,7 @@
 import "./main.css";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
-import { MouseClickEvent } from "./helpers";
+import { MouseClickEvent, computeChunkIndex } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
   copy,
@@ -166,7 +166,7 @@ async function placeVoxel(event: MouseEvent) {
         (coord, i) => coord + dir[i] * (chunkSize - 2)
       ) as Position;
 
-      const chunkIndex = world.computeChunkIndex(positionWithChunkOffset);
+      const chunkIndex = computeChunkIndex(positionWithChunkOffset);
       chunksToUpdateSet.add(chunkIndex);
     });
     chunksToUpdateSet.forEach((chunkId) => {
@@ -306,7 +306,7 @@ function pruneChunks() {
       for (let z = 0; z >= -1; z--) {
         const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
         const newPos = player.position.add(offset);
-        const chunkId = world.computeChunkIndex(newPos.toArray());
+        const chunkId = computeChunkIndex(newPos.toArray());
         if (!world.chunks[chunkId]) {
           // generateChunkAtPosition(newPos);
           // sunlightChunkAtPos(newPos);
