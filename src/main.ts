@@ -79,7 +79,7 @@ async function sunlightChunkAtPos(pos: Vector3) {
 
 async function generateChunksAroundCamera() {
   const start = Date.now();
-  const initialWorldRadius = 1;
+  const initialWorldRadius = 3;
   let count = 0;
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
@@ -219,9 +219,6 @@ async function init() {
   inventory = new Inventory();
   loop.register(player);
   loop.register({ tick: pruneChunks });
-  // loop.register({
-  //   tick: (_delta: number) => generateChunksInMovementDirection(),
-  // });
   loop.start();
 
   blocker.addEventListener("click", function () {
@@ -301,22 +298,38 @@ async function init() {
 
 function pruneChunks() {
   if (renderer.info.render.frame % 5 !== 0) return;
-  Object.keys(world.chunks).forEach((chunkId) => {
-    console.log(chunkId);
-    const distance = world.computeChunkDistanceFromPoint(
-      player.position.toArray(),
-      chunkId
-    );
-    if (distance > 4) {
-      console.log("Deleting chunk out of range with chunkId: ", chunkId);
-      const object = scene.getObjectByProperty("uuid", chunkId) as Mesh;
-      object?.geometry?.dispose();
-      (object?.material as Material)?.dispose();
-      object && scene.remove(object);
-      renderer.renderLists.dispose();
-      delete world.chunks[chunkId];
+  // Object.keys(world.chunks).forEach((chunkId) => {
+  //   console.log(chunkId);
+  //   const distance = world.computeChunkDistanceFromPoint(
+  //     player.position.toArray(),
+  //     chunkId
+  //   );
+  for (let x = -3; x <= 3; x++) {
+    for (let y = -3; y <= 3; y++) {
+      for (let z = 0; z >= -1; z--) {
+        const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
+        const newPos = player.position.add(offset);
+        const chunkId = world.computeChunkIndex(newPos.toArray());
+        if (!world.chunks[chunkId]) {
+          // generateChunkAtPosition(newPos);
+          // sunlightChunkAtPos(newPos);
+          console.log("Generating missing chunk");
+        }
+      }
     }
-  });
+  }
+
+  // if (distance > 4) {
+  //   console.log("Deleting chunk out of range with chunkId: ", chunkId);
+  //   const object = scene.getObjectByName(chunkId) as Mesh;
+  //   object?.geometry?.dispose();
+  //   (object?.material as Material)?.dispose();
+  //   object && scene.remove(object);
+  //   renderer.renderLists.dispose();
+  //   delete world.chunks[chunkId];
+  //   requestRenderIfNotRequested();
+  // }
+  // });
   console.log(Object.keys(world.chunks).length);
   console.log(Object.keys(world.chunks));
 }
@@ -330,8 +343,7 @@ function onWindowResize() {
 function render() {
   renderRequested = false;
   // generateTerrain();
-
-  pruneChunks();
+  // pruneChunks();
   renderer.render(scene, camera);
 }
 
