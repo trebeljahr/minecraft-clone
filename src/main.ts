@@ -1,4 +1,6 @@
 import "./main.css";
+import { SunlightWorker } from "./workers/sunlightWorker";
+import { FloodLightWorker } from "./workers/floodLightWorker";
 import { spawn, Thread, Worker } from "threads";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
@@ -62,21 +64,26 @@ async function generateChunkAtPosition(pos: Vector3) {
 
 async function sunlightChunkAtPos(pos: Vector3) {
   const start = Date.now();
-  const sunlightChunkColumnAt = await spawn(
+  const sunlightWorker = await spawn<SunlightWorker>(
     new Worker("./workers/sunlightWorker")
   );
-  const floodLight = await spawn(new Worker("./workers/floodLightWorker"));
-
-  const { sunlitChunks, floodLightQueue } = await sunlightChunkColumnAt(
-    pos.toArray(),
-    world.chunks
+  const floodLightWorker = await spawn<FloodLightWorker>(
+    new Worker("./workers/floodLightWorker")
   );
-  await Thread.terminate(sunlightChunkColumnAt);
+
+  const { sunlitChunks, floodLightQueue } =
+    await sunlightWorker.sunlightChunkColumnAt(pos.toArray(), world.chunks);
+  await Thread.terminate(sunlightWorker);
   // console.log("This is the floodLight queue", floodLightQueue);
 
-  const { fullyLitChunks } = await floodLight(sunlitChunks, floodLightQueue);
-  await Thread.terminate(floodLight);
-  world.chunks = fullyLitChunks;
+  const { fullyLitChunks } = await floodLightWorker.floodLight(
+    sunlitChunks,
+    floodLightQueue
+  );
+  await Thread.terminate(floodLightWorker);
+  Object.entries(fullyLitChunks).forEach(([chunkId, chunkData]) => {
+    world.chunks[chunkId] = chunkData;
+  });
   // await world.sunLightChunkColumnAt(pos.toArray());
   const afterSunlighting = Date.now();
   // console.log("Time for sunlight propagation:", afterSunlighting - start);
