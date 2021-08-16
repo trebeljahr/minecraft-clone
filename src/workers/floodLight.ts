@@ -9,6 +9,7 @@ import {
   Chunks,
 } from "../constants";
 import {
+  setLightValue,
   computeChunkOffset,
   computeVoxelIndex,
   addChunkForVoxel,
@@ -32,7 +33,8 @@ async function propagateSunlight(chunks: Chunks, queue: Position[]) {
     const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
     if (canPropagateSunlight) {
       queue.push([x, yBelow, z]);
-      // setLightValue([x, yBelow, z], 15);
+
+      setLightValue(chunks, [x, yBelow, z], 15);
       floodLightQueue.push([x, yBelow, z]);
     }
   }
@@ -77,10 +79,8 @@ async function floodLight(chunks: Chunks, queue: Position[]) {
   }
   return chunks;
 }
-async function sunlightChunkColumnAt(
-  pos: Position,
-  chunks: Record<string, Uint8Array>
-) {
+
+async function sunlightChunkColumnAt(pos: Position, chunks: Chunks) {
   const [cx, _, cz] = computeChunkOffset(pos);
   const queue = [] as Position[];
   for (let xOff = 0; xOff < chunkSize; xOff++) {
