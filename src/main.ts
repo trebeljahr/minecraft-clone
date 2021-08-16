@@ -57,21 +57,29 @@ init();
 async function generateChunkAtPosition(pos: Vector3) {
   const start = Date.now();
   world.generateChunkData(pos);
-  console.log("Time for chunk geometry creation:", Date.now() - start);
+  // console.log("Time for chunk geometry creation:", Date.now() - start);
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
   const start = Date.now();
-  const floodLightThread = await spawn(new Worker("./workers/floodLight"));
-  const sunlitChunks = await floodLightThread.sunlightChunkColumnAt(
+  const sunlightChunkColumnAt = await spawn(
+    new Worker("./workers/sunlightWorker")
+  );
+  const floodLight = await spawn(new Worker("./workers/floodLightWorker"));
+
+  const { sunlitChunks, floodLightQueue } = await sunlightChunkColumnAt(
     pos.toArray(),
     world.chunks
   );
-  await Thread.terminate(floodLightThread);
-  world.chunks = sunlitChunks;
+  await Thread.terminate(sunlightChunkColumnAt);
+  // console.log("This is the floodLight queue", floodLightQueue);
+
+  const { fullyLitChunks } = await floodLight(sunlitChunks, floodLightQueue);
+  await Thread.terminate(floodLight);
+  world.chunks = fullyLitChunks;
   // await world.sunLightChunkColumnAt(pos.toArray());
   const afterSunlighting = Date.now();
-  console.log("Time for sunlight propagation:", afterSunlighting - start);
+  // console.log("Time for sunlight propagation:", afterSunlighting - start);
   world.updateChunkGeometry(pos.toArray());
   world.updateChunkGeometry(
     copy(pos)
@@ -80,12 +88,12 @@ async function sunlightChunkAtPos(pos: Vector3) {
   );
 
   requestRenderIfNotRequested();
-  console.log("Time for geometry updates:", Date.now() - afterSunlighting);
+  // console.log("Time for geometry updates:", Date.now() - afterSunlighting);
 }
 
 async function generateChunksAroundCamera() {
   const start = Date.now();
-  const initialWorldRadius = 3;
+  const initialWorldRadius = 1;
   let count = 0;
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
@@ -335,8 +343,8 @@ function pruneChunks() {
   //   requestRenderIfNotRequested();
   // }
   // });
-  console.log(Object.keys(world.chunks).length);
-  console.log(Object.keys(world.chunks));
+  // console.log(Object.keys(world.chunks).length);
+  // console.log(Object.keys(world.chunks));
 }
 
 function onWindowResize() {
@@ -360,34 +368,20 @@ function requestRenderIfNotRequested() {
 }
 
 // function spawnSingleBlock() {
-// const [x, y, z] = player.pos.toArray();
-// const initialBlockPos = [x, y - 2, z - 3] as Position;
-// const hardcodedCameraDirection = {
-//   x: -0.5757005393263303,
-//   y: -0.6186039666723383,
-//   z: -0.5346943252332317,
-// };
-// const hardcodedCameraPosition = {
-//   x: 2.2839938822872243,
-//   y: 85,
-//   z: -0.8391258104030554,
-// };
-// camera.position.y = hardcodedCameraPosition.y;
-// camera.position.x = hardcodedCameraPosition.x;
-// camera.position.z = hardcodedCameraPosition.z;
-// const camDirection = new Vector3(...initialBlockPos);
-// camDirection.y -= 0.5;
-// camera.lookAt(camDirection);
-// world.setVoxel(initialBlockPos, blocks.coal);
-// world.sunLightChunkAt(initialBlockPos, () => {
-//   world.updateChunkGeometry(initialBlockPos);
-//   world.updateChunkGeometry(
-//     copy(player.pos)
-//       .setY(player.pos.y + chunkSize)
-//       .toArray()
-//   );
-//   requestRenderIfNotRequested();
-// });
+//   const [x, y, z] = player.pos.toArray();
+//   const initialBlockPos = [x, y - 2, z - 3] as Position;
+//   const hardcodedCameraPosition = {
+//     x: 2.2839938822872243,
+//     y: 85,
+//     z: -0.8391258104030554,
+//   };
+//   camera.position.y = hardcodedCameraPosition.y;
+//   camera.position.x = hardcodedCameraPosition.x;
+//   camera.position.z = hardcodedCameraPosition.z;
+//   const camDirection = new Vector3(...initialBlockPos);
+//   camDirection.y -= 0.5;
+//   camera.lookAt(camDirection);
+//   world.setVoxel(initialBlockPos, blocks.coal);
 // }
 
 // function generateTerrain() {

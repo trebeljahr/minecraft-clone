@@ -547,7 +547,7 @@ export class World {
     if (!mesh) {
       mesh = new Mesh(geometry, opaque);
       mesh.name = chunkId;
-      console.log("Chunk Id in scene: ", chunkId);
+      // console.log("Chunk Id in scene: ", chunkId);
       chunkIdToMesh[chunkId] = mesh;
       this.scene.add(mesh);
       mesh.position.set(chunkOffset[0], chunkOffset[1], chunkOffset[2]);
