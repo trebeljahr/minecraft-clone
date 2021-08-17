@@ -11,6 +11,25 @@ import { MathUtils, Vector3 } from "three";
 const leftMouse = 0;
 const rightMouse = 2;
 
+export class SimpleTimer {
+  public timeStamps: Record<string, number>;
+  constructor() {
+    this.timeStamps = { start: Date.now() };
+  }
+
+  get startTimeStamp() {
+    return this.timeStamps["start"];
+  }
+
+  stop(now = "now", since = "start") {
+    const stamp = Date.now();
+    this.timeStamps[now] = stamp;
+    console.log(
+      `Time taken from ${since} to ${now} was ${stamp - this.timeStamps[since]}`
+    );
+  }
+}
+
 export class MouseClickEvent {
   public event: MouseEvent;
   constructor(event: MouseEvent) {

@@ -2,7 +2,12 @@ import "./main.css";
 import { spawn, Thread, Worker } from "threads";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
-import { MouseClickEvent, computeChunkIndex, getVoxel } from "./helpers";
+import {
+  MouseClickEvent,
+  SimpleTimer,
+  computeChunkIndex,
+  getVoxel,
+} from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
   Chunks,
@@ -56,10 +61,11 @@ let menu = true;
 init();
 
 async function generateChunkAtPosition(pos: Vector3) {
-  const start = Date.now();
+  const timer = new SimpleTimer();
   await world.generateChunkData(pos);
+  timer.stop("chunk generation");
   await world.updateChunkGeometry(pos.toArray());
-  console.log("Time for chunk geometry creation:", Date.now() - start);
+  timer.stop("chunk geometry", "chunk generation");
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
