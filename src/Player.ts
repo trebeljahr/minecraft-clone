@@ -6,8 +6,7 @@ import { World } from "./VoxelWorld";
 
 const eyeLevel = 1.5;
 const gravity = false; // can be set to disable/enable falling
-const maxSpeed = gravity ? 10 : 30;
-
+let maxSpeed = gravity ? 10 : 30;
 let moveForward = false;
 let moveBack = false;
 let moveLeft = false;
@@ -61,14 +60,14 @@ export class Player {
       const onGround = this.standsOnGround(delta);
       if (onGround || !gravity) {
         this.planarVelocity.z +=
-          this.directionPlayerWantsToMove.z * 300 * delta;
+          ((this.directionPlayerWantsToMove.z * 300 * maxSpeed) / 10) * delta;
         this.planarVelocity.x +=
-          this.directionPlayerWantsToMove.x * 300 * delta;
+          ((this.directionPlayerWantsToMove.x * 300 * maxSpeed) / 10) * delta;
       } else {
         this.planarVelocity.z +=
-          this.directionPlayerWantsToMove.z * 100 * delta;
+          ((this.directionPlayerWantsToMove.z * 100 * maxSpeed) / 10) * delta;
         this.planarVelocity.x +=
-          this.directionPlayerWantsToMove.x * 100 * delta;
+          ((this.directionPlayerWantsToMove.x * 100 * maxSpeed) / 10) * delta;
       }
       this.planarVelocity.clampLength(0, maxSpeed);
       this.velocity.x = this.planarVelocity.x;
@@ -77,11 +76,11 @@ export class Player {
       if (this.velocity.y > -30 && !onGround && gravity)
         this.velocity.y -= 9.8 * 5 * delta;
       if (!gravity && moveDown) {
-        this.velocity.y -= 300 * delta;
+        this.velocity.y -= ((300 * maxSpeed) / 10) * delta;
         this.velocity.clampLength(0, maxSpeed);
       }
       if (!gravity && moveUp) {
-        this.velocity.y += 300 * delta;
+        this.velocity.y += ((300 * maxSpeed) / 10) * delta;
         this.velocity.clampLength(0, maxSpeed);
       }
 
@@ -140,6 +139,14 @@ export class Player {
 
   onKeyDown(event: { code: string }) {
     switch (event.code) {
+      case "KeyX":
+        maxSpeed += 10;
+        console.log("Max speed increased to: ", maxSpeed);
+        break;
+      case "KeyY":
+        maxSpeed = Math.max(0, maxSpeed - 10);
+        console.log("Max speed decreased to: ", maxSpeed);
+        break;
       case "ArrowUp":
       case "KeyW":
         moveForward = true;
