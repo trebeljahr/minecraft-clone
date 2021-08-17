@@ -2,7 +2,7 @@ import { blocks } from "./blocks";
 export const chunkSize = 16;
 export const halfChunk = chunkSize / 2;
 export const chunkSliceSize = chunkSize * chunkSize;
-export const surface = 2 * chunkSize;
+export const surface = 30 * chunkSize;
 export const terrainHeight = surface;
 export const blockLength = 100;
 
@@ -62,6 +62,7 @@ export const fields = {
   sunlight: 5,
   count: 6,
 };
+
 export const faces = [
   {
     // left

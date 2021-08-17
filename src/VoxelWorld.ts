@@ -12,9 +12,7 @@ import {
   copy,
   neighborOffsets,
   terrainHeight,
-  transparentBlocks,
   chunkSize,
-  maxHeight,
   Position,
   fields,
   Chunks,
@@ -162,98 +160,24 @@ export class World {
     return null;
   }
 
-  async sunLightChunkColumnAt(pos: Position) {
-    const index = `${pos[0]} ${pos[2]}`;
-    let chunkColumnHasSunlight = this.sunlightedChunksColumns[index];
-    if (!chunkColumnHasSunlight) {
-      this.sunlightedChunksColumns[index] = true;
-      const [cx, _, cz] = computeChunkOffset(pos);
-      const queue = [];
-      for (let xOff = 0; xOff < chunkSize; xOff++) {
-        for (let zOff = 0; zOff < chunkSize; zOff++) {
-          const newPos = [xOff + cx, maxHeight, zOff + cz] as Position;
-          this.setLightValue(newPos, 15);
-          queue.push(newPos);
-        }
-      }
-      this.propagateSunlight(queue);
-    }
-  }
-
   setLightValue(pos: Position, lightValue: number) {
     const { chunk } = this.addChunkForVoxel(pos);
     const blockIndex = computeVoxelIndex(pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
 
-  async propagateSunlight(queue: Position[]) {
-    const floodLightQueue = [...queue] as Position[];
-    // console.log(
-    //   "Before propagating sunlight for chunk how much sunlighting is to do: ",
-    //   [...queue]
-    // );
-    while (queue.length > 0) {
-      const [x, y, z] = queue.shift();
-
-      const yBelow = y - 1;
-      const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
-      const { chunk: blockBelowChunk } = this.addChunkForVoxel([x, yBelow, z]);
-      const blockBelow = blockBelowChunk[blockBelowIndex];
-
-      const belowIsTransparent = transparentBlocks.includes(blockBelow);
-      const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
-      if (canPropagateSunlight) {
-        queue.push([x, yBelow, z]);
-        this.setLightValue([x, yBelow, z], 15);
-        floodLightQueue.push([x, yBelow, z]);
-      }
-    }
-    // console.log(
-    //   "After sunlight propagation how much floodlighting is to do?",
-    //   floodLightQueue.length
-    // );
-    // console.log([...floodLightQueue]);
-    await this.floodLight(floodLightQueue);
-  }
-
-  async floodLight(queue: Position[]) {
-    const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
-    while (queue.length > 0) {
-      const [x, y, z] = queue.shift();
-      const { chunk } = this.addChunkForVoxel([x, y, z]);
-      const blockIndex = computeVoxelIndex([x, y, z]);
-      const blockLightValue = chunk[blockIndex + fields.light];
-
-      neighbors.forEach((offset) => {
-        const nx = x + offset.x;
-        const ny = y + offset.y;
-        const nz = z + offset.z;
-
-        const newLightValue = blockLightValue - 1;
-
-        if (newLightValue <= 0) return;
-
-        const { chunk: neighborsChunk } = this.addChunkForVoxel([nx, ny, nz]);
-        const neighborIndex = computeVoxelIndex([nx, ny, nz]);
-        let lightValueInNeighbor = neighborsChunk[neighborIndex + fields.light];
-        let neighborType = neighborsChunk[neighborIndex];
-
-        const lightIsBrighter = newLightValue > lightValueInNeighbor;
-        const neighborIsTransparent = transparentBlocks.includes(neighborType);
-
-        const shouldPropagate = lightIsBrighter && neighborIsTransparent;
-        if (shouldPropagate) {
-          neighborsChunk[neighborIndex + fields.light] = newLightValue;
-          queue.push([nx, ny, nz]);
-        }
-      });
-    }
-  }
-
   async generateChunkData(pos: Vector3) {
     pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
+    console.log({ actualHeight: pos.y });
     for (let y = chunkSize - 1; y >= 0; --y) {
-      if (pos.y + y > terrainHeight || pos.y + y <= 0) {
+      const underBedrock = pos.y + y <= 0;
+      const overMaximumHeight = pos.y + y > terrainHeight;
+      if (overMaximumHeight) {
+        console.log("Skipping because too high");
+        continue;
+      }
+      if (underBedrock) {
+        console.log("Skipping because too low");
         continue;
       }
       for (let z = 0; z < chunkSize; ++z) {

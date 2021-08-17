@@ -3,6 +3,7 @@ import { spawn, Thread, Worker } from "threads";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
 import {
+  sleep,
   MouseClickEvent,
   SimpleTimer,
   computeChunkIndex,
@@ -61,15 +62,15 @@ let menu = true;
 init();
 
 async function generateChunkAtPosition(pos: Vector3) {
-  const timer = new SimpleTimer();
+  const logTime = new SimpleTimer();
   await world.generateChunkData(pos);
-  timer.stop("chunk generation");
+  logTime.takenFor("chunk generation");
   await world.updateChunkGeometry(pos.toArray());
-  timer.stop("chunk geometry", "chunk generation");
+  logTime.takenFor("chunk geometry");
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
-  const start = Date.now();
+  const logTime = new SimpleTimer();
   const sunlightWorker = await spawn(new Worker("./workers/sunlightWorker"));
   const floodLightWorker = await spawn(
     new Worker("./workers/floodLightWorker")
@@ -88,8 +89,7 @@ async function sunlightChunkAtPos(pos: Vector3) {
   Object.entries(fullyLitChunks).forEach(([chunkId, chunkData]) => {
     world.chunks[chunkId] = chunkData;
   });
-  const afterSunlighting = Date.now();
-  console.log("Time for sunlight propagation:", afterSunlighting - start);
+  logTime.takenFor("sunlight prop");
   world.updateChunkGeometry(pos.toArray());
   world.updateChunkGeometry(
     copy(pos)
@@ -98,7 +98,7 @@ async function sunlightChunkAtPos(pos: Vector3) {
   );
 
   requestRenderIfNotRequested();
-  console.log("Time for geometry updates:", Date.now() - afterSunlighting);
+  logTime.takenFor("geometry updates");
 }
 
 async function generateChunksAroundCamera() {
@@ -107,11 +107,11 @@ async function generateChunksAroundCamera() {
   let count = 0;
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
-      for (let z = 5; z >= -5; z--) {
+      for (let z = 30; z >= 0; z--) {
         count++;
-        const offset = new Vector3(x + 1, z, y + 1).multiplyScalar(chunkSize);
-        const newPos = player.position.add(offset);
-        generateChunkAtPosition(newPos);
+        const off = new Vector3(x + 1, z, y + 1).multiplyScalar(chunkSize);
+        const pos = new Vector3(0, 0, 0).add(off);
+        generateChunkAtPosition(pos);
       }
     }
   }
@@ -182,8 +182,13 @@ async function placeVoxel(event: MouseEvent) {
     }, 0);
     const lightValue = Math.max(emanatingLight, neighborLight - 1);
     world.setLightValue(pos, lightValue);
+    const floodLightWorker = await spawn(
+      new Worker("./workers/floodLightWorker")
+    );
 
-    await world.floodLight([pos]);
+    await floodLightWorker.floodLight(world.chunks, [pos]);
+    await Thread.terminate(floodLightWorker);
+
     const chunksToUpdateSet = new Set<string>();
     surroundingOffsets.forEach((dir) => {
       const positionWithChunkOffset = pos.map(

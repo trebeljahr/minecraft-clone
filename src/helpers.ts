@@ -11,19 +11,37 @@ import { MathUtils, Vector3 } from "three";
 const leftMouse = 0;
 const rightMouse = 2;
 
+export function sleep(timeToSleep: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeToSleep * 1000);
+  });
+}
+
 export class SimpleTimer {
   public timeStamps: Record<string, number>;
+  public lastTimeStamp: string;
   constructor() {
     this.timeStamps = { start: Date.now() };
+    this.lastTimeStamp = "start";
   }
 
   get startTimeStamp() {
     return this.timeStamps["start"];
   }
 
+  takenFor(name: string) {
+    const stamp = Date.now();
+    this.timeStamps[name] = stamp;
+    console.log(
+      `Time taken for ${name}: ${stamp - this.timeStamps[this.lastTimeStamp]}`
+    );
+    this.lastTimeStamp = name;
+  }
+
   stop(now = "now", since = "start") {
     const stamp = Date.now();
     this.timeStamps[now] = stamp;
+    this.lastTimeStamp = now;
     console.log(
       `Time taken from ${since} to ${now} was ${stamp - this.timeStamps[since]}`
     );
