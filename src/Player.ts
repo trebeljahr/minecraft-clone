@@ -1,4 +1,5 @@
 import { Vector3 } from "three";
+import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
 import { copy } from "./constants";
 import { World } from "./VoxelWorld";
@@ -106,7 +107,7 @@ export class Player {
   }
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
-    const { type: collision } = this.world.getVoxel([x, y, z]);
+    const { type: collision } = getVoxel(this.world.chunks, [x, y, z]);
     if (collision !== 0) return true;
     return false;
   }

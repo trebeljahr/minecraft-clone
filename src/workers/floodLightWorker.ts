@@ -10,7 +10,7 @@ import {
 
 const floodLightWorker = {
   floodLight(chunks: Chunks, queue: Position[]) {
-    // console.log("Flood Light Queue lenght:  ", queue.length);
+    console.log("Flood Light Queue lenght:  ", queue.length);
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
     let counter = 0;
     while (queue.length > 0) {
@@ -44,11 +44,10 @@ const floodLightWorker = {
         }
       });
     }
-    // console.log(`${counter} iterations of floodlight queue`);
+    console.log(`${counter} iterations of floodlight queue`);
 
-    return { fullyLitChunks: chunks };
+    return chunks;
   },
 };
 
-export type FloodLightWorker = typeof floodLightWorker;
 expose(floodLightWorker);

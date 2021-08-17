@@ -1,9 +1,11 @@
 import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
+import { spawn, Thread, Worker } from "threads";
 import {
   computeChunkIndex,
   computeVoxelIndex,
   computeChunkOffset,
   computeChunkCoordinates,
+  getVoxel,
 } from "./helpers";
 import { blocks } from "./blocks";
 import {
@@ -15,7 +17,6 @@ import {
   maxHeight,
   Position,
   fields,
-  faces,
   Chunks,
 } from "./constants";
 import { opaque } from "./voxelMaterial";
@@ -23,7 +24,6 @@ import { Player } from "./Player";
 import { Noise } from "./noise";
 
 const {
-  cactus,
   emerald,
   lapis,
   diamond,
@@ -42,9 +42,6 @@ const chunkIdToMesh = {};
 
 export class World {
   public chunks: Chunks;
-  private tileSize: number;
-  private tileTextureWidth: number;
-  private tileTextureHeight: number;
   private scene: Scene;
   private sunlightedChunksColumns: Record<string, boolean>;
   constructor(options: {
@@ -54,9 +51,6 @@ export class World {
     scene: Scene;
   }) {
     this.scene = options.scene;
-    this.tileSize = options.tileSize;
-    this.tileTextureWidth = options.tileTextureWidth;
-    this.tileTextureHeight = options.tileTextureHeight;
     this.chunks = {};
     this.sunlightedChunksColumns = {};
   }
@@ -89,88 +83,6 @@ export class World {
     return { chunk, chunkId };
   }
 
-  getVoxel(pos: Position) {
-    const { chunk } = this.addChunkForVoxel(pos);
-    const voxelIndex = computeVoxelIndex(pos);
-    return {
-      type: chunk[voxelIndex],
-      light: chunk[voxelIndex + fields.light],
-      sunlight: chunk[voxelIndex + fields.sunlight],
-    };
-  }
-
-  generateGeometryDataForChunk(chunkOffset: Position) {
-    const { tileSize, tileTextureWidth, tileTextureHeight } = this;
-    const positions: number[] = [];
-    const lightValues: number[] = [];
-    const sunlightValues: number[] = [];
-    const normals: number[] = [];
-    const indices: number[] = [];
-    const uvs: number[] = [];
-    const [startX, startY, startZ] = chunkOffset.map(
-      (coord) => coord * chunkSize
-    );
-
-    for (let y = 0; y < chunkSize; ++y) {
-      const voxelY = startY + y;
-      for (let z = 0; z < chunkSize; ++z) {
-        const voxelZ = startZ + z;
-        for (let x = 0; x < chunkSize; ++x) {
-          const voxelX = startX + x;
-          const { type: voxel } = this.getVoxel([voxelX, voxelY, voxelZ]);
-          if (voxel) {
-            const uvVoxel = voxel - 1;
-            for (const { dir, corners, uvRow } of faces) {
-              const {
-                type: neighbor,
-                light: neighborLight,
-                sunlight: neighbourSunLight,
-              } = this.getVoxel([
-                voxelX + dir[0],
-                voxelY + dir[1],
-                voxelZ + dir[2],
-              ]);
-              if (
-                transparentBlocks.includes(neighbor) ||
-                transparentBlocks.includes(voxel)
-              ) {
-                const ndx = positions.length / 3;
-
-                for (const { pos, uv } of corners) {
-                  if (voxel === cactus) {
-                    positions.push(
-                      pos[0] - dir[0] * 0.063 + x,
-                      pos[1] + y,
-                      pos[2] - dir[2] * 0.063 + z
-                    );
-                  } else {
-                    positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
-                  }
-
-                  lightValues.push(neighborLight);
-                  sunlightValues.push(neighbourSunLight);
-                  normals.push(...dir);
-                  uvs.push(
-                    ((uvVoxel + uv[0]) * tileSize) / tileTextureWidth,
-                    1 - ((uvRow + 1 - uv[1]) * tileSize) / tileTextureHeight
-                  );
-                }
-                indices.push(ndx, ndx + 1, ndx + 2, ndx + 2, ndx + 1, ndx + 3);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return {
-      positions,
-      normals,
-      indices,
-      lightValues,
-      uvs,
-    };
-  }
   intersectRay(
     start: Vector3,
     end: Vector3,
@@ -208,7 +120,7 @@ export class World {
     let steppedIndex = -1;
 
     while (t <= velocity) {
-      const { type: voxel } = this.getVoxel([ix, iy, iz]);
+      const { type: voxel } = getVoxel(this.chunks, [ix, iy, iz]);
       if (voxel) {
         return {
           position: [start.x + t * dx, start.y + t * dy, start.z + t * dz],
@@ -500,7 +412,7 @@ export class World {
     return this.sunlightedChunksColumns[columnId];
   }
 
-  updateChunkGeometry(pos: Position) {
+  async updateChunkGeometry(pos: Position) {
     const chunkCoordinates = computeChunkCoordinates(pos);
     const chunkOffset = computeChunkOffset(pos);
     const chunkId = computeChunkIndex(pos);
@@ -508,8 +420,14 @@ export class World {
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
+    const chunkGeometryWorker = await spawn(
+      new Worker("./workers/chunkGeometryWorker")
+    );
     const { positions, normals, uvs, indices, lightValues } =
-      this.generateGeometryDataForChunk(chunkCoordinates);
+      await chunkGeometryWorker.generateGeometry(this.chunks, chunkCoordinates);
+
+    await Thread.terminate(chunkGeometryWorker);
+
     const positionNumComponents = 3;
     geometry.setAttribute(
       "position",
@@ -536,7 +454,7 @@ export class World {
       "color",
       new BufferAttribute(
         new Float32Array(
-          positions.map((_pos) => {
+          positions.map(() => {
             return 255;
           })
         ),

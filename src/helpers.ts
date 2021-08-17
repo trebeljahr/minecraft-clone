@@ -86,6 +86,17 @@ export function computeChunkIndex(pos: Position) {
 export function computeChunkCoordinates(pos: Position): Position {
   return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
 }
+
 export function computeVoxelCoordinates(pos: Vector3) {
   return copy(pos).floor();
+}
+
+export function getVoxel(chunks: Chunks, pos: Position) {
+  const { addedChunk: chunk } = addChunkForVoxel(chunks, pos);
+  const voxelIndex = computeVoxelIndex(pos);
+  return {
+    type: chunk[voxelIndex],
+    light: chunk[voxelIndex + fields.light],
+    sunlight: chunk[voxelIndex + fields.sunlight],
+  };
 }

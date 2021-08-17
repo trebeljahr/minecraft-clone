@@ -1,4 +1,3 @@
-import { expose } from "threads/worker";
 import {
   maxHeight,
   Position,
@@ -12,10 +11,11 @@ import {
   computeVoxelIndex,
   addChunkForVoxel,
 } from "../helpers";
+import { expose } from "threads/worker";
 
 const sunlightWorker = {
-  async sunlightChunkColumnAt(pos: Position, chunks: Chunks) {
-    async function propagateSunlight(chunks: Chunks, queue: Position[]) {
+  sunlightChunkColumnAt(pos: Position, chunks: Chunks) {
+    function propagateSunlight(chunks: Chunks, queue: Position[]) {
       const floodLightQueue = [...queue] as Position[];
       while (queue.length > 0) {
         const [x, y, z] = queue.shift();
@@ -27,7 +27,6 @@ const sunlightWorker = {
           z,
         ]);
         const blockBelow = blockBelowChunk[blockBelowIndex];
-
         const belowIsTransparent = transparentBlocks.includes(blockBelow);
         const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
         if (canPropagateSunlight) {
@@ -47,10 +46,9 @@ const sunlightWorker = {
         queue.push(newPos);
       }
     }
-    const floodLightQueue = await propagateSunlight(chunks, queue);
+    const floodLightQueue = propagateSunlight(chunks, queue);
     return { floodLightQueue, sunlitChunks: chunks };
   },
 };
 
-export type SunlightWorker = typeof sunlightWorker;
 expose(sunlightWorker);

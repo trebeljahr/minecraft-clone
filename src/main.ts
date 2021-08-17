@@ -1,12 +1,11 @@
 import "./main.css";
-import { SunlightWorker } from "./workers/sunlightWorker";
-import { FloodLightWorker } from "./workers/floodLightWorker";
 import { spawn, Thread, Worker } from "threads";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
-import { MouseClickEvent, computeChunkIndex } from "./helpers";
+import { MouseClickEvent, computeChunkIndex, getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
+  Chunks,
   copy,
   terrainHeight,
   tileSize,
@@ -64,19 +63,17 @@ async function generateChunkAtPosition(pos: Vector3) {
 
 async function sunlightChunkAtPos(pos: Vector3) {
   const start = Date.now();
-  const sunlightWorker = await spawn<SunlightWorker>(
-    new Worker("./workers/sunlightWorker")
-  );
-  const floodLightWorker = await spawn<FloodLightWorker>(
+  const sunlightWorker = await spawn(new Worker("./workers/sunlightWorker"));
+  const floodLightWorker = await spawn(
     new Worker("./workers/floodLightWorker")
   );
 
   const { sunlitChunks, floodLightQueue } =
     await sunlightWorker.sunlightChunkColumnAt(pos.toArray(), world.chunks);
   await Thread.terminate(sunlightWorker);
-  // console.log("This is the floodLight queue", floodLightQueue);
+  console.log("This is the floodLight queue", floodLightQueue);
 
-  const { fullyLitChunks } = await floodLightWorker.floodLight(
+  const fullyLitChunks: Chunks = await floodLightWorker.floodLight(
     sunlitChunks,
     floodLightQueue
   );
@@ -84,9 +81,8 @@ async function sunlightChunkAtPos(pos: Vector3) {
   Object.entries(fullyLitChunks).forEach(([chunkId, chunkData]) => {
     world.chunks[chunkId] = chunkData;
   });
-  // await world.sunLightChunkColumnAt(pos.toArray());
   const afterSunlighting = Date.now();
-  // console.log("Time for sunlight propagation:", afterSunlighting - start);
+  console.log("Time for sunlight propagation:", afterSunlighting - start);
   world.updateChunkGeometry(pos.toArray());
   world.updateChunkGeometry(
     copy(pos)
@@ -95,7 +91,7 @@ async function sunlightChunkAtPos(pos: Vector3) {
   );
 
   requestRenderIfNotRequested();
-  // console.log("Time for geometry updates:", Date.now() - afterSunlighting);
+  console.log("Time for geometry updates:", Date.now() - afterSunlighting);
 }
 
 async function generateChunksAroundCamera() {
@@ -169,14 +165,14 @@ async function placeVoxel(event: MouseEvent) {
       return;
     }
     console.log("Setting voxel at ", pos);
-    console.log("Voxel at mouse click", world.getVoxel(pos));
+    console.log("Voxel at mouse click", getVoxel(world.chunks, pos));
     world.setVoxel(pos, voxelId);
     const emanatingLight = glowingBlocks.includes(voxelId) ? 15 : 0;
     const neighborLight = neighborOffsets.reduce((maxLight, offset) => {
       const neighborPos = pos.map(
         (coord, i) => coord + offset.toArray()[i]
       ) as Position;
-      const { light } = world.getVoxel(neighborPos);
+      const { light } = getVoxel(world.chunks, neighborPos);
       return light > maxLight ? light : maxLight;
     }, 0);
     const lightValue = Math.max(emanatingLight, neighborLight - 1);
