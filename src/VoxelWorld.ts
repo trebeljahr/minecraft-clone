@@ -250,7 +250,7 @@ export class World {
     }
   }
 
-  generateChunkData(pos: Vector3) {
+  async generateChunkData(pos: Vector3) {
     pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
     for (let y = chunkSize - 1; y >= 0; --y) {
       if (pos.y + y > terrainHeight || pos.y + y <= 0) {

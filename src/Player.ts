@@ -5,8 +5,8 @@ import { copy } from "./constants";
 import { World } from "./VoxelWorld";
 
 const eyeLevel = 1.5;
-const maxSpeed = 10;
-const gravity = true; // can be set to disable/enable falling
+const gravity = false; // can be set to disable/enable falling
+const maxSpeed = gravity ? 10 : 30;
 
 let moveForward = false;
 let moveBack = false;
@@ -54,9 +54,12 @@ export class Player {
     if (this.controls.isLocked === true) {
       this.planarVelocity.x -= this.planarVelocity.x * 20 * delta;
       this.planarVelocity.z -= this.planarVelocity.z * 20 * delta;
+      if (!gravity) {
+        this.velocity.y -= this.velocity.y * 20 * delta;
+      }
 
       const onGround = this.standsOnGround(delta);
-      if (onGround) {
+      if (onGround || !gravity) {
         this.planarVelocity.z +=
           this.directionPlayerWantsToMove.z * 300 * delta;
         this.planarVelocity.x +=
@@ -73,6 +76,14 @@ export class Player {
 
       if (this.velocity.y > -30 && !onGround && gravity)
         this.velocity.y -= 9.8 * 5 * delta;
+      if (!gravity && moveDown) {
+        this.velocity.y -= 300 * delta;
+        this.velocity.clampLength(0, maxSpeed);
+      }
+      if (!gravity && moveUp) {
+        this.velocity.y += 300 * delta;
+        this.velocity.clampLength(0, maxSpeed);
+      }
 
       this.pos.y += this.velocity.y * delta;
       if (this.collidesWithTerrain) {
@@ -81,6 +92,7 @@ export class Player {
         }
         this.pos.y -= this.velocity.y * delta;
       }
+
       const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
       const clippingOffsetZ = this.velocity.z < 0 ? -0.5 : 0.5;
 
@@ -153,6 +165,9 @@ export class Player {
         break;
 
       case "Space":
+        if (!gravity) {
+          moveUp = true;
+        }
         if (!isFlying) {
           this.jump();
         }

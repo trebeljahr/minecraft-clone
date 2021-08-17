@@ -57,8 +57,9 @@ init();
 
 async function generateChunkAtPosition(pos: Vector3) {
   const start = Date.now();
-  world.generateChunkData(pos);
-  // console.log("Time for chunk geometry creation:", Date.now() - start);
+  await world.generateChunkData(pos);
+  await world.updateChunkGeometry(pos.toArray());
+  console.log("Time for chunk geometry creation:", Date.now() - start);
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
@@ -71,7 +72,7 @@ async function sunlightChunkAtPos(pos: Vector3) {
   const { sunlitChunks, floodLightQueue } =
     await sunlightWorker.sunlightChunkColumnAt(pos.toArray(), world.chunks);
   await Thread.terminate(sunlightWorker);
-  console.log("This is the floodLight queue", floodLightQueue);
+  // console.log("This is the floodLight queue", floodLightQueue);
 
   const fullyLitChunks: Chunks = await floodLightWorker.floodLight(
     sunlitChunks,
@@ -96,13 +97,13 @@ async function sunlightChunkAtPos(pos: Vector3) {
 
 async function generateChunksAroundCamera() {
   const start = Date.now();
-  const initialWorldRadius = 1;
+  const initialWorldRadius = 0;
   let count = 0;
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
-      for (let z = 0; z >= -1; z--) {
+      for (let z = 5; z >= -5; z--) {
         count++;
-        const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
+        const offset = new Vector3(x + 1, z, y + 1).multiplyScalar(chunkSize);
         const newPos = player.position.add(offset);
         generateChunkAtPosition(newPos);
       }
@@ -111,11 +112,9 @@ async function generateChunksAroundCamera() {
 
   for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
     for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
-      for (let z = 0; z >= -1; z--) {
-        const offset = new Vector3(x, z, y).multiplyScalar(chunkSize);
-        const newPos = player.position.add(offset);
-        await sunlightChunkAtPos(newPos);
-      }
+      const offset = new Vector3(x, 0, y).multiplyScalar(chunkSize);
+      const newPos = player.position.add(offset);
+      await sunlightChunkAtPos(newPos);
     }
   }
 
