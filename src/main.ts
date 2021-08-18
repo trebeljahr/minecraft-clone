@@ -11,6 +11,8 @@ import {
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
+  maxHeight,
+  verticalNumberOfChunks,
   Chunks,
   copy,
   terrainHeight,
@@ -86,41 +88,29 @@ async function sunlightChunkAtPos(pos: Vector3) {
     floodLightQueue
   );
   await Thread.terminate(floodLightWorker);
-  Object.entries(fullyLitChunks).forEach(([chunkId, chunkData]) => {
-    world.chunks[chunkId] = chunkData;
-  });
+  world.chunks = fullyLitChunks;
   logTime.takenFor("sunlight prop");
-  world.updateChunkGeometry(pos.toArray());
-  world.updateChunkGeometry(
-    copy(pos)
-      .setY(pos.y + chunkSize)
-      .toArray()
-  );
-
+  for (let y = 0; y < maxHeight + 20; y += chunkSize) {
+    world.updateChunkGeometry([pos.x, y, pos.z]);
+  }
   requestRenderIfNotRequested();
+
   logTime.takenFor("geometry updates");
 }
 
 async function generateChunksAroundCamera() {
   const start = Date.now();
-  const initialWorldRadius = 0;
+  const initialWorldSize = 2;
   let count = 0;
-  for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
-    for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
-      for (let z = 30; z >= 0; z--) {
+  for (let x = 0; x < initialWorldSize; x++) {
+    for (let z = 0; z < initialWorldSize; z++) {
+      for (let y = verticalNumberOfChunks; y >= 0; y--) {
         count++;
-        const off = new Vector3(x + 1, z, y + 1).multiplyScalar(chunkSize);
-        const pos = new Vector3(0, 0, 0).add(off);
-        generateChunkAtPosition(pos);
+        const pos = new Vector3(x, y, z).multiplyScalar(chunkSize);
+        await generateChunkAtPosition(pos);
       }
-    }
-  }
-
-  for (let x = -initialWorldRadius; x <= initialWorldRadius; x++) {
-    for (let y = -initialWorldRadius; y <= initialWorldRadius; y++) {
-      const offset = new Vector3(x, 0, y).multiplyScalar(chunkSize);
-      const newPos = player.position.add(offset);
-      await sunlightChunkAtPos(newPos);
+      const pos = new Vector3(x, 0, z).multiplyScalar(chunkSize);
+      await sunlightChunkAtPos(pos);
     }
   }
 
@@ -186,7 +176,10 @@ async function placeVoxel(event: MouseEvent) {
       new Worker("./workers/floodLightWorker")
     );
 
-    await floodLightWorker.floodLight(world.chunks, [pos]);
+    const fullyLitChunks = await floodLightWorker.floodLight(world.chunks, [
+      pos,
+    ]);
+    world.chunks = fullyLitChunks;
     await Thread.terminate(floodLightWorker);
 
     const chunksToUpdateSet = new Set<string>();
@@ -281,8 +274,13 @@ async function init() {
         inventory.toggle();
         inventory.isOpen ? player.controls.unlock() : player.controls.lock();
         break;
+      case "KeyH":
+        console.log(
+          "Player Position: ",
+          player.position.toArray().map((elem) => Math.floor(elem))
+        );
+        break;
       case "KeyF":
-        console.log("Pressed F");
         const pos = player.controls.getObject().position;
         const newPos = new Vector3(0, terrainHeight + 5, 0);
         pos.y = newPos.y;
