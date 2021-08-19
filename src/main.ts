@@ -67,8 +67,8 @@ async function generateChunkAtPosition(pos: Vector3) {
   const logTime = new SimpleTimer();
   await world.generateChunkData(pos);
   logTime.takenFor("chunk generation");
-  await world.updateChunkGeometry(pos.toArray());
-  logTime.takenFor("chunk geometry");
+  // await world.updateChunkGeometry(pos.toArray());
+  // logTime.takenFor("chunk geometry");
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
@@ -100,14 +100,14 @@ async function sunlightChunkAtPos(pos: Vector3) {
 
 async function generateChunksAroundCamera() {
   const start = Date.now();
-  const initialWorldSize = 2;
+  const initialWorldSize = 5;
   let count = 0;
   for (let x = 0; x < initialWorldSize; x++) {
     for (let z = 0; z < initialWorldSize; z++) {
       for (let y = verticalNumberOfChunks; y >= 0; y--) {
         count++;
         const pos = new Vector3(x, y, z).multiplyScalar(chunkSize);
-        await generateChunkAtPosition(pos);
+        generateChunkAtPosition(pos);
       }
       const pos = new Vector3(x, 0, z).multiplyScalar(chunkSize);
       await sunlightChunkAtPos(pos);
@@ -115,10 +115,6 @@ async function generateChunksAroundCamera() {
   }
 
   console.log("Number of chunks generated around camera: ", count);
-  console.log(
-    "Total time for generating and lighting chunks: ",
-    Date.now() - start
-  );
 }
 
 async function placeVoxel(event: MouseEvent) {
@@ -317,7 +313,10 @@ async function init() {
   window.addEventListener("resize", onWindowResize);
   await generateChunksAroundCamera();
   // spawnSingleBlock();
-  console.log("Total time for init function", Date.now() - start);
+  console.log(
+    "Total time for init function",
+    (Date.now() - start) / 1000 + "s"
+  );
 }
 
 function pruneChunks() {

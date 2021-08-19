@@ -22,9 +22,8 @@ const chunkGeometryWorker = {
     const normals: number[] = [];
     const indices: number[] = [];
     const uvs: number[] = [];
-    const [startX, startY, startZ] = chunkOffset.map(
-      (coord) => coord * chunkSize
-    );
+    const toVoxelCoords = (coord: number) => coord * chunkSize;
+    const [startX, startY, startZ] = chunkOffset.map(toVoxelCoords);
 
     for (let y = 0; y < chunkSize; ++y) {
       const voxelY = startY + y;

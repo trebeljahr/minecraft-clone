@@ -6,6 +6,7 @@ import {
   computeChunkOffset,
   computeChunkCoordinates,
   getVoxel,
+  // SimpleTimer,
 } from "./helpers";
 import { blocks } from "./blocks";
 import {
@@ -305,11 +306,11 @@ export class World {
       }
     }
 
-    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
-    this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
-    this.updateVoxelGeometry([currentX + leafWidth, leafHeightMax, currentZ]);
-    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ - leafWidth]);
-    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
+    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
+    // this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
+    // this.updateVoxelGeometry([currentX + leafWidth, leafHeightMax, currentZ]);
+    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ - leafWidth]);
+    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
   }
 
   spawnSingleBlock(player: Player) {
@@ -344,6 +345,7 @@ export class World {
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
+    // const logTime = new SimpleTimer();
     const chunkGeometryWorker = await spawn(
       new Worker("./workers/chunkGeometryWorker")
     );
@@ -351,6 +353,7 @@ export class World {
       await chunkGeometryWorker.generateGeometry(this.chunks, chunkCoordinates);
 
     await Thread.terminate(chunkGeometryWorker);
+    // logTime.takenFor("chunk geometry worker");
 
     const positionNumComponents = 3;
     geometry.setAttribute(
@@ -386,6 +389,7 @@ export class World {
       )
     );
 
+    // logTime.takenFor("setting geometry attributes");
     if (!mesh) {
       mesh = new Mesh(geometry, opaque);
       mesh.name = chunkId;
