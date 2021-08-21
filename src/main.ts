@@ -64,15 +64,15 @@ let menu = true;
 init();
 
 async function generateChunkAtPosition(pos: Vector3) {
-  const logTime = new SimpleTimer();
+  // const logTime = new SimpleTimer();
   await world.generateChunkData(pos);
-  logTime.takenFor("chunk generation");
+  // logTime.takenFor("chunk generation");
   // await world.updateChunkGeometry(pos.toArray());
   // logTime.takenFor("chunk geometry");
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
-  const logTime = new SimpleTimer();
+  // const logTime = new SimpleTimer();
   const sunlightWorker = await spawn(new Worker("./workers/sunlightWorker"));
   const floodLightWorker = await spawn(
     new Worker("./workers/floodLightWorker")
@@ -81,7 +81,6 @@ async function sunlightChunkAtPos(pos: Vector3) {
   const { sunlitChunks, floodLightQueue } =
     await sunlightWorker.sunlightChunkColumnAt(pos.toArray(), world.chunks);
   await Thread.terminate(sunlightWorker);
-  // console.log("This is the floodLight queue", floodLightQueue);
 
   const fullyLitChunks: Chunks = await floodLightWorker.floodLight(
     sunlitChunks,
@@ -89,17 +88,16 @@ async function sunlightChunkAtPos(pos: Vector3) {
   );
   await Thread.terminate(floodLightWorker);
   world.chunks = fullyLitChunks;
-  logTime.takenFor("sunlight prop");
+  // logTime.takenFor("sunlight prop");
   for (let y = 0; y < maxHeight + 20; y += chunkSize) {
     world.updateChunkGeometry([pos.x, y, pos.z]);
   }
   requestRenderIfNotRequested();
 
-  logTime.takenFor("geometry updates");
+  // logTime.takenFor("geometry updates");
 }
 
 async function generateChunksAroundCamera() {
-  const start = Date.now();
   const initialWorldSize = 5;
   let count = 0;
   for (let x = 0; x < initialWorldSize; x++) {
@@ -198,8 +196,7 @@ async function placeVoxel(event: MouseEvent) {
 }
 
 async function init() {
-  const start = Date.now();
-  console.log("Init has been called");
+  const logTime = new SimpleTimer();
   const near = 0.01;
   camera = new PerspectiveCamera(
     60,
@@ -313,10 +310,7 @@ async function init() {
   window.addEventListener("resize", onWindowResize);
   await generateChunksAroundCamera();
   // spawnSingleBlock();
-  console.log(
-    "Total time for init function",
-    (Date.now() - start) / 1000 + "s"
-  );
+  logTime.takenFor("Init function");
 }
 
 function pruneChunks() {

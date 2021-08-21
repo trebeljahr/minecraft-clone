@@ -169,18 +169,11 @@ export class World {
 
   async generateChunkData(pos: Vector3) {
     pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
-    console.log({ actualHeight: pos.y });
     for (let y = chunkSize - 1; y >= 0; --y) {
       const underBedrock = pos.y + y <= 0;
       const overMaximumHeight = pos.y + y > terrainHeight;
-      if (overMaximumHeight) {
-        console.log("Skipping because too high");
-        continue;
-      }
-      if (underBedrock) {
-        console.log("Skipping because too low");
-        continue;
-      }
+      if (overMaximumHeight || underBedrock) continue;
+
       for (let z = 0; z < chunkSize; ++z) {
         for (let x = 0; x < chunkSize; ++x) {
           const offsetPos: Position = [pos.x + x, pos.y + y, pos.z + z];

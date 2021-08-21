@@ -32,9 +32,8 @@ export class SimpleTimer {
   takenFor(name: string) {
     const stamp = Date.now();
     this.timeStamps[name] = stamp;
-    console.log(
-      `Time taken for ${name}: ${stamp - this.timeStamps[this.lastTimeStamp]}`
-    );
+    const timeTaken = stamp - this.timeStamps[this.lastTimeStamp];
+    console.log(`Time taken for ${name}: ${timeTaken / 1000}s`);
     this.lastTimeStamp = name;
   }
 

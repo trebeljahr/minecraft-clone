@@ -39,8 +39,6 @@ const sunlightWorker = {
     }
 
     const [cx, _, cz] = computeChunkOffset(pos);
-    console.log("Chunk Offset ", { cx, cz });
-    console.log("Versus Position: ", pos);
     const queue = [] as Position[];
     for (let xOff = 0; xOff < chunkSize; xOff++) {
       for (let zOff = 0; zOff < chunkSize; zOff++) {
