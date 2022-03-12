@@ -1,12 +1,11 @@
 import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
-import { spawn, Thread, Worker } from "threads";
 import {
   computeChunkIndex,
   computeVoxelIndex,
   computeChunkOffset,
   computeChunkCoordinates,
   getVoxel,
-  // SimpleTimer,
+  SimpleTimer,
 } from "./helpers";
 import { blocks } from "./blocks";
 import {
@@ -21,6 +20,7 @@ import {
 import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
 import { Noise } from "./noise";
+import { chunkGeometryWorkerPool } from "./workers/workerPool";
 
 const {
   emerald,
@@ -338,51 +338,47 @@ export class World {
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
-    // const logTime = new SimpleTimer();
-    const chunkGeometryWorker = await spawn(
-      new Worker("./workers/chunkGeometryWorker")
-    );
-    const { positions, normals, uvs, indices, lightValues } =
-      await chunkGeometryWorker.generateGeometry(this.chunks, chunkCoordinates);
+    await chunkGeometryWorkerPool.queue(async (worker) => {
+      const logTime = new SimpleTimer();
+      const { positions, normals, uvs, indices, lightValues } =
+        await worker.generateGeometry(this.chunks, chunkCoordinates);
+      logTime.takenFor("running chunk geometry worker");
 
-    await Thread.terminate(chunkGeometryWorker);
-    // logTime.takenFor("chunk geometry worker");
+      const positionNumComponents = 3;
+      geometry.setAttribute(
+        "position",
+        new BufferAttribute(new Float32Array(positions), positionNumComponents)
+      );
+      const normalNumComponents = 3;
+      geometry.setAttribute(
+        "normal",
+        new BufferAttribute(new Float32Array(normals), normalNumComponents)
+      );
+      const uvNumComponents = 2;
+      geometry.setAttribute(
+        "uv",
+        new BufferAttribute(new Float32Array(uvs), uvNumComponents)
+      );
+      geometry.setIndex(indices);
+      geometry.computeBoundingSphere();
 
-    const positionNumComponents = 3;
-    geometry.setAttribute(
-      "position",
-      new BufferAttribute(new Float32Array(positions), positionNumComponents)
-    );
-    const normalNumComponents = 3;
-    geometry.setAttribute(
-      "normal",
-      new BufferAttribute(new Float32Array(normals), normalNumComponents)
-    );
-    const uvNumComponents = 2;
-    geometry.setAttribute(
-      "uv",
-      new BufferAttribute(new Float32Array(uvs), uvNumComponents)
-    );
-    geometry.setIndex(indices);
-    geometry.computeBoundingSphere();
+      geometry.setAttribute(
+        "light",
+        new BufferAttribute(new Float32Array(lightValues), 1)
+      );
+      geometry.setAttribute(
+        "color",
+        new BufferAttribute(
+          new Float32Array(
+            positions.map(() => {
+              return 255;
+            })
+          ),
+          3
+        )
+      );
+    });
 
-    geometry.setAttribute(
-      "light",
-      new BufferAttribute(new Float32Array(lightValues), 1)
-    );
-    geometry.setAttribute(
-      "color",
-      new BufferAttribute(
-        new Float32Array(
-          positions.map(() => {
-            return 255;
-          })
-        ),
-        3
-      )
-    );
-
-    // logTime.takenFor("setting geometry attributes");
     if (!mesh) {
       mesh = new Mesh(geometry, opaque);
       mesh.name = chunkId;
