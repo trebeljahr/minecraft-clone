@@ -2,7 +2,6 @@ import "./main.css";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
 import {
-  sleep,
   MouseClickEvent,
   SimpleTimer,
   computeChunkIndex,
@@ -72,25 +71,25 @@ async function generateChunkAtPosition(pos: Vector3) {
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
-  let sunlitChunks, floodLightQueue;
+  let sunlitChunks: Chunks, floodLightQueue: Position[];
+  const logTime = new SimpleTimer();
   await sunlightWorkerPool.queue(async (worker) => {
     ({ sunlitChunks, floodLightQueue } = await worker.sunlightChunkColumnAt(
       pos.toArray(),
       world.chunks
     ));
   });
+  logTime.takenFor("sunlight");
 
   await floodLightWorkerPool.queue(async (worker) => {
     world.chunks = await worker.floodLight(sunlitChunks, floodLightQueue);
   });
+  logTime.takenFor("floodlight");
 
-  // logTime.takenFor("sunlight prop");
   for (let y = 0; y < maxHeight + 20; y += chunkSize) {
     world.updateChunkGeometry([pos.x, y, pos.z]);
   }
   requestRenderIfNotRequested();
-
-  // logTime.takenFor("geometry updates");
 }
 
 async function generateChunksAroundCamera() {

@@ -13,31 +13,32 @@ import {
 } from "../helpers";
 import { expose } from "threads/worker";
 
+function propagateSunlight(chunks: Chunks, queue: Position[]) {
+  const floodLightQueue = [...queue] as Position[];
+  while (queue.length > 0) {
+    const [x, y, z] = queue.shift();
+    const yBelow = y - 1;
+    const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
+    const { addedChunk: blockBelowChunk } = addChunkForVoxel(chunks, [
+      x,
+      yBelow,
+      z,
+    ]);
+    const blockBelow = blockBelowChunk[blockBelowIndex];
+    const belowIsTransparent = transparentBlocks.includes(blockBelow);
+    const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
+    if (canPropagateSunlight) {
+      queue.push([x, yBelow, z]);
+      setLightValue(chunks, [x, yBelow, z], 15);
+    } else {
+      floodLightQueue.push([x, y, z]);
+    }
+  }
+  return floodLightQueue;
+}
+
 const sunlightWorker = {
   sunlightChunkColumnAt(pos: Position, chunks: Chunks) {
-    function propagateSunlight(chunks: Chunks, queue: Position[]) {
-      const floodLightQueue = [...queue] as Position[];
-      while (queue.length > 0) {
-        const [x, y, z] = queue.shift();
-        const yBelow = y - 1;
-        const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
-        const { addedChunk: blockBelowChunk } = addChunkForVoxel(chunks, [
-          x,
-          yBelow,
-          z,
-        ]);
-        const blockBelow = blockBelowChunk[blockBelowIndex];
-        const belowIsTransparent = transparentBlocks.includes(blockBelow);
-        const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
-        if (canPropagateSunlight) {
-          queue.push([x, yBelow, z]);
-          setLightValue(chunks, [x, yBelow, z], 15);
-          floodLightQueue.push([x, yBelow, z]);
-        }
-      }
-      return floodLightQueue;
-    }
-
     const [cx, _, cz] = computeChunkOffset(pos);
     const queue = [] as Position[];
     for (let xOff = 0; xOff < chunkSize; xOff++) {
@@ -46,6 +47,7 @@ const sunlightWorker = {
         queue.push(newPos);
       }
     }
+    // console.log("Queue after initializing sunlight: ", queue.length);
     const floodLightQueue = propagateSunlight(chunks, queue);
     return { floodLightQueue, sunlitChunks: chunks };
   },

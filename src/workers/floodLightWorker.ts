@@ -11,7 +11,10 @@ import {
 const floodLightWorker = {
   floodLight(chunks: Chunks, queue: Position[]) {
     const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
+    let iterations = 0;
+    console.log("Start queue length: ", queue.length);
     while (queue.length > 0) {
+      iterations++;
       const [x, y, z] = queue.shift();
       const newLightValue = getLightValue(chunks, [x, y, z]) - 1;
       if (newLightValue <= 0) continue;
@@ -41,6 +44,7 @@ const floodLightWorker = {
         }
       });
     }
+    console.log("Final iterations amount: ", iterations);
 
     return chunks;
   },
