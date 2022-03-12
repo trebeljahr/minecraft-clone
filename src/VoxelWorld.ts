@@ -1,30 +1,28 @@
+import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
+import { spawn, Thread, Worker } from "threads";
 import {
-  Vector3,
-  MathUtils,
-  Scene,
-  BufferAttribute,
-  BufferGeometry,
-  Mesh,
-} from "three";
+  computeChunkIndex,
+  computeVoxelIndex,
+  computeChunkOffset,
+  computeChunkCoordinates,
+  getVoxel,
+  // SimpleTimer,
+} from "./helpers";
 import { blocks } from "./blocks";
 import {
   copy,
   neighborOffsets,
   terrainHeight,
-  transparentBlocks,
   chunkSize,
-  maxHeight,
   Position,
   fields,
-  maxLight,
-  faces,
+  Chunks,
 } from "./constants";
 import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
 import { Noise } from "./noise";
 
 const {
-  cactus,
   emerald,
   lapis,
   diamond,
@@ -36,79 +34,36 @@ const {
   grass,
   dirt,
 } = blocks;
+
 const noise = new Noise();
 
 const chunkIdToMesh = {};
 
 export class World {
-  private chunkSize: number;
-  private chunkSliceSize: number;
-  public chunks: Record<string, Uint8Array>;
-  private tileSize: number;
-  private tileTextureWidth: number;
-  private tileTextureHeight: number;
+  public chunks: Chunks;
   private scene: Scene;
   private sunlightedChunksColumns: Record<string, boolean>;
   constructor(options: {
-    chunkSize: number;
     tileSize: number;
     tileTextureWidth: number;
     tileTextureHeight: number;
     scene: Scene;
   }) {
     this.scene = options.scene;
-    this.chunkSize = options.chunkSize;
-    this.tileSize = options.tileSize;
-    this.tileTextureWidth = options.tileTextureWidth;
-    this.tileTextureHeight = options.tileTextureHeight;
-    const { chunkSize } = this;
-    this.chunkSliceSize = chunkSize * chunkSize;
     this.chunks = {};
     this.sunlightedChunksColumns = {};
   }
 
-  computeChunkDistanceFromPoint(point: Position, chunkId: string) {
-    console.log(chunkId.split(",").map((elem) => parseInt(elem)));
-    const chunkPos = new Vector3(
-      ...chunkId.split(",").map((elem) => parseInt(elem))
-    );
-    const pos = new Vector3(...this.computeChunkCoordinates(point));
-    console.log(pos);
-    const distance = chunkPos.distanceTo(pos);
-    console.log("Distance from point", distance);
-    return distance;
+  getChunkForVoxel(pos: Position) {
+    return this.chunks[computeChunkIndex(pos)];
   }
 
-  computeChunkOffset(pos: Position): Position {
-    return this.computeChunkCoordinates(pos).map(
-      (coord) => coord * chunkSize
-    ) as Position;
-  }
-  computeChunkCoordinates(pos: Position): Position {
-    return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
-  }
-  computeVoxelCoordinates(pos: Vector3) {
-    return copy(pos).floor();
-  }
-  computeVoxelIndex(pos: Position) {
-    const { chunkSize, chunkSliceSize } = this;
-    const [x, y, z] = pos
-      .map((coord) => MathUtils.euclideanModulo(coord, chunkSize))
-      .map((value) => value | 0);
-    return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
-  }
-  getChunkForVoxel(pos: Position) {
-    return this.chunks[this.computeChunkIndex(pos)];
-  }
-  computeChunkIndex(pos: Position) {
-    return this.computeChunkCoordinates(pos).join(",");
-  }
   setVoxel(pos: Position, type: number) {
     let chunk = this.getChunkForVoxel(pos);
     if (!chunk) {
       chunk = this.addChunkForVoxel(pos).chunk;
     }
-    const voxelOffset = this.computeVoxelIndex(pos);
+    const voxelOffset = computeVoxelIndex(pos);
     chunk[voxelOffset] = type;
     chunk[voxelOffset + fields.r] = 0;
     chunk[voxelOffset + fields.g] = 0;
@@ -118,103 +73,15 @@ export class World {
   }
 
   addChunkForVoxel(pos: Position) {
-    const chunkId = this.computeChunkIndex(pos);
+    const chunkId = computeChunkIndex(pos);
     let chunk = this.chunks[chunkId];
     if (!chunk) {
-      const { chunkSize } = this;
       chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
       this.chunks[chunkId] = chunk;
     }
     return { chunk, chunkId };
   }
 
-  getVoxel(pos: Position) {
-    const { chunk } = this.addChunkForVoxel(pos);
-    const voxelIndex = this.computeVoxelIndex(pos);
-    return {
-      type: chunk[voxelIndex],
-      light: chunk[voxelIndex + fields.light],
-      sunlight: chunk[voxelIndex + fields.sunlight],
-    };
-  }
-
-  generateGeometryDataForChunk(chunkOffset: Position) {
-    const {
-      chunkSize: chunkSize,
-      tileSize,
-      tileTextureWidth,
-      tileTextureHeight,
-    } = this;
-    const positions: number[] = [];
-    const lightValues: number[] = [];
-    const sunlightValues: number[] = [];
-    const normals: number[] = [];
-    const indices: number[] = [];
-    const uvs: number[] = [];
-    const [startX, startY, startZ] = chunkOffset.map(
-      (coord) => coord * chunkSize
-    );
-
-    for (let y = 0; y < chunkSize; ++y) {
-      const voxelY = startY + y;
-      for (let z = 0; z < chunkSize; ++z) {
-        const voxelZ = startZ + z;
-        for (let x = 0; x < chunkSize; ++x) {
-          const voxelX = startX + x;
-          const { type: voxel } = this.getVoxel([voxelX, voxelY, voxelZ]);
-          if (voxel) {
-            const uvVoxel = voxel - 1;
-            for (const { dir, corners, uvRow } of faces) {
-              const {
-                type: neighbor,
-                light: neighborLight,
-                sunlight: neighbourSunLight,
-              } = this.getVoxel([
-                voxelX + dir[0],
-                voxelY + dir[1],
-                voxelZ + dir[2],
-              ]);
-              if (
-                transparentBlocks.includes(neighbor) ||
-                transparentBlocks.includes(voxel)
-              ) {
-                const ndx = positions.length / 3;
-
-                for (const { pos, uv } of corners) {
-                  if (voxel === cactus) {
-                    positions.push(
-                      pos[0] - dir[0] * 0.063 + x,
-                      pos[1] + y,
-                      pos[2] - dir[2] * 0.063 + z
-                    );
-                  } else {
-                    positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
-                  }
-
-                  lightValues.push(neighborLight);
-                  sunlightValues.push(neighbourSunLight);
-                  normals.push(...dir);
-                  uvs.push(
-                    ((uvVoxel + uv[0]) * tileSize) / tileTextureWidth,
-                    1 - ((uvRow + 1 - uv[1]) * tileSize) / tileTextureHeight
-                  );
-                }
-                indices.push(ndx, ndx + 1, ndx + 2, ndx + 2, ndx + 1, ndx + 3);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return {
-      positions,
-      normals,
-      indices,
-      lightValues,
-      uvs,
-    };
-  }
   intersectRay(
     start: Vector3,
     end: Vector3,
@@ -252,7 +119,7 @@ export class World {
     let steppedIndex = -1;
 
     while (t <= velocity) {
-      const { type: voxel } = this.getVoxel([ix, iy, iz]);
+      const { type: voxel } = getVoxel(this.chunks, [ix, iy, iz]);
       if (voxel) {
         return {
           position: [start.x + t * dx, start.y + t * dy, start.z + t * dz],
@@ -294,100 +161,19 @@ export class World {
     return null;
   }
 
-  async sunLightChunkColumnAt(pos: Position) {
-    const index = `${pos[0]} ${pos[2]}`;
-    let chunkColumnHasSunlight = this.sunlightedChunksColumns[index];
-    if (!chunkColumnHasSunlight) {
-      this.sunlightedChunksColumns[index] = true;
-      const [cx, _, cz] = this.computeChunkOffset(pos);
-      const queue = [];
-      for (let xOff = 0; xOff < chunkSize; xOff++) {
-        for (let zOff = 0; zOff < chunkSize; zOff++) {
-          const newPos = [xOff + cx, maxHeight, zOff + cz] as Position;
-          this.setLightValue(newPos, 15);
-          queue.push(newPos);
-        }
-      }
-      this.propagateSunlight(queue);
-    }
-  }
-
   setLightValue(pos: Position, lightValue: number) {
     const { chunk } = this.addChunkForVoxel(pos);
-    const blockIndex = this.computeVoxelIndex(pos);
+    const blockIndex = computeVoxelIndex(pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
 
-  async propagateSunlight(queue: Position[]) {
-    const floodLightQueue = [...queue] as Position[];
-    // console.log(
-    //   "Before propagating sunlight for chunk how much sunlighting is to do: ",
-    //   [...queue]
-    // );
-    while (queue.length > 0) {
-      const [x, y, z] = queue.shift();
-
-      const yBelow = y - 1;
-      const blockBelowIndex = this.computeVoxelIndex([x, yBelow, z]);
-      const { chunk: blockBelowChunk } = this.addChunkForVoxel([x, yBelow, z]);
-      const blockBelow = blockBelowChunk[blockBelowIndex];
-
-      const belowIsTransparent = transparentBlocks.includes(blockBelow);
-      const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
-      if (canPropagateSunlight) {
-        queue.push([x, yBelow, z]);
-        this.setLightValue([x, yBelow, z], 15);
-        floodLightQueue.push([x, yBelow, z]);
-      }
-    }
-    // console.log(
-    //   "After sunlight propagation how much floodlighting is to do?",
-    //   floodLightQueue.length
-    // );
-    // console.log([...floodLightQueue]);
-    await this.floodLight(floodLightQueue);
-  }
-
-  async floodLight(queue: Position[]) {
-    const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
-    while (queue.length > 0) {
-      const [x, y, z] = queue.shift();
-      const { chunk } = this.addChunkForVoxel([x, y, z]);
-      const blockIndex = this.computeVoxelIndex([x, y, z]);
-      const blockLightValue = chunk[blockIndex + fields.light];
-
-      neighbors.forEach((offset) => {
-        const nx = x + offset.x;
-        const ny = y + offset.y;
-        const nz = z + offset.z;
-
-        const newLightValue = blockLightValue - 1;
-
-        if (newLightValue <= 0) return;
-
-        const { chunk: neighborsChunk } = this.addChunkForVoxel([nx, ny, nz]);
-        const neighborIndex = this.computeVoxelIndex([nx, ny, nz]);
-        let lightValueInNeighbor = neighborsChunk[neighborIndex + fields.light];
-        let neighborType = neighborsChunk[neighborIndex];
-
-        const lightIsBrighter = newLightValue > lightValueInNeighbor;
-        const neighborIsTransparent = transparentBlocks.includes(neighborType);
-
-        const shouldPropagate = lightIsBrighter && neighborIsTransparent;
-        if (shouldPropagate) {
-          neighborsChunk[neighborIndex + fields.light] = newLightValue;
-          queue.push([nx, ny, nz]);
-        }
-      });
-    }
-  }
-
-  generateChunkData(pos: Vector3) {
+  async generateChunkData(pos: Vector3) {
     pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
     for (let y = chunkSize - 1; y >= 0; --y) {
-      if (pos.y + y > terrainHeight || pos.y + y <= 0) {
-        continue;
-      }
+      const underBedrock = pos.y + y <= 0;
+      const overMaximumHeight = pos.y + y > terrainHeight;
+      if (overMaximumHeight || underBedrock) continue;
+
       for (let z = 0; z < chunkSize; ++z) {
         for (let x = 0; x < chunkSize; ++x) {
           const offsetPos: Position = [pos.x + x, pos.y + y, pos.z + z];
@@ -513,11 +299,11 @@ export class World {
       }
     }
 
-    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
-    this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
-    this.updateVoxelGeometry([currentX + leafWidth, leafHeightMax, currentZ]);
-    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ - leafWidth]);
-    this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
+    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
+    // this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
+    // this.updateVoxelGeometry([currentX + leafWidth, leafHeightMax, currentZ]);
+    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ - leafWidth]);
+    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
   }
 
   spawnSingleBlock(player: Player) {
@@ -532,27 +318,36 @@ export class World {
       const offsetPos = pos.map(
         (coord, i) => coord + offset.toArray()[i]
       ) as Position;
-      const chunkId = this.computeChunkIndex(offsetPos);
+      const chunkId = computeChunkIndex(offsetPos);
       if (!updatedChunkIds[chunkId]) {
         updatedChunkIds[chunkId] = true;
         this.updateChunkGeometry(offsetPos);
       }
     }
   }
+
   hasSunlight(columnId: string) {
     return this.sunlightedChunksColumns[columnId];
   }
 
-  updateChunkGeometry(pos: Position) {
-    const chunkCoordinates = this.computeChunkCoordinates(pos);
-    const chunkOffset = this.computeChunkOffset(pos);
-    const chunkId = this.computeChunkIndex(pos);
+  async updateChunkGeometry(pos: Position) {
+    const chunkCoordinates = computeChunkCoordinates(pos);
+    const chunkOffset = computeChunkOffset(pos);
+    const chunkId = computeChunkIndex(pos);
 
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
+    // const logTime = new SimpleTimer();
+    const chunkGeometryWorker = await spawn(
+      new Worker("./workers/chunkGeometryWorker")
+    );
     const { positions, normals, uvs, indices, lightValues } =
-      this.generateGeometryDataForChunk(chunkCoordinates);
+      await chunkGeometryWorker.generateGeometry(this.chunks, chunkCoordinates);
+
+    await Thread.terminate(chunkGeometryWorker);
+    // logTime.takenFor("chunk geometry worker");
+
     const positionNumComponents = 3;
     geometry.setAttribute(
       "position",
@@ -579,7 +374,7 @@ export class World {
       "color",
       new BufferAttribute(
         new Float32Array(
-          positions.map((_pos) => {
+          positions.map(() => {
             return 255;
           })
         ),
@@ -587,10 +382,11 @@ export class World {
       )
     );
 
+    // logTime.takenFor("setting geometry attributes");
     if (!mesh) {
       mesh = new Mesh(geometry, opaque);
       mesh.name = chunkId;
-      console.log("Chunk Id in scene: ", chunkId);
+      // console.log("Chunk Id in scene: ", chunkId);
       chunkIdToMesh[chunkId] = mesh;
       this.scene.add(mesh);
       mesh.position.set(chunkOffset[0], chunkOffset[1], chunkOffset[2]);

@@ -1,7 +1,9 @@
 import { blocks } from "./blocks";
 export const chunkSize = 16;
 export const halfChunk = chunkSize / 2;
-export const surface = 5 * chunkSize;
+export const chunkSliceSize = chunkSize * chunkSize;
+export const verticalNumberOfChunks = 3;
+export const surface = verticalNumberOfChunks * chunkSize;
 export const terrainHeight = surface;
 export const blockLength = 100;
 
@@ -61,6 +63,7 @@ export const fields = {
   sunlight: 5,
   count: 6,
 };
+
 export const faces = [
   {
     // left
@@ -130,6 +133,7 @@ export const faces = [
   },
 ];
 
+export type Chunks = Record<string, Uint8Array>;
 // function getCurrentChunk(providedPos?: Vector3) {
 //   const pos = providedPos || player.position;
 //   return copy(pos).divideScalar(chunkSize).floor();

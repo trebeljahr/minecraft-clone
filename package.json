@@ -14,9 +14,11 @@
     "@types/three": "^0.127.1",
     "dat.gui": "^0.7.7",
     "perlin-noise-3d": "^0.5.4",
+    "threads": "^1.6.5",
     "three": "latest"
   },
   "devDependencies": {
+    "@babel/types": "^7.15.0",
     "awesome-typescript-loader": "^5.2.1",
     "css-loader": "^3.2.0",
     "file-loader": "^4.2.0",
@@ -24,6 +26,7 @@
     "source-map-loader": "^0.2.4",
     "style-loader": "^1.0.0",
     "terser-webpack-plugin": "^1.4.1",
+    "threads-plugin": "^1.4.0",
     "typescript": "latest",
     "webpack": "^4.39.2",
     "webpack-cleanup-plugin": "^0.5.1",
