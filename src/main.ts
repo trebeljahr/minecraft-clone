@@ -1,5 +1,4 @@
 import "./main.css";
-import { spawn, Thread, Worker } from "threads";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
 import {
@@ -38,6 +37,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { floodLightWorkerPool, sunlightWorkerPool } from "./workers/workerPool";
 
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
@@ -72,22 +72,18 @@ async function generateChunkAtPosition(pos: Vector3) {
 }
 
 async function sunlightChunkAtPos(pos: Vector3) {
-  // const logTime = new SimpleTimer();
-  const sunlightWorker = await spawn(new Worker("./workers/sunlightWorker"));
-  const floodLightWorker = await spawn(
-    new Worker("./workers/floodLightWorker")
-  );
+  let sunlitChunks, floodLightQueue;
+  await sunlightWorkerPool.queue(async (worker) => {
+    ({ sunlitChunks, floodLightQueue } = await worker.sunlightChunkColumnAt(
+      pos.toArray(),
+      world.chunks
+    ));
+  });
 
-  const { sunlitChunks, floodLightQueue } =
-    await sunlightWorker.sunlightChunkColumnAt(pos.toArray(), world.chunks);
-  await Thread.terminate(sunlightWorker);
+  await floodLightWorkerPool.queue(async (worker) => {
+    world.chunks = await worker.floodLight(sunlitChunks, floodLightQueue);
+  });
 
-  const fullyLitChunks: Chunks = await floodLightWorker.floodLight(
-    sunlitChunks,
-    floodLightQueue
-  );
-  await Thread.terminate(floodLightWorker);
-  world.chunks = fullyLitChunks;
   // logTime.takenFor("sunlight prop");
   for (let y = 0; y < maxHeight + 20; y += chunkSize) {
     world.updateChunkGeometry([pos.x, y, pos.z]);
@@ -166,15 +162,9 @@ async function placeVoxel(event: MouseEvent) {
     }, 0);
     const lightValue = Math.max(emanatingLight, neighborLight - 1);
     world.setLightValue(pos, lightValue);
-    const floodLightWorker = await spawn(
-      new Worker("./workers/floodLightWorker")
-    );
-
-    const fullyLitChunks = await floodLightWorker.floodLight(world.chunks, [
-      pos,
-    ]);
-    world.chunks = fullyLitChunks;
-    await Thread.terminate(floodLightWorker);
+    await floodLightWorkerPool.queue(async (worker) => {
+      world.chunks = await worker.floodLight(world.chunks, [pos]);
+    });
 
     const chunksToUpdateSet = new Set<string>();
     surroundingOffsets.forEach((dir) => {

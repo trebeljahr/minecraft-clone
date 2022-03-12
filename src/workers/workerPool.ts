@@ -1,7 +1,16 @@
 import { spawn, Pool, Worker } from "threads";
 
-const size = 8;
 export const chunkGeometryWorkerPool = Pool(
   () => spawn(new Worker("./chunkGeometryWorker")),
-  size
+  8
+);
+
+export const sunlightWorkerPool = Pool(
+  () => spawn(new Worker("./sunlightWorker")),
+  8
+);
+
+export const floodLightWorkerPool = Pool(
+  () => spawn(new Worker("./floodLightWorker")),
+  8
 );

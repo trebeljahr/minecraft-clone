@@ -339,10 +339,8 @@ export class World {
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
     await chunkGeometryWorkerPool.queue(async (worker) => {
-      const logTime = new SimpleTimer();
       const { positions, normals, uvs, indices, lightValues } =
         await worker.generateGeometry(this.chunks, chunkCoordinates);
-      logTime.takenFor("running chunk geometry worker");
 
       const positionNumComponents = 3;
       geometry.setAttribute(
