@@ -5,7 +5,7 @@ import {
   computeChunkOffset,
   computeChunkCoordinates,
   getVoxel,
-  SimpleTimer,
+  addChunkForVoxel,
 } from "./helpers";
 import { blocks } from "./blocks";
 import {
@@ -19,23 +19,20 @@ import {
 } from "./constants";
 import { opaque } from "./voxelMaterial";
 import { Player } from "./Player";
-import { Noise } from "./noise";
 import { chunkGeometryWorkerPool } from "./workers/workerPool";
+import {
+  setVoxel,
+  shouldPlaceBlock,
+  shouldSpawnDiamonds,
+  shouldSpawnDirt,
+  shouldSpawnEmeralds,
+  shouldSpawnGold,
+  shouldSpawnGrass,
+  shouldSpawnLapis,
+  shouldSpawnTree,
+} from "./chunkLogic";
 
-const {
-  emerald,
-  lapis,
-  diamond,
-  birchwood,
-  foliage,
-  oakwood,
-  gold,
-  stone,
-  grass,
-  dirt,
-} = blocks;
-
-const noise = new Noise();
+const { birchwood, foliage, oakwood } = blocks;
 
 const chunkIdToMesh = {};
 
@@ -52,35 +49,6 @@ export class World {
     this.scene = options.scene;
     this.chunks = {};
     this.sunlightedChunksColumns = {};
-  }
-
-  getChunkForVoxel(pos: Position) {
-    return this.chunks[computeChunkId(pos)];
-  }
-
-  setVoxel(pos: Position, type: number) {
-    let chunk = this.getChunkForVoxel(pos);
-    if (!chunk) {
-      chunk = this.addChunkForVoxel(pos).chunk;
-    }
-    const voxelOffset = computeVoxelIndex(pos);
-    chunk[voxelOffset] = type;
-    chunk[voxelOffset + fields.r] = 0;
-    chunk[voxelOffset + fields.g] = 0;
-    chunk[voxelOffset + fields.b] = 0;
-    chunk[voxelOffset + fields.light] = 0;
-    chunk[voxelOffset + fields.sunlight] = 0;
-  }
-
-  addChunkForVoxel(pos: Position) {
-    const chunkId = computeChunkId(pos);
-    let chunk = this.chunks[chunkId];
-    if (!chunk) {
-      // console.log("Adding new chunk!");
-      chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
-      this.chunks[chunkId] = chunk;
-    }
-    return { chunk, chunkId };
   }
 
   intersectRay(
@@ -168,143 +136,20 @@ export class World {
     chunk[blockIndex + fields.light] = lightValue;
   }
 
-  generateChunkData(pos: Vector3) {
-    pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
-    for (let y = chunkSize - 1; y >= -1; --y) {
-      const underBedrock = pos.y + y <= 0;
-      const overMaximumHeight = pos.y + y > terrainHeight;
-      if (overMaximumHeight || underBedrock) continue;
-
-      for (let z = 0; z < chunkSize; ++z) {
-        for (let x = 0; x < chunkSize; ++x) {
-          const offsetPos: Position = [pos.x + x, pos.y + y, pos.z + z];
-          if (this.shouldPlaceBlock(...offsetPos)) {
-            if (this.shouldSpawnGold(...offsetPos)) {
-              this.setVoxel(offsetPos, gold);
-            } else if (this.shouldSpawnDiamonds(...offsetPos)) {
-              this.setVoxel(offsetPos, diamond);
-            } else if (this.shouldSpawnLapis(...offsetPos)) {
-              this.setVoxel(offsetPos, lapis);
-            } else if (this.shouldSpawnEmeralds(...offsetPos)) {
-              this.setVoxel(offsetPos, emerald);
-            } else if (this.shouldSpawnGrass(offsetPos)) {
-              this.setVoxel(offsetPos, grass);
-              if (this.shouldSpawnTree()) {
-                this.spawnTree(pos.x + x, pos.y + y + 1, pos.z + z);
-              }
-            } else if (this.shouldSpawnDirt(...offsetPos)) {
-              this.setVoxel(offsetPos, dirt);
-            } else {
-              this.setVoxel(offsetPos, stone);
-            }
-          }
-        }
-      }
-    }
+  setVoxel(pos: Position, type: number) {
+    this.chunks = setVoxel(this.chunks, pos, type);
   }
 
-  shouldPlaceBlock(x: number, z: number, y: number) {
-    const noiseVal = noise.perlin3(x / 10, z / 10, y / 10);
-    return noiseVal >= -0.3 && z < terrainHeight;
+  addChunkForVoxel(pos: Position) {
+    const { addedChunk, addedChunkId } = addChunkForVoxel(this.chunks, pos);
+    this.chunks[addedChunkId] = addedChunk;
+    return { chunk: addedChunk, chunkId: addedChunkId };
   }
-
-  wouldPlaceBlockAbove(x: number, currentY: number, z: number) {
-    for (let y = currentY + 1; y < currentY + 5; y++) {
-      if (this.shouldPlaceBlock(x, y, z)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  shouldSpawnGrass(pos: Position) {
-    return !this.wouldPlaceBlockAbove(...pos);
-  }
-
-  shouldSpawnLapis(_x: number, currentY: number, _z: number) {
-    if (currentY > 40) return false;
-    // for (let offset in neighborOffsets) {
-    //   getVoxel()
-    // }
-    return Math.random() < 0.01;
-  }
-
-  shouldSpawnDiamonds(_x: number, currentY: number, _z: number) {
-    if (currentY > 40) return false;
-    // for (let offset in neighborOffsets) {
-    //   getVoxel()
-    // }
-    return Math.random() < 0.01;
-  }
-
-  shouldSpawnEmeralds(_x: number, currentY: number, _z: number) {
-    if (currentY > 40) return false;
-    // for (let offset in neighborOffsets) {
-    //   getVoxel()
-    // }
-    return Math.random() < 0.01;
-  }
-
-  shouldSpawnGold(_x: number, currentY: number, _z: number) {
-    if (currentY > 40) return false;
-    // for (let offset in neighborOffsets) {
-    //   getVoxel()
-    // }
-    return Math.random() < 0.01;
-  }
-
-  shouldSpawnDirt(x: number, currentY: number, z: number) {
-    for (let y = currentY + 1; y < currentY + 4; y++) {
-      if (this.shouldSpawnGrass([x, y, z])) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  shouldSpawnTree() {
-    return Math.random() < 0.006;
-  }
-
-  spawnTree(currentX: number, currentY: number, currentZ: number) {
-    const treeHeight = currentY + Math.floor(Math.random() * 3) + 3;
-    const leafHeightMin = treeHeight - 2;
-    const leafHeightMax = treeHeight + 2;
-
-    const wood = Math.random() > 0.5 ? oakwood : birchwood;
-
-    const leafWidth = 2;
-
-    for (let y = currentY; y < leafHeightMax; y++) {
-      if (y >= leafHeightMin && y < treeHeight) {
-        for (let x = currentX - leafWidth; x <= currentX + leafWidth; x++) {
-          for (let z = currentZ - leafWidth; z <= currentZ + leafWidth; z++) {
-            this.setVoxel([x, y, z], foliage);
-          }
-        }
-      } else if (y >= leafHeightMin && y <= treeHeight) {
-        for (let x = currentX - 1; x <= currentX + 1; x++) {
-          for (let z = currentZ - 1; z <= currentZ + 1; z++) {
-            this.setVoxel([x, y, z], foliage);
-          }
-        }
-      } else if (y >= leafHeightMin) {
-        this.setVoxel([currentX, y, currentZ], foliage);
-        this.setVoxel([currentX, y, currentZ + 1], foliage);
-        this.setVoxel([currentX, y, currentZ - 1], foliage);
-        this.setVoxel([currentX + 1, y, currentZ], foliage);
-        this.setVoxel([currentX - 1, y, currentZ], foliage);
-      }
-      if (y <= treeHeight) {
-        this.setVoxel([currentX, y, currentZ], wood);
-      }
-    }
-
-    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
-    // this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
-    // this.updateVoxelGeometry([currentX + leafWidth, leafHeightMax, currentZ]);
-    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ - leafWidth]);
-    // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
+  async generateChunkData(posVector: Vector3) {
+    await chunkGeometryWorkerPool.queue(async (worker) => {
+      const pos = posVector.toArray() as Position;
+      await worker.generateChunkData(this.chunks, pos);
+    });
   }
 
   spawnSingleBlock(player: Player) {
