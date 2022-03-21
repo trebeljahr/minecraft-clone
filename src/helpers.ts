@@ -71,14 +71,14 @@ export function computeChunkDistanceFromPoint(
   point: Position,
   chunkId: string
 ) {
-  console.log(chunkId.split(",").map((elem) => parseInt(elem)));
+  // console.log(chunkId.split(",").map((elem) => parseInt(elem)));
   const chunkPos = new Vector3(
     ...chunkId.split(",").map((elem) => parseInt(elem))
   );
   const pos = new Vector3(...computeChunkCoordinates(point));
-  console.log(pos);
+  // console.log(pos);
   const distance = chunkPos.distanceTo(pos);
-  console.log("Distance from point", distance);
+  // console.log("Distance from point", distance);
   return distance;
 }
 
@@ -93,7 +93,7 @@ export function setLightValue(
 }
 
 export function addChunkForVoxel(chunks: Chunks, pos: Position) {
-  const chunkId = computeChunkIndex(pos);
+  const chunkId = computeChunkId(pos);
   let chunk = chunks[chunkId];
   if (!chunk) {
     chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
@@ -109,14 +109,51 @@ export function computeVoxelIndex(pos: Position) {
   return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
 }
 
+export function getSurroundingChunksColumns(chunks: Chunks, pos: Position) {
+  let filteredChunks = {};
+  for (let x = -1; x < 1; x++) {
+    for (let z = -1; z < 1; z++) {
+      filteredChunks = { ...filteredChunks, ...getChunkColumn(chunks, pos) };
+    }
+  }
+  return filteredChunks;
+}
+
+export function getChunkColumn(chunks: Chunks, pos: Position) {
+  // console.log(pos);
+  // console.log(computeChunkId(pos));
+  const chunkEntries = Object.entries(chunks);
+  const filteredEntries = chunkEntries.filter(([chunkId]) => {
+    const chunkPosition = parseChunkId(chunkId);
+    const posOffset = computeChunkOffsetVector(pos);
+    const sameX = chunkPosition.x === posOffset.x;
+    const sameZ = chunkPosition.z === posOffset.z;
+    if (sameX && sameZ) {
+      return true;
+    }
+    return false;
+  });
+  // console.log(filteredEntries);
+  return Object.fromEntries(filteredEntries);
+}
+
+export function computeChunkOffsetVector(pos: Position) {
+  return new Vector3(...computeChunkOffset(pos));
+}
+
 export function computeChunkOffset(pos: Position): Position {
   return computeChunkCoordinates(pos).map(
     (coord) => coord * chunkSize
   ) as Position;
 }
 
-export function computeChunkIndex(pos: Position) {
+export function computeChunkId(pos: Position) {
   return computeChunkCoordinates(pos).join(",");
+}
+
+export function parseChunkId(chunkId: string) {
+  const [x, y, z] = chunkId.split(",").map((digits) => parseInt(digits));
+  return new Vector3(x, y, z).multiplyScalar(chunkSize);
 }
 
 export function computeChunkCoordinates(pos: Position): Position {

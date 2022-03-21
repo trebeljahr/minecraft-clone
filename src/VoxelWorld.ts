@@ -1,6 +1,6 @@
 import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
 import {
-  computeChunkIndex,
+  computeChunkId,
   computeVoxelIndex,
   computeChunkOffset,
   computeChunkCoordinates,
@@ -55,7 +55,7 @@ export class World {
   }
 
   getChunkForVoxel(pos: Position) {
-    return this.chunks[computeChunkIndex(pos)];
+    return this.chunks[computeChunkId(pos)];
   }
 
   setVoxel(pos: Position, type: number) {
@@ -73,9 +73,10 @@ export class World {
   }
 
   addChunkForVoxel(pos: Position) {
-    const chunkId = computeChunkIndex(pos);
+    const chunkId = computeChunkId(pos);
     let chunk = this.chunks[chunkId];
     if (!chunk) {
+      // console.log("Adding new chunk!");
       chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
       this.chunks[chunkId] = chunk;
     }
@@ -167,9 +168,9 @@ export class World {
     chunk[blockIndex + fields.light] = lightValue;
   }
 
-  async generateChunkData(pos: Vector3) {
+  generateChunkData(pos: Vector3) {
     pos.divideScalar(chunkSize).floor().multiplyScalar(chunkSize);
-    for (let y = chunkSize - 1; y >= 0; --y) {
+    for (let y = chunkSize - 1; y >= -1; --y) {
       const underBedrock = pos.y + y <= 0;
       const overMaximumHeight = pos.y + y > terrainHeight;
       if (overMaximumHeight || underBedrock) continue;
@@ -318,7 +319,7 @@ export class World {
       const offsetPos = pos.map(
         (coord, i) => coord + offset.toArray()[i]
       ) as Position;
-      const chunkId = computeChunkIndex(offsetPos);
+      const chunkId = computeChunkId(offsetPos);
       if (!updatedChunkIds[chunkId]) {
         updatedChunkIds[chunkId] = true;
         this.updateChunkGeometry(offsetPos);
@@ -333,7 +334,7 @@ export class World {
   async updateChunkGeometry(pos: Position) {
     const chunkCoordinates = computeChunkCoordinates(pos);
     const chunkOffset = computeChunkOffset(pos);
-    const chunkId = computeChunkIndex(pos);
+    const chunkId = computeChunkId(pos);
 
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();

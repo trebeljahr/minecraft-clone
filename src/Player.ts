@@ -51,6 +51,9 @@ export class Player {
 
   movePlayer(delta: number) {
     if (this.controls.isLocked === true) {
+      // console.log(delta);
+      // const before = copy(this.position);
+      // console.log("before update: ", before);
       this.planarVelocity.x -= this.planarVelocity.x * 20 * delta;
       this.planarVelocity.z -= this.planarVelocity.z * 20 * delta;
       if (!gravity) {
@@ -60,14 +63,14 @@ export class Player {
       const onGround = this.standsOnGround(delta);
       if (onGround || !gravity) {
         this.planarVelocity.z +=
-          ((this.directionPlayerWantsToMove.z * 300 * maxSpeed) / 10) * delta;
+          this.directionPlayerWantsToMove.z * 30 * maxSpeed * delta;
         this.planarVelocity.x +=
-          ((this.directionPlayerWantsToMove.x * 300 * maxSpeed) / 10) * delta;
+          this.directionPlayerWantsToMove.x * 30 * maxSpeed * delta;
       } else {
         this.planarVelocity.z +=
-          ((this.directionPlayerWantsToMove.z * 100 * maxSpeed) / 10) * delta;
+          this.directionPlayerWantsToMove.z * 10 * maxSpeed * delta;
         this.planarVelocity.x +=
-          ((this.directionPlayerWantsToMove.x * 100 * maxSpeed) / 10) * delta;
+          this.directionPlayerWantsToMove.x * 10 * maxSpeed * delta;
       }
       this.planarVelocity.clampLength(0, maxSpeed);
       this.velocity.x = this.planarVelocity.x;
@@ -76,11 +79,11 @@ export class Player {
       if (this.velocity.y > -30 && !onGround && gravity)
         this.velocity.y -= 9.8 * 5 * delta;
       if (!gravity && moveDown) {
-        this.velocity.y -= ((300 * maxSpeed) / 10) * delta;
+        this.velocity.y -= 30 * maxSpeed * delta;
         this.velocity.clampLength(0, maxSpeed);
       }
       if (!gravity && moveUp) {
-        this.velocity.y += ((300 * maxSpeed) / 10) * delta;
+        this.velocity.y += 30 * maxSpeed * delta;
         this.velocity.clampLength(0, maxSpeed);
       }
 
@@ -92,25 +95,33 @@ export class Player {
         this.pos.y -= this.velocity.y * delta;
       }
 
-      const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
-      const clippingOffsetZ = this.velocity.z < 0 ? -0.5 : 0.5;
+      // const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
+      // const clippingOffsetZ = this.velocity.z < 0 ? -0.5 : 0.5;
 
-      this.controls.moveRight(this.velocity.x * delta + clippingOffsetX);
-      if (!this.collidesWithTerrain) {
-        this.controls.moveRight(this.velocity.x * delta);
-      }
-      this.controls.moveRight(-this.velocity.x * delta - clippingOffsetX);
+      // this.controls.moveRight(this.velocity.x * delta + clippingOffsetX);
+      // if (!this.collidesWithTerrain) {
 
-      this.controls.moveForward(this.velocity.z * delta + clippingOffsetZ);
-      if (!this.collidesWithTerrain) {
-        this.controls.moveForward(this.velocity.z * delta);
+      this.controls.moveRight(this.velocity.x * delta);
+      // }
+      // this.controls.moveRight(-this.velocity.x * delta - clippingOffsetX);
+
+      // this.controls.moveForward(this.velocity.z * delta + clippingOffsetZ);
+      // if (!this.collidesWithTerrain) {
+      this.controls.moveForward(this.velocity.z * delta);
+      // }
+      // this.controls.moveForward(-this.velocity.z * delta - clippingOffsetZ);
+      // console.log("afterupdate", this.position);
+
+      // console.log("Z Intended Direction", this.directionPlayerWantsToMove.z);
+      // console.log("Z Actual Velocity", this.velocity.z);
+      if (this.velocity.z > 0 && this.directionPlayerWantsToMove.z < 0) {
+        // console.log("Moving the wrong way! Glitching");
       }
-      this.controls.moveForward(-this.velocity.z * delta - clippingOffsetZ);
     }
   }
 
   get pos(): Vector3 {
-    return this.controls.getObject().position;
+    return copy(this.controls.getObject().position);
   }
 
   get position(): Vector3 {

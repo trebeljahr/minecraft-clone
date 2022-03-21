@@ -61,7 +61,7 @@ const chunkGeometryWorker = {
                     positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
                   }
 
-                  lightValues.push(neighborLight);
+                  lightValues.push(10 || neighborLight);
                   sunlightValues.push(neighbourSunLight);
                   normals.push(...dir);
                   uvs.push(
