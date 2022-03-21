@@ -12,8 +12,8 @@ import { blocks } from "./blocks";
 const noise = new Noise();
 const { birchwood, foliage, oakwood } = blocks;
 
-export function getChunkForVoxel(chunks: Chunks, pos: Position) {
-  return chunks[computeChunkId(pos)];
+export function getChunkForVoxel(chunks: Chunks, pos: number[]) {
+  return chunks[computeChunkId(pos as Position)];
 }
 
 export function spawnTree(
@@ -63,7 +63,7 @@ export function spawnTree(
   // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
 }
 
-export function addChunkForVoxel(chunks: Chunks, pos: Position) {
+export function addChunkForVoxel(chunks: Chunks, pos: number[]) {
   const chunkId = computeChunkId(pos);
   let chunk = chunks[chunkId];
   if (!chunk) {
@@ -74,7 +74,7 @@ export function addChunkForVoxel(chunks: Chunks, pos: Position) {
   return { chunk, chunkId };
 }
 
-export function setVoxel(chunks: Chunks, pos: Position, type: number) {
+export function setVoxel(chunks: Chunks, pos: number[], type: number) {
   let chunk = getChunkForVoxel(chunks, pos);
   if (!chunk) {
     chunk = addChunkForVoxel(chunks, pos).chunk;
@@ -89,13 +89,13 @@ export function setVoxel(chunks: Chunks, pos: Position, type: number) {
   return chunks;
 }
 
-export function shouldPlaceBlock(pos: Position) {
+export function shouldPlaceBlock(pos: number[]) {
   const [x, y, z] = pos;
   const noiseVal = noise.perlin3(x / 10, z / 10, y / 10);
   return noiseVal >= -0.3 && z < terrainHeight;
 }
 
-export function wouldPlaceBlockAbove(pos) {
+export function wouldPlaceBlockAbove(pos: number[]) {
   const [x, currentY, z] = pos;
   for (let y = currentY + 1; y < currentY + 5; y++) {
     if (shouldPlaceBlock([x, y, z])) {
@@ -105,11 +105,11 @@ export function wouldPlaceBlockAbove(pos) {
   return false;
 }
 
-export function shouldSpawnGrass(pos: Position) {
+export function shouldSpawnGrass(pos: number[]) {
   return !wouldPlaceBlockAbove(pos);
 }
 
-export function shouldSpawnLapis(pos: Position) {
+export function shouldSpawnLapis(pos: number[]) {
   const [, currentY] = pos;
   if (currentY > 40) return false;
   // for (let offset in neighborOffsets) {
@@ -118,17 +118,7 @@ export function shouldSpawnLapis(pos: Position) {
   return Math.random() < 0.01;
 }
 
-export function shouldSpawnDiamonds(pos: Position) {
-  const [, currentY] = pos;
-
-  if (currentY > 40) return false;
-  // for (let offset in neighborOffsets) {
-  //   getVoxel()
-  // }
-  return Math.random() < 0.01;
-}
-
-export function shouldSpawnEmeralds(pos: Position) {
+export function shouldSpawnDiamonds(pos: number[]) {
   const [, currentY] = pos;
 
   if (currentY > 40) return false;
@@ -138,7 +128,7 @@ export function shouldSpawnEmeralds(pos: Position) {
   return Math.random() < 0.01;
 }
 
-export function shouldSpawnGold(pos: Position) {
+export function shouldSpawnEmeralds(pos: number[]) {
   const [, currentY] = pos;
 
   if (currentY > 40) return false;
@@ -148,7 +138,17 @@ export function shouldSpawnGold(pos: Position) {
   return Math.random() < 0.01;
 }
 
-export function shouldSpawnDirt(pos: Position) {
+export function shouldSpawnGold(pos: number[]) {
+  const [, currentY] = pos;
+
+  if (currentY > 40) return false;
+  // for (let offset in neighborOffsets) {
+  //   getVoxel()
+  // }
+  return Math.random() < 0.01;
+}
+
+export function shouldSpawnDirt(pos: number[]) {
   const [x, currentY, z] = pos;
 
   for (let y = currentY + 1; y < currentY + 4; y++) {

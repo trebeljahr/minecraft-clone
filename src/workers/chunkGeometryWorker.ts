@@ -53,25 +53,25 @@ const chunkGeometryWorker = {
       for (let z = 0; z < chunkSize; ++z) {
         for (let x = 0; x < chunkSize; ++x) {
           const offsetPos: Position = [pos.x + x, pos.y + y, pos.z + z];
-          if (offsetPos.length !== 3) return;
-          if (shouldPlaceBlock(offsetPos)) {
-            if (shouldSpawnGold(offsetPos)) {
-              //           chunks = setVoxel(chunks, offsetPos, gold);
-              //         } else if (shouldSpawnDiamonds(...offsetPos)) {
-              //           chunks = setVoxel(chunks, offsetPos, diamond);
-              //         } else if (shouldSpawnLapis(...offsetPos)) {
-              //           chunks = setVoxel(chunks, offsetPos, lapis);
-              //         } else if (shouldSpawnEmeralds(...offsetPos)) {
-              //           chunks = setVoxel(chunks, offsetPos, emerald);
-              //         } else if (shouldSpawnGrass(offsetPos)) {
-              //           chunks = setVoxel(chunks, offsetPos, grass);
-              //           if (shouldSpawnTree()) {
-              //             chunks = spawnTree(chunks, pos.x + x, pos.y + y + 1, pos.z + z);
-              //           }
-              //         } else if (shouldSpawnDirt(...offsetPos)) {
-              //           chunks = setVoxel(chunks, offsetPos, dirt);
-              //         } else {
-              //           chunks = setVoxel(chunks, offsetPos, stone);
+          // if (offsetPos.length !== 3) return;
+          if (shouldPlaceBlock([...offsetPos])) {
+            if (shouldSpawnGold([...offsetPos])) {
+              chunks = setVoxel(chunks, [...offsetPos], gold);
+            } else if (shouldSpawnDiamonds([...offsetPos])) {
+              chunks = setVoxel(chunks, [...offsetPos], diamond);
+            } else if (shouldSpawnLapis([...offsetPos])) {
+              chunks = setVoxel(chunks, [...offsetPos], lapis);
+            } else if (shouldSpawnEmeralds([...offsetPos])) {
+              chunks = setVoxel(chunks, [...offsetPos], emerald);
+            } else if (shouldSpawnGrass([...offsetPos])) {
+              chunks = setVoxel(chunks, [...offsetPos], grass);
+              if (shouldSpawnTree()) {
+                chunks = spawnTree(chunks, pos.x + x, pos.y + y + 1, pos.z + z);
+              }
+            } else if (shouldSpawnDirt([...offsetPos])) {
+              chunks = setVoxel(chunks, [...offsetPos], dirt);
+            } else {
+              chunks = setVoxel(chunks, [...offsetPos], stone);
             }
           }
         }

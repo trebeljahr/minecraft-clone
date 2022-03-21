@@ -145,10 +145,11 @@ export class World {
     this.chunks[addedChunkId] = addedChunk;
     return { chunk: addedChunk, chunkId: addedChunkId };
   }
+
   async generateChunkData(posVector: Vector3) {
     await chunkGeometryWorkerPool.queue(async (worker) => {
       const pos = posVector.toArray() as Position;
-      await worker.generateChunkData(this.chunks, pos);
+      this.chunks = await worker.generateChunkData(this.chunks, pos);
     });
   }
 

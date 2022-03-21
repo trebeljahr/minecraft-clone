@@ -102,7 +102,7 @@ export function addChunkForVoxel(chunks: Chunks, pos: Position) {
   return { addedChunk: chunk, addedChunkId: chunkId };
 }
 
-export function computeVoxelIndex(pos: Position) {
+export function computeVoxelIndex(pos: number[]) {
   const [x, y, z] = pos
     .map((coord) => MathUtils.euclideanModulo(coord, chunkSize))
     .map((value) => value | 0);
@@ -147,7 +147,7 @@ export function computeChunkOffset(pos: Position): Position {
   ) as Position;
 }
 
-export function computeChunkId(pos: Position) {
+export function computeChunkId(pos: number[]) {
   return computeChunkCoordinates(pos).join(",");
 }
 
@@ -156,7 +156,7 @@ export function parseChunkId(chunkId: string) {
   return new Vector3(x, y, z).multiplyScalar(chunkSize);
 }
 
-export function computeChunkCoordinates(pos: Position): Position {
+export function computeChunkCoordinates(pos: number[]): Position {
   return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
 }
 

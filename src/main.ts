@@ -69,12 +69,13 @@ let menu = true;
 
 init();
 
-function generateChunkColumnAtPosition(pos: Vector3) {
+async function generateChunkColumnAtPosition(pos: Vector3) {
   for (let y = verticalNumberOfChunks; y >= 0; y--) {
     const chunkPos = new Vector3(pos.x, y * chunkSize, pos.z);
     const logTime = new SimpleTimer();
-    world.generateChunkData(chunkPos);
-    world.updateChunkGeometry([pos.x, y * chunkSize, pos.z]);
+    await world.generateChunkData(chunkPos);
+    await world.updateChunkGeometry([pos.x, y * chunkSize, pos.z]);
+
     // logTime.takenFor("chunk geometry update");
     logTime.takenFor("single chunk generation");
   }
@@ -114,7 +115,7 @@ async function sunlightChunkAtPos(pos: Vector3) {
   requestRenderIfNotRequested();
 }
 
-const chunksQueuedForGeneration: string[] = [];
+let chunksQueuedForGeneration: string[] = [];
 let chunksQueuedForSunlight: string[] = [];
 const chunksAlreadyGenerated: string[] = [];
 const chunksAlreadySunlit: string[] = [];
@@ -145,30 +146,20 @@ async function streamInChunks() {
 
       if (chunkAlreadyQueued || chunkAlreadyGenerated) return;
 
-      console.log("Queuing chunk with id: ", chunkId);
+      // console.log("Queuing chunk with id: ", chunkId);
       // console.log("position:", camera.position);
 
       // console.log(chunksAlreadyGenerated);
+      const posOfChunkToGenerate = parseChunkId(chunkId);
+      generateChunkColumnAtPosition(posOfChunkToGenerate).then(() => {
+        chunksAlreadyGenerated.push(chunkId);
+        chunksQueuedForSunlight.push(chunkId);
+        chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
+          return id !== chunkId;
+        });
+      });
       chunksQueuedForGeneration.push(chunkId);
     }
-  }
-}
-
-function chunkUpdates() {
-  const oldLength = chunksQueuedForGeneration.length;
-  const chunkId = chunksQueuedForGeneration.shift();
-
-  if (chunksQueuedForGeneration.length === 0 && oldLength >= 1) {
-    console.log("Cleared up chunk queue");
-  }
-  if (chunkId) {
-    const posOfChunkToGenerate = parseChunkId(chunkId);
-    // console.log("posOfChunkToGenerate", posOfChunkToGenerate);
-    const logTime = new SimpleTimer();
-    generateChunkColumnAtPosition(posOfChunkToGenerate);
-    logTime.takenFor("generating new chunk column");
-    chunksAlreadyGenerated.push(chunkId);
-    chunksQueuedForSunlight.push(chunkId);
   }
 }
 
@@ -321,7 +312,6 @@ async function init() {
   inventory = new Inventory();
   loop.register(player);
   loop.register({ tick: streamInChunks });
-  loop.register({ tick: chunkUpdates });
   loop.register({ tick: sunlightUpdates });
   loop.register({ tick: pruneChunks });
   loop.start();
