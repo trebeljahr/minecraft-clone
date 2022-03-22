@@ -1,6 +1,7 @@
 const merge = require("webpack-merge");
 const ThreadsPlugin = require("threads-plugin");
 const path = require("path");
+const WorkerFileUpdaterPlugin = require("./worker-file-updater-plugin");
 
 //https://webpack.js.org/plugins/html-webpack-plugin/
 const HtmlWebpackPlugin = require("html-webpack-plugin");
@@ -19,7 +20,12 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 
 //merge() isn't required, but it enables autocomplete
 module.exports = merge({
-  entry: path.join(__dirname, "src", "main.ts"),
+  entry: {
+    main: path.join(__dirname, "src", "main.ts"),
+    worker1: "./src/workers/chunkGeometryWorker.ts",
+    worker2: "./src/workers/floodLightWorker.ts",
+    worker3: "./src/workers/sunlightWorker.ts",
+  },
   output: {
     path: path.join(__dirname, "public"),
   },
@@ -31,6 +37,7 @@ module.exports = merge({
     new ThreadsPlugin(),
     // WebpackCleanupPluginConfig,
     HTMLWebpackPluginConfig,
+    new WorkerFileUpdaterPlugin(),
   ],
 
   module: {
