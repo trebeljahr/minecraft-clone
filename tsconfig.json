@@ -4,6 +4,7 @@
     "module": "esnext",
     "target": "es2019",
     "lib": ["es2019", "dom", "dom.iterable"],
-    "sourceMap": true
+    "sourceMap": true,
+    "esModuleInterop": true
   }
 }

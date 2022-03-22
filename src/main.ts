@@ -10,13 +10,14 @@ import {
   parseChunkId,
   computeChunkOffset,
   getChunkColumn,
-  getSurroundingChunksColumns,
+  computeChunkCoordinates,
+  chunkCoordinatesFromId,
+  computeChunkOffsetFromId,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
   maxHeight,
   verticalNumberOfChunks,
-  Chunks,
   copy,
   terrainHeight,
   tileSize,
@@ -35,15 +36,12 @@ import { Player } from "./Player";
 import {
   ACESFilmicToneMapping,
   Color,
-  Material,
-  Mesh,
   PerspectiveCamera,
   Scene,
   sRGBEncoding,
   Vector3,
   WebGLRenderer,
 } from "three";
-import { floodLightWorkerPool, sunlightWorkerPool } from "./workers/workerPool";
 
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
@@ -69,51 +67,67 @@ let menu = true;
 
 init();
 
-async function generateChunkColumnAtPosition(pos: Vector3) {
-  for (let y = verticalNumberOfChunks; y >= 0; y--) {
-    const chunkPos = new Vector3(pos.x, y * chunkSize, pos.z);
-    const logTime = new SimpleTimer();
-    await world.generateChunkData(chunkPos);
-    await world.updateChunkGeometry([pos.x, y * chunkSize, pos.z]);
+async function generateChunkColumnAtPosition(chunkId: string) {
+  for (let yOff = verticalNumberOfChunks; yOff >= 0; yOff--) {
+    // const y = 3;
+    // const chunkPos = new Vector3(pos.x, y * chunkSize - 1, pos.z);
+    // const logTime = new SimpleTimer();
+    // console.log(
+    //   "Adding chunk for: ",
+    //   chunkPos,
+    //   "with id",
+    //   computeChunkId(chunkPos.toArray())
+    // );
+    const [x, y, z] = chunkCoordinatesFromId(chunkId);
+    const newId = `${x},${y + yOff},${z}`;
+    await world.addChunkAtId(newId);
+    // console.log(world.chunks);
+    const bottomLeftCornerOfChunk = computeChunkOffsetFromId(newId);
+    // console.log(chunkId);
+    // console.log(newId);
+    // console.log(x, y, z);
+    // console.log(bottomLeftCornerOfChunk);
+    await world.generateChunkData(new Vector3(...bottomLeftCornerOfChunk));
+    await world.updateChunkGeometry(chunkId);
 
     // logTime.takenFor("chunk geometry update");
-    logTime.takenFor("single chunk generation");
+    // logTime.takenFor("single chunk generation");
   }
 
   requestRenderIfNotRequested();
 }
 
-async function sunlightChunkAtPos(pos: Vector3) {
-  let sunlitChunks: Chunks, floodLightQueue: Position[];
-  // const logTime = new SimpleTimer();
-  const filteredChunks = getSurroundingChunksColumns(
-    world.chunks,
-    pos.toArray()
-  );
-  // console.log("Filtered around:", computeChunkId(pos.toArray()));
-  // console.log("ChunkIds", Object.keys(filteredChunks));
+// async function sunlightChunkAtPos(pos: Vector3) {
+// let sunlitChunks: Chunks, floodLightQueue: Position[];
+// const logTime = new SimpleTimer();
+// const filteredChunks = getSurroundingChunksColumns(
+//   world.chunks,
+//   pos.toArray()
+// );
+// console.log("Filtered around:", computeChunkId(pos.toArray()));
+// console.log("ChunkIds", Object.keys(filteredChunks));
 
-  await sunlightWorkerPool.queue(async (worker) => {
-    ({ sunlitChunks, floodLightQueue } = await worker.sunlightChunkColumnAt(
-      pos.toArray(),
-      filteredChunks
-    ));
-  });
-  // logTime.takenFor("sunlight");
+// await sunlightWorkerPool.queue(async (worker) => {
+//   ({ sunlitChunks, floodLightQueue } = await worker.sunlightChunkColumnAt(
+//     pos.toArray(),
+//     filteredChunks
+//   ));
+// });
+// logTime.takenFor("sunlight");
 
-  await floodLightWorkerPool.queue(async (worker) => {
-    const chunkUpdates = await worker.floodLight(sunlitChunks, floodLightQueue);
-    // console.log("Original: ", world.chunks);
-    // console.log("Update: ", chunkUpdates);
-    world.chunks = { ...world.chunks, ...chunkUpdates };
-  });
-  // logTime.takenFor("floodlight");
+// await floodLightWorkerPool.queue(async (worker) => {
+//   const chunkUpdates = await worker.floodLight(sunlitChunks, floodLightQueue);
+//   // console.log("Original: ", world.chunks);
+//   // console.log("Update: ", chunkUpdates);
+//   world.chunks = { ...world.chunks, ...chunkUpdates };
+// });
+// logTime.takenFor("floodlight");
 
-  for (let y = 0; y < maxHeight + 20; y += chunkSize) {
-    world.updateChunkGeometry([pos.x, y, pos.z]);
-  }
-  requestRenderIfNotRequested();
-}
+// for (let y = 0; y < maxHeight + 20; y += chunkSize) {
+//   world.updateChunkGeometry([pos.x, y, pos.z]);
+// }
+// requestRenderIfNotRequested();
+// }
 
 let chunksQueuedForGeneration: string[] = [];
 let chunksQueuedForSunlight: string[] = [];
@@ -121,9 +135,11 @@ const chunksAlreadyGenerated: string[] = [];
 const chunksAlreadySunlit: string[] = [];
 
 async function streamInChunks() {
-  // if (renderer.info.render.frame % 60 !== 0) return;
-  for (let z = -1; z <= 1; z++) {
-    for (let x = -1; x <= 1; x++) {
+  if (renderer.info.render.frame % 60 !== 0) return;
+  for (let z = 0; z <= 0; z++) {
+    for (let x = 0; x <= 0; x++) {
+      // for (let z = -5; z <= 5; z++) {
+      //   for (let x = -5; x <= 5; x++) {
       const chunkColumnPos = new Vector3(
         player.position.x + x * chunkSize,
         0,
@@ -150,8 +166,11 @@ async function streamInChunks() {
       // console.log("position:", camera.position);
 
       // console.log(chunksAlreadyGenerated);
-      const posOfChunkToGenerate = parseChunkId(chunkId);
-      generateChunkColumnAtPosition(posOfChunkToGenerate).then(() => {
+      // const posOfChunkToGenerate = parseChunkId(chunkId);
+      // if (chunkId !== originalChunkId) {
+      //   console.log("ChunkIds don't match before and after parsing");
+      // }
+      generateChunkColumnAtPosition(chunkId).then(() => {
         chunksAlreadyGenerated.push(chunkId);
         chunksQueuedForSunlight.push(chunkId);
         chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
@@ -252,10 +271,10 @@ async function placeVoxel(event: MouseEvent) {
     }, 0);
     const lightValue = Math.max(emanatingLight, neighborLight - 1);
     world.setLightValue(pos, lightValue);
-    await floodLightWorkerPool.queue(async (worker) => {
-      const chunksUpdates = await worker.floodLight(world.chunks, [pos]);
-      world.chunks = { ...world.chunks, ...chunksUpdates };
-    });
+    // await floodLightWorkerPool.queue(async (worker) => {
+    //   const chunksUpdates = await worker.floodLight(world.chunks, [pos]);
+    //   world.chunks = { ...world.chunks, ...chunksUpdates };
+    // });
 
     const chunksToUpdateSet = new Set<string>();
     surroundingOffsets.forEach((dir) => {
@@ -270,7 +289,7 @@ async function placeVoxel(event: MouseEvent) {
       const chunkCoordinates = chunkId
         .split(",")
         .map((coord) => parseInt(coord) * chunkSize) as Position;
-      world.updateChunkGeometry(chunkCoordinates);
+      world.updateChunkGeometry(chunkId);
     });
     requestRenderIfNotRequested();
   }

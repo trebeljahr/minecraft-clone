@@ -109,15 +109,15 @@ export function computeVoxelIndex(pos: number[]) {
   return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
 }
 
-export function getSurroundingChunksColumns(chunks: Chunks, pos: Position) {
-  let filteredChunks = {};
-  for (let x = -1; x < 1; x++) {
-    for (let z = -1; z < 1; z++) {
-      filteredChunks = { ...filteredChunks, ...getChunkColumn(chunks, pos) };
-    }
-  }
-  return filteredChunks;
-}
+// export function getSurroundingChunksColumns(chunks: Chunks, pos: Position) {
+//   let filteredChunks = {};
+//   for (let x = -1; x < 1; x++) {
+//     for (let z = -1; z < 1; z++) {
+//       filteredChunks = { ...filteredChunks, ...getChunkColumn(chunks, pos) };
+//     }
+//   }
+//   return filteredChunks;
+// }
 
 export function getChunkColumn(chunks: Chunks, pos: Position) {
   // console.log(pos);
@@ -145,6 +145,22 @@ export function computeChunkOffset(pos: Position): Position {
   return computeChunkCoordinates(pos).map(
     (coord) => coord * chunkSize
   ) as Position;
+}
+
+export function computeChunkOffsetFromId(chunkId: string): Position {
+  return chunkCoordinatesFromId(chunkId).map(
+    (coord) => coord * chunkSize
+  ) as Position;
+}
+
+export function addChunkAtChunkId(chunks: Chunks, id: string) {
+  console.log("New chunk added at", id);
+  chunks[id] = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
+  return chunks;
+}
+
+export function chunkCoordinatesFromId(chunkId: string) {
+  return chunkId.split(",").map((num) => parseInt(num));
 }
 
 export function computeChunkId(pos: number[]) {

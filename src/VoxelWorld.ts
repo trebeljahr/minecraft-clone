@@ -6,6 +6,8 @@ import {
   computeChunkCoordinates,
   getVoxel,
   addChunkForVoxel,
+  addChunkAtChunkId,
+  computeChunkOffsetFromId,
 } from "./helpers";
 import { blocks } from "./blocks";
 import {
@@ -131,17 +133,24 @@ export class World {
   }
 
   setLightValue(pos: Position, lightValue: number) {
-    const { chunk } = this.addChunkForVoxel(pos);
+    const { chunk } = this.addChunkForVoxel(new Vector3(...pos));
     const blockIndex = computeVoxelIndex(pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
 
+  async addChunkAtId(chunkId: string) {
+    this.chunks = addChunkAtChunkId(this.chunks, chunkId);
+    return this.chunks;
+  }
   setVoxel(pos: Position, type: number) {
     this.chunks = setVoxel(this.chunks, pos, type);
   }
 
-  addChunkForVoxel(pos: Position) {
-    const { addedChunk, addedChunkId } = addChunkForVoxel(this.chunks, pos);
+  addChunkForVoxel(pos: Vector3) {
+    const { addedChunk, addedChunkId } = addChunkForVoxel(
+      this.chunks,
+      pos.toArray()
+    );
     this.chunks[addedChunkId] = addedChunk;
     return { chunk: addedChunk, chunkId: addedChunkId };
   }
@@ -153,11 +162,11 @@ export class World {
     });
   }
 
-  spawnSingleBlock(player: Player) {
-    const pos = copy(player.pos);
-    this.setVoxel(pos.setX(pos.x + 3).toArray(), 3);
-    this.updateVoxelGeometry(pos.toArray());
-  }
+  // spawnSingleBlock(player: Player) {
+  //   const pos = copy(player.pos);
+  //   this.setVoxel(pos.setX(pos.x + 3).toArray(), 3);
+  //   this.updateVoxelGeometry(pos.toArray());
+  // }
 
   updateVoxelGeometry(pos: Position) {
     const updatedChunkIds = {};
@@ -168,7 +177,7 @@ export class World {
       const chunkId = computeChunkId(offsetPos);
       if (!updatedChunkIds[chunkId]) {
         updatedChunkIds[chunkId] = true;
-        this.updateChunkGeometry(offsetPos);
+        this.updateChunkGeometry(chunkId);
       }
     }
   }
@@ -177,17 +186,15 @@ export class World {
     return this.sunlightedChunksColumns[columnId];
   }
 
-  async updateChunkGeometry(pos: Position) {
-    const chunkCoordinates = computeChunkCoordinates(pos);
-    const chunkOffset = computeChunkOffset(pos);
-    const chunkId = computeChunkId(pos);
+  async updateChunkGeometry(chunkId: string) {
+    const chunkOffset = computeChunkOffsetFromId(chunkId);
 
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
     await chunkGeometryWorkerPool.queue(async (worker) => {
       const { positions, normals, uvs, indices, lightValues } =
-        await worker.generateGeometry(this.chunks, chunkCoordinates);
+        await worker.generateGeometry(this.chunks, chunkId);
 
       const positionNumComponents = 3;
       geometry.setAttribute(
