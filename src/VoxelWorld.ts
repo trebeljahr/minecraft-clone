@@ -143,6 +143,7 @@ export class World {
     this.chunks = { ...this.chunks, ...editedChunks };
     return this.chunks;
   }
+
   setVoxel(pos: Position, type: number) {
     this.chunks = { ...this.chunks, ...setVoxel(this.chunks, pos, type) };
   }
@@ -159,7 +160,8 @@ export class World {
   async generateChunkData(posVector: Vector3) {
     await chunkGeometryWorkerPool.queue(async (worker) => {
       const pos = posVector.toArray() as Position;
-      this.chunks = await worker.generateChunkData(this.chunks, pos);
+      const updatedChunks = await worker.generateChunkData(this.chunks, pos);
+      this.chunks = { ...this.chunks, ...updatedChunks };
     });
   }
 

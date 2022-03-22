@@ -1,7 +1,6 @@
 import "./main.css";
 import { Inventory } from "./inventory";
-import { blocks } from "./blocks";
-import { Worker } from "threads";
+import { blocks, blocksLookup } from "./blocks";
 import {
   MouseClickEvent,
   SimpleTimer,
@@ -9,15 +8,12 @@ import {
   getVoxel,
   computeChunkDistanceFromPoint,
   parseChunkId,
-  getSmallChunkCorner,
-  getChunkColumn,
-  computeChunkCoordinates,
   chunkCoordinatesFromId,
   computeSmallChunkCornerFromId,
+  transformToBlocks,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
-  maxHeight,
   verticalNumberOfChunks,
   copy,
   terrainHeight,
@@ -29,6 +25,8 @@ import {
   glowingBlocks,
   surroundingOffsets,
   Position,
+  fields,
+  Chunks,
 } from "./constants";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
@@ -68,36 +66,6 @@ let menu = true;
 
 init();
 
-async function generateChunkColumnAtPosition(chunkId: string) {
-  for (let yOff = verticalNumberOfChunks; yOff >= 0; yOff--) {
-    // const y = 3;
-    // const chunkPos = new Vector3(pos.x, y * chunkSize - 1, pos.z);
-    // const logTime = new SimpleTimer();
-    // console.log(
-    //   "Adding chunk for: ",
-    //   chunkPos,
-    //   "with id",
-    //   computeChunkId(chunkPos.toArray())
-    // );
-    const [x, y, z] = chunkCoordinatesFromId(chunkId);
-    const newId = `${x},${y + yOff},${z}`;
-    await world.addChunkAtId(newId);
-    // console.log(world.chunks);
-    const bottomLeftCornerOfChunk = computeSmallChunkCornerFromId(newId);
-    // console.log(chunkId);
-    // console.log(newId);
-    // console.log(x, y, z);
-    // console.log(bottomLeftCornerOfChunk);
-    await world.generateChunkData(new Vector3(...bottomLeftCornerOfChunk));
-    await world.updateChunkGeometry(chunkId);
-
-    // logTime.takenFor("chunk geometry update");
-    // logTime.takenFor("single chunk generation");
-  }
-
-  requestRenderIfNotRequested();
-}
-
 // async function sunlightChunkAtPos(pos: Vector3) {
 // let sunlitChunks: Chunks, floodLightQueue: Position[];
 // const logTime = new SimpleTimer();
@@ -135,50 +103,45 @@ let chunksQueuedForSunlight: string[] = [];
 const chunksAlreadyGenerated: string[] = [];
 const chunksAlreadySunlit: string[] = [];
 
+async function generateChunkAtPosition(newId: string) {
+  await world.addChunkAtId(newId);
+  const bottomLeftCornerOfChunk = computeSmallChunkCornerFromId(newId);
+  await world.generateChunkData(new Vector3(...bottomLeftCornerOfChunk));
+  await world.updateChunkGeometry(newId);
+  requestRenderIfNotRequested();
+}
+
 async function streamInChunks() {
-  if (renderer.info.render.frame % 60 !== 0) return;
-  for (let z = 0; z <= 0; z++) {
-    for (let x = 0; x <= 0; x++) {
-      // for (let z = -5; z <= 5; z++) {
-      //   for (let x = -5; x <= 5; x++) {
-      const chunkColumnPos = new Vector3(
-        player.position.x + x * chunkSize,
-        0,
-        player.position.z + z * chunkSize
-      );
+  // if (renderer.info.render.frame % 60 !== 0) return;
+  const iterator = 0;
+  for (let y = verticalNumberOfChunks; y >= 0; y--) {
+    for (let z = -iterator; z <= iterator; z++) {
+      for (let x = -iterator; x <= iterator; x++) {
+        const chunkColumnPos = new Vector3(
+          player.position.x + x * chunkSize,
+          y * chunkSize, // y position of player doesn't matter!
+          player.position.z + z * chunkSize
+        );
 
-      const chunkId = computeChunkId(chunkColumnPos.toArray());
-      const chunkAlreadyQueued = chunksQueuedForGeneration.includes(chunkId);
-      const chunkAlreadyGenerated = chunksAlreadyGenerated.includes(chunkId);
+        const chunkId = computeChunkId(chunkColumnPos.toArray());
+        const chunkAlreadyQueued = chunksQueuedForGeneration.includes(chunkId);
+        const chunkAlreadyGenerated = chunksAlreadyGenerated.includes(chunkId);
 
-      const camDirection = new Vector3(0, 0, 0);
-      camera.getWorldDirection(camDirection);
+        const camDirection = new Vector3(0, 0, 0);
+        camera.getWorldDirection(camDirection);
 
-      // console.log("direction", camDirection);
-      // console.log("position:", camera.position);
+        if (chunkAlreadyQueued || chunkAlreadyGenerated) return;
 
-      // console.log(chunksAlreadyGenerated);
-      // console.log("Chunk already queued", chunkAlreadyQueued);
-      // console.log("Chunk already generated", chunkAlreadyGenerated);
-
-      if (chunkAlreadyQueued || chunkAlreadyGenerated) return;
-
-      // console.log("Queuing chunk with id: ", chunkId);
-      // console.log("position:", camera.position);
-
-      // console.log(chunksAlreadyGenerated);
-      // const posOfChunkToGenerate = parseChunkId(chunkId);
-      // if (chunkId !== originalChunkId) {
-      //   console.log("ChunkIds don't match before and after parsing");
-      // }
-      generateChunkColumnAtPosition(chunkId).then(() => {
-        chunksAlreadyGenerated.push(chunkId);
-        chunksQueuedForSunlight.push(chunkId);
-        chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
-          return id !== chunkId;
+        chunksQueuedForGeneration.push(chunkId);
+        generateChunkAtPosition(chunkId).then(() => {
+          // console.log(transformToBlocks(world.chunks[chunkId]));
+          chunksAlreadyGenerated.push(chunkId);
+          chunksQueuedForSunlight.push(chunkId);
+          chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
+            return id !== chunkId;
+          });
         });
-      });
-      chunksQueuedForGeneration.push(chunkId);
+      }
     }
   }
 }

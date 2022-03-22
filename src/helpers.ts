@@ -7,6 +7,7 @@ import {
   Position,
 } from "./constants";
 import { MathUtils, Vector3 } from "three";
+import { blocksLookup } from "./blocks";
 
 const leftMouse = 0;
 const rightMouse = 2;
@@ -157,6 +158,15 @@ export function computeSmallChunkCornerFromId(chunkId: string): Position {
   return chunkCoordinatesFromId(chunkId).map(
     (coord) => coord * chunkSize
   ) as Position;
+}
+
+export const byBlockData = (_: number, index: number) =>
+  index % fields.count === 0;
+
+export function transformToBlocks(chunk: Uint8Array) {
+  return [...chunk].filter(byBlockData).map((num) => {
+    return blocksLookup[num];
+  });
 }
 
 export function addChunkAtChunkId(chunks: Chunks, id: string) {
