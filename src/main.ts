@@ -11,6 +11,7 @@ import {
   chunkCoordinatesFromId,
   computeSmallChunkCornerFromId,
   transformToBlocks,
+  computeChunkOffsetVector,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -35,6 +36,8 @@ import { Player } from "./Player";
 import {
   ACESFilmicToneMapping,
   Color,
+  Material,
+  Mesh,
   PerspectiveCamera,
   Scene,
   sRGBEncoding,
@@ -45,7 +48,6 @@ import {
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
-// const loopSize = 3;
 const { air } = blocks;
 
 let camera: PerspectiveCamera;
@@ -57,12 +59,6 @@ let player: Player;
 let renderer: WebGLRenderer;
 let renderRequested = false;
 let menu = true;
-// let minX = -loopSize;
-// let maxX = loopSize;
-// let x = minX;
-// let minY = -loopSize;
-// let maxY = loopSize;
-// let y = minY;
 
 init();
 
@@ -105,41 +101,42 @@ const chunksAlreadySunlit: string[] = [];
 
 async function generateChunkAtPosition(newId: string) {
   await world.addChunkAtId(newId);
-  const bottomLeftCornerOfChunk = computeSmallChunkCornerFromId(newId);
-  await world.generateChunkData(new Vector3(...bottomLeftCornerOfChunk));
+  await world.generateChunkData(newId);
   await world.updateChunkGeometry(newId);
   requestRenderIfNotRequested();
 }
 
 async function streamInChunks() {
-  // if (renderer.info.render.frame % 60 !== 0) return;
-  const iterator = 0;
+  const iterator = 2;
   for (let y = verticalNumberOfChunks; y >= 0; y--) {
     for (let z = -iterator; z <= iterator; z++) {
       for (let x = -iterator; x <= iterator; x++) {
-        const chunkColumnPos = new Vector3(
+        const chunkPos = new Vector3(
           player.position.x + x * chunkSize,
           y * chunkSize, // y position of player doesn't matter!
           player.position.z + z * chunkSize
         );
 
-        const chunkId = computeChunkId(chunkColumnPos.toArray());
+        const chunkId = computeChunkId(chunkPos.toArray());
         const chunkAlreadyQueued = chunksQueuedForGeneration.includes(chunkId);
-        const chunkAlreadyGenerated = chunksAlreadyGenerated.includes(chunkId);
-
-        const camDirection = new Vector3(0, 0, 0);
-        camera.getWorldDirection(camDirection);
-
-        if (chunkAlreadyQueued || chunkAlreadyGenerated) return;
+        const chunkAlreadyCreated = Object.keys(world.chunks).includes(chunkId);
+        if (chunkAlreadyQueued || chunkAlreadyCreated) {
+          // continue NOT return!!!
+          continue;
+        }
 
         chunksQueuedForGeneration.push(chunkId);
+        console.log(chunksQueuedForGeneration);
         generateChunkAtPosition(chunkId).then(() => {
-          // console.log(transformToBlocks(world.chunks[chunkId]));
-          chunksAlreadyGenerated.push(chunkId);
-          chunksQueuedForSunlight.push(chunkId);
+          // const blocks = transformToBlocks(world.chunks[chunkId]);
+          // if (y !== 3) {
+          //   console.log(blocks);
+          // }
+          // chunksQueuedForSunlight.push(chunkId);
           chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
             return id !== chunkId;
           });
+          console.log(world.chunks);
         });
       }
     }
@@ -269,7 +266,7 @@ async function init() {
     20000
   );
   camera.position.y = terrainHeight + 5;
-
+  console.log("initial position", camera.position.y);
   canvas = document.querySelector("#canvas");
   renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -381,27 +378,23 @@ async function init() {
 
 function pruneChunks() {
   if (renderer.info.render.frame % 60 !== 0) return;
-  // console.log(Object.keys(world.chunks).length);
-  // console.log(Object.keys(world.chunks));
   Object.keys(world.chunks).forEach((chunkId) => {
-    const distance = computeChunkDistanceFromPoint(
-      player.position.toArray(),
-      chunkId
-    );
-    // console.log(distance);
-    if (distance > 4) {
+    const currentChunkId = computeChunkId(player.position.toArray());
+    const [x, , z] = chunkCoordinatesFromId(chunkId);
+    const [x2, , z2] = chunkCoordinatesFromId(currentChunkId);
+    const viewDistance = 3;
+    if (Math.abs(x - x2) > viewDistance || Math.abs(z - z2) > viewDistance) {
       // console.log("Deleting chunk out of range with chunkId: ", chunkId);
-      // const object = scene.getObjectByName(chunkId) as Mesh;
-      // object?.geometry?.dispose();
-      // (object?.material as Material)?.dispose();
-      // object && scene.remove(object);
-      // renderer.renderLists.dispose();
-      // delete world.chunks[chunkId];
-      // requestRenderIfNotRequested();
+      const object = scene.getObjectByName(chunkId) as Mesh;
+      object?.geometry?.dispose();
+      (object?.material as Material)?.dispose();
+      object && scene.remove(object);
+      renderer.renderLists.dispose();
+      delete world.chunks[chunkId];
+      console.log("Deleted?", world.chunks[chunkId]);
+      requestRenderIfNotRequested();
     }
   });
-  // console.log(Object.keys(world.chunks).length);
-  // console.log(Object.keys(world.chunks));
 }
 
 function onWindowResize() {
@@ -412,7 +405,6 @@ function onWindowResize() {
 
 function render() {
   renderRequested = false;
-  // generateTerrain();
   // pruneChunks();
   renderer.render(scene, camera);
 }
@@ -439,49 +431,4 @@ function requestRenderIfNotRequested() {
 //   camDirection.y -= 0.5;
 //   camera.lookAt(camDirection);
 //   world.setVoxel(initialBlockPos, blocks.coal);
-// }
-
-// function generateTerrain() {
-//   if (maxX > 5) return;
-
-//   if (renderer.info.render.frame % 5 === 0) {
-//     const pos = new Vector3(x * chunkSize, surface - chunkSize, y * chunkSize);
-
-//     generateChunkAtPosition(pos);
-//     generateChunkAtPosition(copy(pos).sub(new Vector3(0, 1 * chunkSize, 0)));
-//     generateChunkAtPosition(copy(pos).sub(new Vector3(0, 2 * chunkSize, 0)));
-
-//     if (y === maxY && x === maxX - 1) {
-//       console.log("Finished loop");
-//       minX--;
-//       maxX++;
-//       x = minX;
-//       minY--;
-//       maxY++;
-//       y = minY;
-//     } else {
-//       if (y === maxY && x > minX && x < maxX) {
-//         x++;
-//       }
-//       if (y === maxY && x === maxX) {
-//         x = minX + 1;
-//       }
-//       if (y >= minY && y < maxY && x === maxX) {
-//         y++;
-//       }
-
-//       if (x > minX && x < maxX && y === minY) {
-//         x++;
-//       }
-
-//       if (x === minX) {
-//         if (y === maxY) {
-//           x++;
-//           y = minY;
-//         } else {
-//           y++;
-//         }
-//       }
-//     }
-//   }
 // }

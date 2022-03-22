@@ -7,8 +7,9 @@ import {
   Position,
 } from "./constants";
 import { MathUtils, Vector3 } from "three";
-import { blocksLookup } from "./blocks";
+import { blocksLookup, blocks } from "./blocks";
 
+const { foliage } = blocks;
 const leftMouse = 0;
 const rightMouse = 2;
 
@@ -168,6 +169,13 @@ export function transformToBlocks(chunk: Uint8Array) {
     return blocksLookup[num];
   });
 }
+
+export const toBlock = (block: number) => (num, index) => {
+  if (index % fields.count === 0) {
+    return block;
+  }
+  return num;
+};
 
 export function addChunkAtChunkId(chunks: Chunks, id: string) {
   // console.log("New chunk added at", id);

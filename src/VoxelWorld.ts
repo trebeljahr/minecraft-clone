@@ -2,44 +2,20 @@ import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
 import {
   computeChunkId,
   computeVoxelIndex,
-  getSmallChunkCorner,
-  computeChunkCoordinates,
   getVoxel,
   addChunkForVoxel,
   addChunkAtChunkId,
   computeSmallChunkCornerFromId,
 } from "./helpers";
-import { blocks } from "./blocks";
-import {
-  copy,
-  neighborOffsets,
-  terrainHeight,
-  chunkSize,
-  Position,
-  fields,
-  Chunks,
-} from "./constants";
+import { neighborOffsets, Position, fields, Chunks } from "./constants";
 import { opaque } from "./voxelMaterial";
-import { Player } from "./Player";
 import { chunkGeometryWorkerPool } from "./workers/workerPool";
-import {
-  setVoxel,
-  shouldPlaceBlock,
-  shouldSpawnDiamonds,
-  shouldSpawnDirt,
-  shouldSpawnEmeralds,
-  shouldSpawnGold,
-  shouldSpawnGrass,
-  shouldSpawnLapis,
-  shouldSpawnTree,
-} from "./chunkLogic";
-
-const { birchwood, foliage, oakwood } = blocks;
+import { setVoxel } from "./chunkLogic";
 
 const chunkIdToMesh = {};
 
 export class World {
-  public chunks: Chunks;
+  private internalChunks: Chunks;
   private scene: Scene;
   private sunlightedChunksColumns: Record<string, boolean>;
   constructor(options: {
@@ -51,6 +27,13 @@ export class World {
     this.scene = options.scene;
     this.chunks = {};
     this.sunlightedChunksColumns = {};
+  }
+
+  get chunks() {
+    return this.internalChunks;
+  }
+  set chunks(update: Chunks) {
+    this.internalChunks = update;
   }
 
   intersectRay(
@@ -139,13 +122,12 @@ export class World {
   }
 
   async addChunkAtId(chunkId: string) {
-    const editedChunks = addChunkAtChunkId(this.chunks, chunkId);
-    this.chunks = { ...this.chunks, ...editedChunks };
-    return this.chunks;
+    addChunkAtChunkId(this.chunks, chunkId);
   }
 
   setVoxel(pos: Position, type: number) {
-    this.chunks = { ...this.chunks, ...setVoxel(this.chunks, pos, type) };
+    const chunkId = computeChunkId(pos);
+    this.chunks[chunkId] = setVoxel(this.chunks[chunkId], pos, type);
   }
 
   addChunkForVoxel(pos: Vector3) {
@@ -157,11 +139,12 @@ export class World {
     return { chunk: addedChunk, chunkId: addedChunkId };
   }
 
-  async generateChunkData(posVector: Vector3) {
+  async generateChunkData(chunkId: string) {
     await chunkGeometryWorkerPool.queue(async (worker) => {
-      const pos = posVector.toArray() as Position;
-      const updatedChunks = await worker.generateChunkData(this.chunks, pos);
-      this.chunks = { ...this.chunks, ...updatedChunks };
+      this.chunks[chunkId] = await worker.generateChunkData(
+        this.chunks[chunkId],
+        chunkId
+      );
     });
   }
 

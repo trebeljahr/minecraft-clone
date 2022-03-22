@@ -5,7 +5,12 @@ import {
   Position,
   terrainHeight,
 } from "./constants";
-import { computeChunkId, computeVoxelIndex } from "./helpers";
+import {
+  computeChunkId,
+  computeChunkOffsetVector,
+  computeVoxelIndex,
+  parseChunkId,
+} from "./helpers";
 import { Noise } from "./noise";
 import { blocks } from "./blocks";
 import { Vector3 } from "three";
@@ -23,60 +28,41 @@ const {
 } = blocks;
 const noise = new Noise();
 
-export function generateChunkData(chunks: Chunks, posArray: number[]) {
-  // console.log(chunks);
-  // console.log(posArray);
-  const pos = new Vector3(...posArray)
-    .divideScalar(chunkSize)
-    .floor()
-    .multiplyScalar(chunkSize);
+export function generateChunkData(chunk: Uint8Array, chunkId: string) {
+  const pos = parseChunkId(chunkId);
   for (let y = chunkSize - 1; y >= 0; y--) {
-    // console.log("y-offset", y);
     const underBedrock = pos.y + y <= 0;
     const overMaximumHeight = pos.y + y > terrainHeight;
     if (overMaximumHeight || underBedrock) continue;
 
     for (let z = 0; z < chunkSize; z++) {
-      // console.log("z-offset", z);
       for (let x = 0; x < chunkSize; x++) {
-        // console.log("x-offset", x);
-
         const offsetPos: Position = [pos.x + x, pos.y + y, pos.z + z];
-        const chunkId = computeChunkId(offsetPos);
-        const foundChunk = chunks[chunkId];
-        if (!foundChunk) {
-          console.log("Searching: ", Object.keys(chunks));
-          console.log("Original position", pos);
-          console.log("Offset", { x, y, z });
-          console.log("Pos with offset", offsetPos, "at id:", chunkId);
-          console.log("Found:", foundChunk);
-          console.error("Not found chunk");
-        }
         // if (offsetPos.length !== 3) return;
         if (shouldPlaceBlock([...offsetPos])) {
           if (shouldSpawnGold([...offsetPos])) {
-            chunks = setVoxel(chunks, [...offsetPos], gold);
+            chunk = setVoxel(chunk, [...offsetPos], gold);
           } else if (shouldSpawnDiamonds([...offsetPos])) {
-            chunks = setVoxel(chunks, [...offsetPos], diamond);
+            chunk = setVoxel(chunk, [...offsetPos], diamond);
           } else if (shouldSpawnLapis([...offsetPos])) {
-            chunks = setVoxel(chunks, [...offsetPos], lapis);
+            chunk = setVoxel(chunk, [...offsetPos], lapis);
           } else if (shouldSpawnEmeralds([...offsetPos])) {
-            chunks = setVoxel(chunks, [...offsetPos], emerald);
+            chunk = setVoxel(chunk, [...offsetPos], emerald);
           } else if (shouldSpawnGrass([...offsetPos])) {
-            chunks = setVoxel(chunks, [...offsetPos], grass);
+            chunk = setVoxel(chunk, [...offsetPos], grass);
             // if (shouldSpawnTree()) {
             //   chunks = spawnTree(chunks, pos.x + x, pos.y + y + 1, pos.z + z);
             // }
           } else if (shouldSpawnDirt([...offsetPos])) {
-            chunks = setVoxel(chunks, [...offsetPos], dirt);
+            chunk = setVoxel(chunk, [...offsetPos], dirt);
           } else {
-            chunks = setVoxel(chunks, [...offsetPos], stone);
+            chunk = setVoxel(chunk, [...offsetPos], stone);
           }
         }
       }
     }
   }
-  return chunks;
+  return chunk;
 }
 
 export function getChunkForVoxel(chunks: Chunks, pos: number[]) {
@@ -92,7 +78,7 @@ export function getChunkForVoxel(chunks: Chunks, pos: number[]) {
 }
 
 export function spawnTree(
-  chunks: Chunks,
+  chunk: Uint8Array,
   currentX: number,
   currentY: number,
   currentZ: number
@@ -109,27 +95,27 @@ export function spawnTree(
     if (y >= leafHeightMin && y < treeHeight) {
       for (let x = currentX - leafWidth; x <= currentX + leafWidth; x++) {
         for (let z = currentZ - leafWidth; z <= currentZ + leafWidth; z++) {
-          chunks = setVoxel(chunks, [x, y, z], foliage);
+          chunk = setVoxel(chunk, [x, y, z], foliage);
         }
       }
     } else if (y >= leafHeightMin && y <= treeHeight) {
       for (let x = currentX - 1; x <= currentX + 1; x++) {
         for (let z = currentZ - 1; z <= currentZ + 1; z++) {
-          chunks = setVoxel(chunks, [x, y, z], foliage);
+          chunk = setVoxel(chunk, [x, y, z], foliage);
         }
       }
     } else if (y >= leafHeightMin) {
-      chunks = setVoxel(chunks, [currentX, y, currentZ], foliage);
-      chunks = setVoxel(chunks, [currentX, y, currentZ + 1], foliage);
-      chunks = setVoxel(chunks, [currentX, y, currentZ - 1], foliage);
-      chunks = setVoxel(chunks, [currentX + 1, y, currentZ], foliage);
-      chunks = setVoxel(chunks, [currentX - 1, y, currentZ], foliage);
+      chunk = setVoxel(chunk, [currentX, y, currentZ], foliage);
+      chunk = setVoxel(chunk, [currentX, y, currentZ + 1], foliage);
+      chunk = setVoxel(chunk, [currentX, y, currentZ - 1], foliage);
+      chunk = setVoxel(chunk, [currentX + 1, y, currentZ], foliage);
+      chunk = setVoxel(chunk, [currentX - 1, y, currentZ], foliage);
     }
     if (y <= treeHeight) {
-      chunks = setVoxel(chunks, [currentX, y, currentZ], wood);
+      chunk = setVoxel(chunk, [currentX, y, currentZ], wood);
     }
   }
-  return chunks;
+  return chunk;
 
   // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
   // this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
@@ -138,13 +124,7 @@ export function spawnTree(
   // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
 }
 
-export function setVoxel(chunks: Chunks, pos: number[], type: number) {
-  let chunk = getChunkForVoxel(chunks, pos);
-  //   if (!chunk) {
-  //     chunk = addChunkForVoxel(chunks, pos).chunk;
-  //   }
-  //   if (!chunk) return chunks;
-  //   try {
+export function setVoxel(chunk: Uint8Array, pos: number[], type: number) {
   const voxelOffset = computeVoxelIndex(pos);
   chunk[voxelOffset] = type;
   chunk[voxelOffset + fields.r] = 0;
@@ -152,14 +132,7 @@ export function setVoxel(chunks: Chunks, pos: number[], type: number) {
   chunk[voxelOffset + fields.b] = 0;
   chunk[voxelOffset + fields.light] = 0;
   chunk[voxelOffset + fields.sunlight] = 0;
-  //   } catch (err) {
-  //     console.log("Caught the setting error!");
-  //     console.log(chunks);
-  //     console.log(chunk);
-  //     console.log(pos);
-  //   }
-
-  return chunks;
+  return chunk;
 }
 
 export function shouldPlaceBlock(pos: number[]) {

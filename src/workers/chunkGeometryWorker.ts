@@ -38,7 +38,7 @@ const chunkGeometryWorker = {
     const uvs: number[] = [];
     const toVoxelCoords = (coord: number) => coord * chunkSize;
     const [startX, startY, startZ] = chunkCoordinates.map(toVoxelCoords);
-    console.log(startX, startY, startZ);
+    // console.log(startX, startY, startZ);
 
     for (let y = 0; y < chunkSize; ++y) {
       const voxelY = startY + y;

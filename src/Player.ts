@@ -3,10 +3,13 @@ import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
 import { copy } from "./constants";
 import { World } from "./VoxelWorld";
+import { blocks } from "./blocks";
+
+const { foliage } = blocks;
 
 const eyeLevel = 1.5;
 const gravity = false; // can be set to disable/enable falling
-let maxSpeed = gravity ? 10 : 30;
+let maxSpeed = gravity ? 100 : 300;
 let moveForward = false;
 let moveBack = false;
 let moveLeft = false;
@@ -37,15 +40,10 @@ export class Player {
       this.canJump = false;
     }
   }
-  standsOnGround(delta: number): boolean {
-    const resetVel = () => (this.pos.y -= this.velocity.y * delta);
-
-    this.pos.y += this.velocity.y * delta;
+  standsOnGround(): boolean {
     if (this.collidesWithTerrain) {
-      resetVel();
       return true;
     }
-    resetVel();
     return false;
   }
 
@@ -56,67 +54,57 @@ export class Player {
       // console.log("before update: ", before);
       this.planarVelocity.x -= this.planarVelocity.x * 20 * delta;
       this.planarVelocity.z -= this.planarVelocity.z * 20 * delta;
-      if (!gravity) {
-        this.velocity.y -= this.velocity.y * 20 * delta;
-      }
 
-      const onGround = this.standsOnGround(delta);
-      if (onGround || !gravity) {
-        this.planarVelocity.z +=
-          this.directionPlayerWantsToMove.z * 30 * maxSpeed * delta;
-        this.planarVelocity.x +=
-          this.directionPlayerWantsToMove.x * 30 * maxSpeed * delta;
-      } else {
-        this.planarVelocity.z +=
-          this.directionPlayerWantsToMove.z * 10 * maxSpeed * delta;
-        this.planarVelocity.x +=
-          this.directionPlayerWantsToMove.x * 10 * maxSpeed * delta;
-      }
+      this.planarVelocity.z +=
+        this.directionPlayerWantsToMove.z * maxSpeed * delta;
+      this.planarVelocity.x +=
+        this.directionPlayerWantsToMove.x * maxSpeed * delta;
+
       this.planarVelocity.clampLength(0, maxSpeed);
       this.velocity.x = this.planarVelocity.x;
       this.velocity.z = this.planarVelocity.z;
 
-      if (this.velocity.y > -30 && !onGround && gravity)
-        this.velocity.y -= 9.8 * 5 * delta;
-      if (!gravity && moveDown) {
-        this.velocity.y -= 30 * maxSpeed * delta;
-        this.velocity.clampLength(0, maxSpeed);
-      }
-      if (!gravity && moveUp) {
-        this.velocity.y += 30 * maxSpeed * delta;
-        this.velocity.clampLength(0, maxSpeed);
-      }
-
       this.pos.y += this.velocity.y * delta;
-      if (this.collidesWithTerrain) {
+      // console.log(this.pos.y);
+      // console.log(this.velocity.y);
+      const onGround = this.collidesWithTerrain;
+
+      if (onGround) {
         if (this.velocity.y < 0) {
           this.canJump = true;
         }
+        console.log("colliding with terrain on y direction");
         this.pos.y -= this.velocity.y * delta;
       }
 
-      // const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
-      // const clippingOffsetZ = this.velocity.z < 0 ? -0.5 : 0.5;
+      if (this.velocity.y > -30 && !onGround && gravity)
+        this.velocity.y -= 9.8 * 5 * delta;
 
-      // this.controls.moveRight(this.velocity.x * delta + clippingOffsetX);
-      // if (!this.collidesWithTerrain) {
-
-      this.controls.moveRight(this.velocity.x * delta);
-      // }
-      // this.controls.moveRight(-this.velocity.x * delta - clippingOffsetX);
-
-      // this.controls.moveForward(this.velocity.z * delta + clippingOffsetZ);
-      // if (!this.collidesWithTerrain) {
-      this.controls.moveForward(this.velocity.z * delta);
-      // }
-      // this.controls.moveForward(-this.velocity.z * delta - clippingOffsetZ);
-      // console.log("afterupdate", this.position);
-
-      // console.log("Z Intended Direction", this.directionPlayerWantsToMove.z);
-      // console.log("Z Actual Velocity", this.velocity.z);
-      if (this.velocity.z > 0 && this.directionPlayerWantsToMove.z < 0) {
-        // console.log("Moving the wrong way! Glitching");
+      if (!gravity && moveDown) {
+        console.log("moving down");
+        this.velocity.y -= maxSpeed * delta;
+        this.velocity.clampLength(0, maxSpeed);
       }
+      if (!gravity && moveUp) {
+        console.log("moving up");
+        this.velocity.y += maxSpeed * delta;
+        this.velocity.clampLength(0, maxSpeed);
+      }
+
+      const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
+      const clippingOffsetZ = this.velocity.z < 0 ? -0.5 : 0.5;
+
+      this.controls.moveRight(this.velocity.x * delta + clippingOffsetX);
+      if (!this.collidesWithTerrain) {
+        this.controls.moveRight(this.velocity.x * delta);
+      }
+      this.controls.moveRight(-this.velocity.x * delta - clippingOffsetX);
+
+      this.controls.moveForward(this.velocity.z * delta + clippingOffsetZ);
+      if (!this.collidesWithTerrain) {
+        this.controls.moveForward(this.velocity.z * delta);
+      }
+      this.controls.moveForward(-this.velocity.z * delta - clippingOffsetZ);
     }
   }
 
@@ -130,7 +118,7 @@ export class Player {
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
     const { type: collision } = getVoxel(this.world.chunks, [x, y, z]);
-    if (collision !== 0) return true;
+    if (collision !== 0 && collision !== foliage) return true;
     return false;
   }
 
