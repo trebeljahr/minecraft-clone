@@ -7,7 +7,7 @@ import {
 } from "../constants";
 import {
   setLightValue,
-  computeChunkOffset,
+  getSmallChunkCorner,
   computeVoxelIndex,
   addChunkForVoxel,
 } from "../helpers";
@@ -39,7 +39,7 @@ function propagateSunlight(chunks: Chunks, queue: Position[]) {
 
 const sunlightWorker = {
   sunlightChunkColumnAt(pos: Position, chunks: Chunks) {
-    const [cx, _, cz] = computeChunkOffset(pos);
+    const [cx, _, cz] = getSmallChunkCorner(pos);
     const queue = [] as Position[];
     for (let xOff = 0; xOff < chunkSize; xOff++) {
       for (let zOff = 0; zOff < chunkSize; zOff++) {

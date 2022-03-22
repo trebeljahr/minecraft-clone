@@ -8,11 +8,11 @@ import {
   getVoxel,
   computeChunkDistanceFromPoint,
   parseChunkId,
-  computeChunkOffset,
+  getSmallChunkCorner,
   getChunkColumn,
   computeChunkCoordinates,
   chunkCoordinatesFromId,
-  computeChunkOffsetFromId,
+  computeSmallChunkCornerFromId,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -82,7 +82,7 @@ async function generateChunkColumnAtPosition(chunkId: string) {
     const newId = `${x},${y + yOff},${z}`;
     await world.addChunkAtId(newId);
     // console.log(world.chunks);
-    const bottomLeftCornerOfChunk = computeChunkOffsetFromId(newId);
+    const bottomLeftCornerOfChunk = computeSmallChunkCornerFromId(newId);
     // console.log(chunkId);
     // console.log(newId);
     // console.log(x, y, z);

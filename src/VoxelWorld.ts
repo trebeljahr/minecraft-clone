@@ -2,12 +2,12 @@ import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
 import {
   computeChunkId,
   computeVoxelIndex,
-  computeChunkOffset,
+  getSmallChunkCorner,
   computeChunkCoordinates,
   getVoxel,
   addChunkForVoxel,
   addChunkAtChunkId,
-  computeChunkOffsetFromId,
+  computeSmallChunkCornerFromId,
 } from "./helpers";
 import { blocks } from "./blocks";
 import {
@@ -187,7 +187,7 @@ export class World {
   }
 
   async updateChunkGeometry(chunkId: string) {
-    const chunkOffset = computeChunkOffsetFromId(chunkId);
+    const chunkOffset = computeSmallChunkCornerFromId(chunkId);
 
     let mesh = chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();

@@ -7,7 +7,7 @@ import {
   chunkSize,
   faces,
 } from "../constants";
-import { computeChunkOffsetFromId, getVoxel } from "../helpers";
+import { computeSmallChunkCornerFromId, getVoxel } from "../helpers";
 import { expose } from "threads/worker";
 import { blocks } from "../blocks";
 import { generateChunkData } from "../chunkLogic";
@@ -24,7 +24,7 @@ const { cactus } = blocks;
 const chunkGeometryWorker = {
   generateChunkData,
   generateGeometry(chunks: Chunks, chunkId: string) {
-    const chunkOffset = computeChunkOffsetFromId(chunkId);
+    const chunkOffset = computeSmallChunkCornerFromId(chunkId);
     const positions: number[] = [];
     const lightValues: number[] = [];
     const sunlightValues: number[] = [];

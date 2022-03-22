@@ -138,23 +138,29 @@ export function getChunkColumn(chunks: Chunks, pos: Position) {
 }
 
 export function computeChunkOffsetVector(pos: Position) {
-  return new Vector3(...computeChunkOffset(pos));
+  return new Vector3(...getSmallChunkCorner(pos));
 }
 
-export function computeChunkOffset(pos: Position): Position {
+export function getSmallChunkCorner(pos: Position): Position {
   return computeChunkCoordinates(pos).map(
     (coord) => coord * chunkSize
   ) as Position;
 }
 
-export function computeChunkOffsetFromId(chunkId: string): Position {
+export function getBigChunkCorner(pos: Position): Position {
+  return getSmallChunkCorner(pos).map(
+    (coord) => coord + chunkSize - 1
+  ) as Position;
+}
+
+export function computeSmallChunkCornerFromId(chunkId: string): Position {
   return chunkCoordinatesFromId(chunkId).map(
     (coord) => coord * chunkSize
   ) as Position;
 }
 
 export function addChunkAtChunkId(chunks: Chunks, id: string) {
-  console.log("New chunk added at", id);
+  // console.log("New chunk added at", id);
   chunks[id] = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
   return chunks;
 }
