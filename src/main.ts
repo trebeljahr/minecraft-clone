@@ -98,6 +98,7 @@ let chunksQueuedForGeneration: string[] = [];
 let chunksQueuedForSunlight: string[] = [];
 const chunksAlreadyGenerated: string[] = [];
 const chunksAlreadySunlit: string[] = [];
+const viewDistance = 3;
 
 async function generateChunkAtPosition(newId: string) {
   await world.addChunkAtId(newId);
@@ -107,7 +108,7 @@ async function generateChunkAtPosition(newId: string) {
 }
 
 async function streamInChunks() {
-  const iterator = 2;
+  const iterator = viewDistance - 1;
   for (let y = verticalNumberOfChunks; y >= 0; y--) {
     for (let z = -iterator; z <= iterator; z++) {
       for (let x = -iterator; x <= iterator; x++) {
@@ -119,28 +120,45 @@ async function streamInChunks() {
 
         const chunkId = computeChunkId(chunkPos.toArray());
         const chunkAlreadyQueued = chunksQueuedForGeneration.includes(chunkId);
-        const chunkAlreadyCreated = Object.keys(world.chunks).includes(chunkId);
-        if (chunkAlreadyQueued || chunkAlreadyCreated) {
+        const chunkExistsAlready = world.chunks[chunkId];
+
+        if (chunkAlreadyQueued || chunkExistsAlready) {
           // continue NOT return!!!
           continue;
         }
-
         chunksQueuedForGeneration.push(chunkId);
-        console.log(chunksQueuedForGeneration);
+
         generateChunkAtPosition(chunkId).then(() => {
-          // const blocks = transformToBlocks(world.chunks[chunkId]);
-          // if (y !== 3) {
-          //   console.log(blocks);
-          // }
-          // chunksQueuedForSunlight.push(chunkId);
           chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
             return id !== chunkId;
           });
-          console.log(world.chunks);
+          // chunksQueuedForSunlight.push(chunkId);
         });
       }
     }
   }
+}
+
+function pruneChunks() {
+  if (renderer.info.render.frame % 120 !== 0) return;
+
+  Object.keys(world.chunks).forEach((idToDelete) => {
+    const currentChunkId = computeChunkId(player.position.toArray());
+    const [x, , z] = chunkCoordinatesFromId(idToDelete);
+    const [x2, , z2] = chunkCoordinatesFromId(currentChunkId);
+    const outOfView =
+      Math.abs(x - x2) >= viewDistance || Math.abs(z - z2) >= viewDistance;
+    if (outOfView && !chunksQueuedForGeneration.includes(idToDelete)) {
+      const object = scene.getObjectByName(idToDelete) as Mesh;
+      object?.geometry?.dispose();
+      (object?.material as Material)?.dispose();
+      object && scene.remove(object);
+      renderer.renderLists.dispose();
+      delete world.meshes[idToDelete];
+      delete world.chunks[idToDelete];
+      requestRenderIfNotRequested();
+    }
+  });
 }
 
 function parseChunkIdToChunkCoordinates(chunkId: string) {
@@ -208,9 +226,12 @@ async function placeVoxel(event: MouseEvent) {
       })
       .map((coord) => Math.floor(coord)) as Position;
 
-    const distanceFromPlayerHead = new Vector3(...pos).sub(player.pos).length();
+    const distanceFromPlayerHead = new Vector3(...pos)
+      .sub(player.position)
+      .length();
     const distanceFromPlayerFeet = new Vector3(...pos)
-      .sub(copy(player.pos).setY(player.pos.y - 1))
+      .sub(player.position)
+      .setY(player.position.y - 1)
       .length();
     if (
       (distanceFromPlayerHead < 1 || distanceFromPlayerFeet < 1) &&
@@ -292,8 +313,8 @@ async function init() {
   inventory = new Inventory();
   loop.register(player);
   loop.register({ tick: streamInChunks });
-  loop.register({ tick: sunlightUpdates });
   loop.register({ tick: pruneChunks });
+  loop.register({ tick: sunlightUpdates });
   loop.start();
 
   blocker.addEventListener("click", function () {
@@ -353,14 +374,14 @@ async function init() {
         console.log("position:", camera.position);
         break;
       case "KeyG":
-        console.log("Pressed G", player.pos);
+        console.log("Pressed G", player.position);
         console.log(
           "X is stuck",
-          player.pos.x - Math.floor(player.pos.x) <= 0.001
+          player.position.x - Math.floor(player.position.x) <= 0.001
         );
         console.log(
           "Z is stuck",
-          player.pos.z - Math.floor(player.pos.z) <= 0.001
+          player.position.z - Math.floor(player.position.z) <= 0.001
         );
         break;
     }
@@ -374,27 +395,6 @@ async function init() {
   // await generateChunksAroundCamera();
   // spawnSingleBlock();
   logTime.takenFor("Init function");
-}
-
-function pruneChunks() {
-  if (renderer.info.render.frame % 60 !== 0) return;
-  Object.keys(world.chunks).forEach((chunkId) => {
-    const currentChunkId = computeChunkId(player.position.toArray());
-    const [x, , z] = chunkCoordinatesFromId(chunkId);
-    const [x2, , z2] = chunkCoordinatesFromId(currentChunkId);
-    const viewDistance = 3;
-    if (Math.abs(x - x2) > viewDistance || Math.abs(z - z2) > viewDistance) {
-      // console.log("Deleting chunk out of range with chunkId: ", chunkId);
-      const object = scene.getObjectByName(chunkId) as Mesh;
-      object?.geometry?.dispose();
-      (object?.material as Material)?.dispose();
-      object && scene.remove(object);
-      renderer.renderLists.dispose();
-      delete world.chunks[chunkId];
-      console.log("Deleted?", world.chunks[chunkId]);
-      requestRenderIfNotRequested();
-    }
-  });
 }
 
 function onWindowResize() {

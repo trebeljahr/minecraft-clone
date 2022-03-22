@@ -65,8 +65,6 @@ export class Player {
       this.velocity.z = this.planarVelocity.z;
 
       this.pos.y += this.velocity.y * delta;
-      // console.log(this.pos.y);
-      // console.log(this.velocity.y);
       const onGround = this.collidesWithTerrain;
 
       if (onGround) {
@@ -82,13 +80,11 @@ export class Player {
 
       if (!gravity && moveDown) {
         console.log("moving down");
-        this.velocity.y -= maxSpeed * delta;
-        this.velocity.clampLength(0, maxSpeed);
+        this.pos.y -= (maxSpeed / 10) * delta;
       }
       if (!gravity && moveUp) {
         console.log("moving up");
-        this.velocity.y += maxSpeed * delta;
-        this.velocity.clampLength(0, maxSpeed);
+        this.pos.y += (maxSpeed / 10) * delta;
       }
 
       const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
@@ -109,7 +105,7 @@ export class Player {
   }
 
   get pos(): Vector3 {
-    return copy(this.controls.getObject().position);
+    return this.controls.getObject().position;
   }
 
   get position(): Vector3 {
@@ -118,7 +114,7 @@ export class Player {
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
     const { type: collision } = getVoxel(this.world.chunks, [x, y, z]);
-    if (collision !== 0 && collision !== foliage) return true;
+    if (collision !== 0) return true;
     return false;
   }
 

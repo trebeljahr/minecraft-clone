@@ -12,10 +12,9 @@ import { opaque } from "./voxelMaterial";
 import { chunkGeometryWorkerPool } from "./workers/workerPool";
 import { setVoxel } from "./chunkLogic";
 
-const chunkIdToMesh = {};
-
 export class World {
   private internalChunks: Chunks;
+  private chunkIdToMesh: Record<string, Mesh>;
   private scene: Scene;
   private sunlightedChunksColumns: Record<string, boolean>;
   constructor(options: {
@@ -26,6 +25,7 @@ export class World {
   }) {
     this.scene = options.scene;
     this.chunks = {};
+    this.chunkIdToMesh = {};
     this.sunlightedChunksColumns = {};
   }
 
@@ -34,6 +34,10 @@ export class World {
   }
   set chunks(update: Chunks) {
     this.internalChunks = update;
+  }
+
+  get meshes() {
+    return this.chunkIdToMesh;
   }
 
   intersectRay(
@@ -175,7 +179,7 @@ export class World {
   async updateChunkGeometry(chunkId: string) {
     const chunkOffset = computeSmallChunkCornerFromId(chunkId);
 
-    let mesh = chunkIdToMesh[chunkId];
+    let mesh = this.chunkIdToMesh[chunkId];
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
     await chunkGeometryWorkerPool.queue(async (worker) => {
@@ -221,7 +225,7 @@ export class World {
       mesh = new Mesh(geometry, opaque);
       mesh.name = chunkId;
       // console.log("Chunk Id in scene: ", chunkId);
-      chunkIdToMesh[chunkId] = mesh;
+      this.chunkIdToMesh[chunkId] = mesh;
       this.scene.add(mesh);
       mesh.position.set(chunkOffset[0], chunkOffset[1], chunkOffset[2]);
     }
