@@ -4,14 +4,17 @@ import {
   chunkSize,
   transparentBlocks,
   Chunks,
+  verticalNumberOfChunks,
 } from "../constants";
 import {
   setLightValue,
   getSmallChunkCorner,
   computeVoxelIndex,
   addChunkForVoxel,
+  computeChunkId,
 } from "../helpers";
 import { expose } from "threads/worker";
+import { getChunkForVoxel } from "../chunkLogic";
 
 function propagateSunlight(chunks: Chunks, queue: Position[]) {
   const floodLightQueue = [...queue] as Position[];
@@ -19,12 +22,17 @@ function propagateSunlight(chunks: Chunks, queue: Position[]) {
     const [x, y, z] = queue.shift();
     const yBelow = y - 1;
     const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
-    const { addedChunk: blockBelowChunk } = addChunkForVoxel(chunks, [
-      x,
-      yBelow,
-      z,
-    ]);
-    const blockBelow = blockBelowChunk[blockBelowIndex];
+    // console.log(Object.keys(chunks));
+    // console.log(computeChunkId([x, yBelow, z]));
+    const [chunkBelow, chunkId] = getChunkForVoxel(chunks, [x, yBelow, z]);
+    if (!chunkBelow || yBelow < 0) {
+      // console.log("No chunk found below?", chunkBelow);
+      // console.log("yBelow?", yBelow);
+
+      continue;
+    }
+
+    const blockBelow = chunkBelow[blockBelowIndex];
     const belowIsTransparent = transparentBlocks.includes(blockBelow);
     const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
     if (canPropagateSunlight) {
@@ -40,10 +48,15 @@ function propagateSunlight(chunks: Chunks, queue: Position[]) {
 const sunlightWorker = {
   sunlightChunkColumnAt(pos: Position, chunks: Chunks) {
     const [cx, _, cz] = getSmallChunkCorner(pos);
+    console.log(cx, cz);
     const queue = [] as Position[];
     for (let xOff = 0; xOff < chunkSize; xOff++) {
       for (let zOff = 0; zOff < chunkSize; zOff++) {
-        const newPos = [xOff + cx, maxHeight + 20, zOff + cz] as Position;
+        const newPos = [
+          xOff + cx,
+          verticalNumberOfChunks * chunkSize,
+          zOff + cz,
+        ] as Position;
         queue.push(newPos);
       }
     }

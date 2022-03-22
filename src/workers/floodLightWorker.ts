@@ -7,6 +7,7 @@ import {
   fields,
   Chunks,
 } from "../constants";
+import { getChunkForVoxel } from "../chunkLogic";
 
 const floodLightWorker = {
   floodLight(chunks: Chunks, queue: Position[]) {
@@ -24,11 +25,13 @@ const floodLightWorker = {
         const ny = y + offset.y;
         const nz = z + offset.z;
 
-        const { addedChunk: neighborsChunk } = addChunkForVoxel(chunks, [
-          nx,
-          ny,
-          nz,
-        ]);
+        const [neighborsChunk, id] = getChunkForVoxel(chunks, [nx, ny, nz]);
+        if (!neighborsChunk) {
+          console.log(id);
+          console.log(chunks);
+          return;
+        }
+
         const neighborIndex = computeVoxelIndex([nx, ny, nz]);
         const lightValueInNeighbor =
           neighborsChunk[neighborIndex + fields.light];

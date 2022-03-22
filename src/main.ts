@@ -8,7 +8,7 @@ import {
   getVoxel,
   computeChunkDistanceFromPoint,
   parseChunkId,
-  chunkCoordinatesFromId,
+  getChunkCoordinatesFromId,
   computeSmallChunkCornerFromId,
   transformToBlocks,
   computeChunkOffsetVector,
@@ -28,6 +28,7 @@ import {
   Position,
   fields,
   Chunks,
+  maxHeight,
 } from "./constants";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
@@ -44,6 +45,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { floodLightWorkerPool, sunlightWorkerPool } from "./workers/workerPool";
 
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
@@ -62,53 +64,52 @@ let menu = true;
 
 init();
 
-// async function sunlightChunkAtPos(pos: Vector3) {
-// let sunlitChunks: Chunks, floodLightQueue: Position[];
-// const logTime = new SimpleTimer();
-// const filteredChunks = getSurroundingChunksColumns(
-//   world.chunks,
-//   pos.toArray()
-// );
-// console.log("Filtered around:", computeChunkId(pos.toArray()));
-// console.log("ChunkIds", Object.keys(filteredChunks));
+async function sunlightChunkAtPos(pos: Vector3) {
+  let sunlitChunks: Chunks, floodLightQueue: Position[];
+  const logTime = new SimpleTimer();
+  // const filteredChunks = getSurroundingChunksColumns(
+  //   world.chunks,
+  //   pos.toArray()
+  // );
+  // console.log("Filtered around:", computeChunkId(pos.toArray()));
+  // console.log("ChunkIds", Object.keys(filteredChunks));
 
-// await sunlightWorkerPool.queue(async (worker) => {
-//   ({ sunlitChunks, floodLightQueue } = await worker.sunlightChunkColumnAt(
-//     pos.toArray(),
-//     filteredChunks
-//   ));
-// });
-// logTime.takenFor("sunlight");
+  await sunlightWorkerPool.queue(async (worker) => {
+    ({ sunlitChunks, floodLightQueue } = await worker.sunlightChunkColumnAt(
+      pos.toArray(),
+      world.chunks
+    ));
+  });
+  logTime.takenFor("sunlight");
 
-// await floodLightWorkerPool.queue(async (worker) => {
-//   const chunkUpdates = await worker.floodLight(sunlitChunks, floodLightQueue);
-//   // console.log("Original: ", world.chunks);
-//   // console.log("Update: ", chunkUpdates);
-//   world.chunks = { ...world.chunks, ...chunkUpdates };
-// });
-// logTime.takenFor("floodlight");
+  await floodLightWorkerPool.queue(async (worker) => {
+    const chunkUpdates = await worker.floodLight(sunlitChunks, floodLightQueue);
+    // console.log("Original: ", world.chunks);
+    // console.log("Update: ", chunkUpdates);
+    world.chunks = { ...world.chunks, ...chunkUpdates };
+  });
+  logTime.takenFor("floodlight");
 
-// for (let y = 0; y < maxHeight + 20; y += chunkSize) {
-//   world.updateChunkGeometry([pos.x, y, pos.z]);
-// }
-// requestRenderIfNotRequested();
-// }
+  for (let y = 0; y < maxHeight + 20; y += chunkSize) {
+    await world.updateChunkGeometry(computeChunkId([pos.x, y, pos.z]));
+  }
+
+  requestRenderIfNotRequested();
+}
 
 let chunksQueuedForGeneration: string[] = [];
-let chunksQueuedForSunlight: string[] = [];
-const chunksAlreadyGenerated: string[] = [];
-const chunksAlreadySunlit: string[] = [];
 const viewDistance = 3;
 
 async function generateChunkAtPosition(newId: string) {
   await world.addChunkAtId(newId);
   await world.generateChunkData(newId);
-  await world.updateChunkGeometry(newId);
+  await world.updateChunkGeometry(newId, true);
   requestRenderIfNotRequested();
 }
 
-async function streamInChunks() {
-  const iterator = viewDistance - 1;
+function streamInChunks() {
+  // const iterator = viewDistance - 1;
+  const iterator = 1;
   for (let y = verticalNumberOfChunks; y >= 0; y--) {
     for (let z = -iterator; z <= iterator; z++) {
       for (let x = -iterator; x <= iterator; x++) {
@@ -132,7 +133,17 @@ async function streamInChunks() {
           chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
             return id !== chunkId;
           });
-          // chunksQueuedForSunlight.push(chunkId);
+          if (
+            y === 0
+            // z < iterator &&
+            // z > -iterator &&
+            // x < iterator &&
+            // x > -iterator
+          ) {
+            // console.log("Hello making sun");
+            // const posOfChunkToSunlight = parseChunkId(chunkId);
+            // sunlightChunkAtPos(posOfChunkToSunlight);
+          }
         });
       }
     }
@@ -144,8 +155,8 @@ function pruneChunks() {
 
   Object.keys(world.chunks).forEach((idToDelete) => {
     const currentChunkId = computeChunkId(player.position.toArray());
-    const [x, , z] = chunkCoordinatesFromId(idToDelete);
-    const [x2, , z2] = chunkCoordinatesFromId(currentChunkId);
+    const [x, , z] = getChunkCoordinatesFromId(idToDelete);
+    const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
     const outOfView =
       Math.abs(x - x2) >= viewDistance || Math.abs(z - z2) >= viewDistance;
     if (outOfView && !chunksQueuedForGeneration.includes(idToDelete)) {
@@ -158,44 +169,6 @@ function pruneChunks() {
       delete world.chunks[idToDelete];
       requestRenderIfNotRequested();
     }
-  });
-}
-
-function parseChunkIdToChunkCoordinates(chunkId: string) {
-  const [xOff, yOff, zOff] = chunkId.split(",").map((digit) => parseInt(digit));
-  return [xOff, yOff, zOff];
-}
-
-function surroundingChunksExist(chunkId: string) {
-  const [xOff, , zOff] = parseChunkIdToChunkCoordinates(chunkId);
-  for (let x = -1; x < 1; x++) {
-    for (let z = -1; z < 1; z++) {
-      const chunkIdToFind = `${x + xOff},0,${z + zOff}`;
-      // console.log(chunksAlreadyGenerated);
-      // console.log(chunkIdToFind);
-      if (!chunksAlreadyGenerated.includes(chunkIdToFind)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-function sunlightUpdates() {
-  chunksQueuedForSunlight = chunksQueuedForSunlight.filter((chunkId) => {
-    const surroundingExists = surroundingChunksExist(chunkId);
-    // console.log("Surrounding Exists?", surroundingExists);
-    if (surroundingExists) {
-      const chunkId = chunksQueuedForSunlight.shift();
-
-      const posOfChunkToSunlight = parseChunkId(chunkId);
-      // console.log("Sunlighting chunk at: ", posOfChunkToSunlight);
-
-      // sunlightChunkAtPos(posOfChunkToSunlight);
-      chunksAlreadySunlit.push(chunkId);
-      return false;
-    }
-    return true;
   });
 }
 
@@ -314,7 +287,6 @@ async function init() {
   loop.register(player);
   loop.register({ tick: streamInChunks });
   loop.register({ tick: pruneChunks });
-  loop.register({ tick: sunlightUpdates });
   loop.start();
 
   blocker.addEventListener("click", function () {

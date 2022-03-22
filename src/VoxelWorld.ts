@@ -126,7 +126,7 @@ export class World {
   }
 
   async addChunkAtId(chunkId: string) {
-    addChunkAtChunkId(this.chunks, chunkId);
+    this.chunks = addChunkAtChunkId(this.chunks, chunkId);
   }
 
   setVoxel(pos: Position, type: number) {
@@ -176,7 +176,7 @@ export class World {
     return this.sunlightedChunksColumns[columnId];
   }
 
-  async updateChunkGeometry(chunkId: string) {
+  async updateChunkGeometry(chunkId: string, defaultLight = false) {
     const chunkOffset = computeSmallChunkCornerFromId(chunkId);
 
     let mesh = this.chunkIdToMesh[chunkId];
@@ -184,7 +184,7 @@ export class World {
 
     await chunkGeometryWorkerPool.queue(async (worker) => {
       const { positions, normals, uvs, indices, lightValues } =
-        await worker.generateGeometry(this.chunks, chunkId);
+        await worker.generateGeometry(this.chunks, chunkId, defaultLight);
 
       const positionNumComponents = 3;
       geometry.setAttribute(

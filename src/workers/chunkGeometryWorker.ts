@@ -7,12 +7,7 @@ import {
   chunkSize,
   faces,
 } from "../constants";
-import {
-  chunkCoordinatesFromId,
-  computeChunkOffsetVector,
-  computeSmallChunkCornerFromId,
-  getVoxel,
-} from "../helpers";
+import { getChunkCoordinatesFromId, getVoxel } from "../helpers";
 import { expose } from "threads/worker";
 import { blocks } from "../blocks";
 import { generateChunkData } from "../chunkLogic";
@@ -28,8 +23,8 @@ const { cactus } = blocks;
 
 const chunkGeometryWorker = {
   generateChunkData,
-  generateGeometry(chunks: Chunks, chunkId: string) {
-    const chunkCoordinates = chunkCoordinatesFromId(chunkId);
+  generateGeometry(chunks: Chunks, chunkId: string, defaultLight = false) {
+    const chunkCoordinates = getChunkCoordinatesFromId(chunkId);
     const positions: number[] = [];
     const lightValues: number[] = [];
     const sunlightValues: number[] = [];
@@ -75,8 +70,11 @@ const chunkGeometryWorker = {
                   } else {
                     positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
                   }
-
-                  lightValues.push(10 || neighborLight);
+                  if (defaultLight) {
+                    lightValues.push(5);
+                  } else {
+                    lightValues.push(neighborLight);
+                  }
                   sunlightValues.push(neighbourSunLight);
                   normals.push(...dir);
                   uvs.push(

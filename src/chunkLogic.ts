@@ -65,16 +65,13 @@ export function generateChunkData(chunk: Uint8Array, chunkId: string) {
   return chunk;
 }
 
-export function getChunkForVoxel(chunks: Chunks, pos: number[]) {
+export function getChunkForVoxel(
+  chunks: Chunks,
+  pos: number[]
+): [Uint8Array, string] {
   const chunkId = computeChunkId(pos as Position);
   const foundChunk = chunks[chunkId];
-  //   if (!foundChunk) {
-  //     console.log("Searching: ", Object.keys(chunks));
-  //     console.log("For pos", pos, "at id:", chunkId);
-  //     console.log("Found:", foundChunk);
-  //     console.error("Not found chunk");
-  //   }
-  return foundChunk;
+  return [foundChunk, chunkId];
 }
 
 export function spawnTree(

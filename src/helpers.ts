@@ -77,7 +77,7 @@ export function computeChunkDistanceFromPoint(
   const chunkPos = new Vector3(
     ...chunkId.split(",").map((elem) => parseInt(elem))
   );
-  const pos = new Vector3(...computeChunkCoordinates(point));
+  const pos = new Vector3(...getChunkCoordinates(point));
   // console.log(pos);
   const distance = chunkPos.distanceTo(pos);
   // console.log("Distance from point", distance);
@@ -144,9 +144,7 @@ export function computeChunkOffsetVector(pos: Position) {
 }
 
 export function getSmallChunkCorner(pos: Position): Position {
-  return computeChunkCoordinates(pos).map(
-    (coord) => coord * chunkSize
-  ) as Position;
+  return getChunkCoordinates(pos).map((coord) => coord * chunkSize) as Position;
 }
 
 export function getBigChunkCorner(pos: Position): Position {
@@ -156,7 +154,7 @@ export function getBigChunkCorner(pos: Position): Position {
 }
 
 export function computeSmallChunkCornerFromId(chunkId: string): Position {
-  return chunkCoordinatesFromId(chunkId).map(
+  return getChunkCoordinatesFromId(chunkId).map(
     (coord) => coord * chunkSize
   ) as Position;
 }
@@ -177,18 +175,35 @@ export const toBlock = (block: number) => (num, index) => {
   return num;
 };
 
-export function addChunkAtChunkId(chunks: Chunks, id: string) {
-  // console.log("New chunk added at", id);
-  chunks[id] = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
+export function generateSurroundingChunks(chunks: Chunks, id: string) {
+  for (let xOff = -1; xOff <= 1; xOff++) {
+    for (let zOff = -1; zOff <= 1; zOff++) {
+      for (let yOff = -1; yOff <= 1; yOff++) {
+        const [x, y, z] = getChunkCoordinatesFromId(id);
+        const newChunkId = `${x + xOff}, ${y + yOff}, ${z + zOff}`;
+        if (!chunks[newChunkId]) {
+          chunks[newChunkId] = new Uint8Array(
+            chunkSize * chunkSize * chunkSize * fields.count
+          );
+        }
+      }
+    }
+  }
   return chunks;
 }
 
-export function chunkCoordinatesFromId(chunkId: string) {
+export function addChunkAtChunkId(chunks: Chunks, id: string) {
+  chunks[id] = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
+  chunks = generateSurroundingChunks(chunks, id);
+  return chunks;
+}
+
+export function getChunkCoordinatesFromId(chunkId: string) {
   return chunkId.split(",").map((num) => parseInt(num));
 }
 
 export function computeChunkId(pos: number[]) {
-  return computeChunkCoordinates(pos).join(",");
+  return getChunkCoordinates(pos).join(",");
 }
 
 export function parseChunkId(chunkId: string) {
@@ -196,7 +211,7 @@ export function parseChunkId(chunkId: string) {
   return new Vector3(x, y, z).multiplyScalar(chunkSize);
 }
 
-export function computeChunkCoordinates(pos: number[]): Position {
+export function getChunkCoordinates(pos: number[]): Position {
   return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
 }
 
@@ -205,7 +220,15 @@ export function computeVoxelCoordinates(pos: Vector3) {
 }
 
 export function getVoxel(chunks: Chunks, pos: Position) {
-  const { addedChunk: chunk } = addChunkForVoxel(chunks, pos);
+  const chunkId = computeChunkId(pos);
+  const chunk = chunks[chunkId];
+  if (!chunk) {
+    return {
+      type: 0,
+      light: 0,
+      sunlight: 0,
+    };
+  }
   const voxelIndex = computeVoxelIndex(pos);
   return {
     type: chunk[voxelIndex],
