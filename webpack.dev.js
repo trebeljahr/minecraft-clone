@@ -9,10 +9,11 @@ module.exports = merge(common, {
 
   //https://webpack.js.org/configuration/dev-server/
   devServer: {
-    contentBase: path.join(__dirname, "dist"),
+    static: {
+      directory: path.join(__dirname, "dist"),
+    },
     compress: true,
-    port: 8080,
-    noInfo: true,
+    port: 9000,
   },
 
   module: {

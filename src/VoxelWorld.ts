@@ -139,11 +139,12 @@ export class World {
   }
 
   async addChunkAtId(chunkId: string) {
-    this.chunks = addChunkAtChunkId(this.chunks, chunkId);
+    const editedChunks = addChunkAtChunkId(this.chunks, chunkId);
+    this.chunks = { ...this.chunks, ...editedChunks };
     return this.chunks;
   }
   setVoxel(pos: Position, type: number) {
-    this.chunks = setVoxel(this.chunks, pos, type);
+    this.chunks = { ...this.chunks, ...setVoxel(this.chunks, pos, type) };
   }
 
   addChunkForVoxel(pos: Vector3) {

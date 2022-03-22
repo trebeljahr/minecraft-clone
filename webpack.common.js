@@ -14,8 +14,8 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
   },
 });
 
-const WebpackCleanupPlugin = require("webpack-cleanup-plugin");
-const WebpackCleanupPluginConfig = new WebpackCleanupPlugin({});
+// const WebpackCleanupPlugin = require("webpack-cleanup-plugin");
+// const WebpackCleanupPluginConfig = new WebpackCleanupPlugin({});
 
 //merge() isn't required, but it enables autocomplete
 module.exports = merge({
@@ -29,36 +29,28 @@ module.exports = merge({
 
   plugins: [
     new ThreadsPlugin(),
-    WebpackCleanupPluginConfig,
+    // WebpackCleanupPluginConfig,
     HTMLWebpackPluginConfig,
   ],
 
   module: {
     rules: [
-      //https://www.typescriptlang.org/docs/handbook/react-&-webpack.html (ignore the react part)
       {
         test: /\.ts$/,
-        loader: "awesome-typescript-loader",
+        loader: "ts-loader",
+      },
+      {
+        test: /\.(gltf|mp3|svg|glb|png|jpe?g)$/,
+        type: "asset/resource",
+        generator: {
+          filename: "assets/[hash][ext][query]",
+        },
       },
 
       //https://webpack.js.org/loaders/css-loader/
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
-      },
-
-      //https://webpack.js.org/loaders/file-loader/
-      {
-        test: /\.(gltf|mp3|svg|glb|png|jpe?g)$/,
-        use: [
-          {
-            loader: "file-loader",
-            options: {
-              outputPath: "assets",
-              name: "[sha256:hash:base64:16].[ext]",
-            },
-          },
-        ],
       },
     ],
   },

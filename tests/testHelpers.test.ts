@@ -119,4 +119,48 @@ describe("test voxel logic", () => {
       steps * steps * (verticalNumberOfChunks + 1)
     );
   });
+
+  it("should populate chunks for moving 'player' asynchronously", () => {
+    let chunks = {};
+    async function generateChunksAroundPlayer(pos: Vector3) {
+      const iter = 0;
+      for (let z = -iter; z <= iter; z++) {
+        for (let x = -iter; x <= iter; x++) {
+          const chunkColumnPos = new Vector3(
+            pos.x + x * chunkSize,
+            0,
+            pos.z + z * chunkSize
+          );
+
+          const chunkId = computeChunkId(chunkColumnPos.toArray());
+          for (let yOff = verticalNumberOfChunks; yOff >= 0; yOff--) {
+            const [x, y, z] = chunkCoordinatesFromId(chunkId);
+            const newId = `${x},${y + yOff},${z}`;
+            chunks = addChunkAtChunkId(chunks, newId);
+            const bottomLeftCornerOfChunk =
+              computeSmallChunkCornerFromId(newId);
+
+            chunks = generateChunkData(
+              chunks,
+              new Vector3(...bottomLeftCornerOfChunk).toArray()
+            );
+          }
+        }
+      }
+    }
+
+    const steps = 10;
+    const promises = [];
+    for (let x = 0; x < chunkSize * steps; x += chunkSize) {
+      for (let z = 0; z < chunkSize * steps; z += chunkSize) {
+        promises.push(generateChunksAroundPlayer(new Vector3(x, 0, z)));
+      }
+    }
+
+    Promise.all(promises).then(() => {
+      expect(Object.keys(chunks).length).toBe(
+        steps * steps * (verticalNumberOfChunks + 1)
+      );
+    });
+  });
 });

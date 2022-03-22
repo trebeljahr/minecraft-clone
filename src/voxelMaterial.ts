@@ -6,9 +6,9 @@ import {
   UniformsUtils,
 } from "three";
 
-const texture = new TextureLoader().load(
-  require("../assets/First-Texture-Atlas.png")
-);
+import textureAtlas from "./assets/First-Texture-Atlas.png";
+const texture = new TextureLoader().load(textureAtlas);
+
 texture.magFilter = NearestFilter;
 texture.minFilter = NearestFilter;
 
