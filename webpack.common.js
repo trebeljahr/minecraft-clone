@@ -1,5 +1,4 @@
 const merge = require("webpack-merge");
-const ThreadsPlugin = require("threads-plugin");
 const path = require("path");
 
 //https://webpack.js.org/plugins/html-webpack-plugin/
@@ -28,7 +27,6 @@ module.exports = merge({
   },
 
   plugins: [
-    new ThreadsPlugin(),
     // WebpackCleanupPluginConfig,
     HTMLWebpackPluginConfig,
   ],
