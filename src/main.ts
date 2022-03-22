@@ -1,6 +1,7 @@
 import "./main.css";
 import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
+import { Worker } from "threads";
 import {
   MouseClickEvent,
   SimpleTimer,

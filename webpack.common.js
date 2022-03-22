@@ -46,8 +46,6 @@ module.exports = merge({
           filename: "assets/[hash][ext][query]",
         },
       },
-
-      //https://webpack.js.org/loaders/css-loader/
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
