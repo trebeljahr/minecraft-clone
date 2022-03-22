@@ -6,7 +6,8 @@
   "main": "app.js",
   "scripts": {
     "dev": "webpack-dev-server --open --config webpack.dev.js",
-    "build": "webpack --config webpack.prod.js"
+    "build": "webpack --config webpack.prod.js",
+    "test": "./node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "@shopify/draggable": "^1.0.0-beta.8",
