@@ -1,4 +1,11 @@
-import { Vector3, Scene, BufferAttribute, BufferGeometry, Mesh } from "three";
+import {
+  Vector3,
+  Scene,
+  BufferAttribute,
+  BufferGeometry,
+  Mesh,
+  Material,
+} from "three";
 import {
   computeChunkId,
   computeVoxelIndex,
@@ -133,6 +140,8 @@ export class World {
 
   async generateChunkData(chunkId: string) {
     await chunkGeometryWorkerPool.queue(async (worker) => {
+      if (!this.chunks[chunkId]) return;
+
       this.chunks[chunkId] = await worker.generateChunkData(
         this.chunks[chunkId],
         chunkId
@@ -163,7 +172,18 @@ export class World {
   async updateChunkGeometry(chunkId: string, defaultLight = false) {
     const chunkOffset = computeSmallChunkCornerFromId(chunkId);
 
+    if (!this.chunks[chunkId]) return;
+
     let mesh = this.chunkIdToMesh[chunkId];
+
+    // const meshInScene = this.scene.getObjectByName(chunkId) as Mesh;
+    // if (meshInScene && !mesh) {
+    //   console.log("Has Mesh in scene!");
+    //   meshInScene?.geometry?.dispose();
+    //   (meshInScene?.material as Material)?.dispose();
+    //   meshInScene && this.scene.remove(meshInScene);
+    // }
+
     const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
     await chunkGeometryWorkerPool.queue(async (worker) => {

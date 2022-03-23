@@ -59,6 +59,16 @@ let menu = true;
 
 init();
 
+function updateChunks(updates: Chunks) {
+  Object.keys(updates).forEach((id) => {
+    if (!world.chunks[id]) {
+      console.log("Chunk already deleted");
+    } else {
+      world.chunks[id] = updates[id];
+    }
+  });
+}
+
 async function sunlightChunks() {
   let chunks: Chunks,
     floodLightQueue: Position[],
@@ -85,17 +95,11 @@ async function sunlightChunks() {
     const chunkUpdates = await worker.floodLight(chunks, floodLightQueue);
     // console.log("Original: ", world.chunks);
     // console.log("Update: ", chunkUpdates);
-
-    Object.keys(chunkUpdates).forEach((id) => {
-      if (!world.chunks[id]) {
-        console.log("Chunk already deleted");
-      } else {
-        world.chunks[id] = chunkUpdates[id];
-      }
-    });
+    updateChunks(chunkUpdates);
   });
+
   logTime.takenFor("floodlight");
-  for (let yOff = 0; yOff < verticalNumberOfChunks; yOff++) {
+  for (let yOff = verticalNumberOfChunks - 1; yOff >= 0; yOff--) {
     chunksThatNeedToBeLit.forEach(async ([id]) => {
       const [x, y, z] = getChunkCoordinatesFromId(id);
       const newId = `${x},${y + yOff},${z}`;
@@ -113,7 +117,7 @@ async function generateChunkAtPosition(newId: string) {
   await world.addChunkAtId(newId);
   await world.generateChunkData(newId);
   // await world.updateChunkGeometry(newId, true);
-  requestRenderIfNotRequested();
+  // requestRenderIfNotRequested();
 }
 
 function streamInChunks() {
@@ -161,13 +165,16 @@ function streamInChunks() {
 function pruneChunks() {
   if (renderer.info.render.frame % 60 !== 0) return;
 
-  Object.keys(world.chunks).forEach((idToDelete) => {
-    const currentChunkId = computeChunkId(player.position.toArray());
-    const [x, , z] = getChunkCoordinatesFromId(idToDelete);
-    const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
-    const outOfView =
-      Math.abs(x - x2) >= viewDistance || Math.abs(z - z2) >= viewDistance;
-    if (outOfView) {
+  Object.keys(world.chunks)
+    .filter((id) => {
+      const currentChunkId = computeChunkId(player.position.toArray());
+      const [x, , z] = getChunkCoordinatesFromId(id);
+      const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
+      const outOfView =
+        Math.abs(x - x2) >= viewDistance || Math.abs(z - z2) >= viewDistance;
+      return outOfView;
+    })
+    .forEach((idToDelete) => {
       delete world.meshes[idToDelete];
       delete world.chunks[idToDelete];
       const object = scene.getObjectByName(idToDelete) as Mesh;
@@ -176,6 +183,11 @@ function pruneChunks() {
       object && scene.remove(object);
       renderer.renderLists.dispose();
       requestRenderIfNotRequested();
+    });
+
+  Object.keys(world.chunks).forEach((id) => {
+    if (!world.chunks[id] && scene.getObjectByName(id)) {
+      console.log("We have a scene chunk without world chunk");
     }
   });
 }
@@ -294,7 +306,7 @@ async function init() {
   inventory = new Inventory();
   loop.register(player);
   loop.register({ tick: streamInChunks });
-  loop.register({ tick: pruneChunks });
+  // loop.register({ tick: pruneChunks });
   loop.start();
 
   blocker.addEventListener("click", function () {
