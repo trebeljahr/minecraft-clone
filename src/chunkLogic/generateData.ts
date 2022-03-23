@@ -24,7 +24,7 @@ const {
   oakwood,
 } = blocks;
 
-export function generateChunkData(chunk: Chunk, chunkId: string) {
+export async function generateChunkData(chunk: Chunk, chunkId: string) {
   const pos = parseChunkId(chunkId);
   for (let y = chunkSize - 1; y >= 0; y--) {
     const underBedrock = pos.y + y <= 0;

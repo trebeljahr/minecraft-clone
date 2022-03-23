@@ -1,8 +1,7 @@
 import { Vector3 } from "three";
 import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
-import { copy } from "./constants";
-import { World } from "./VoxelWorld";
+import { Chunks, copy } from "./constants";
 import { blocks } from "./blocks";
 
 const { foliage } = blocks;
@@ -22,11 +21,9 @@ export class Player {
   public controls: PointerLockControls;
   private velocity = new Vector3(0, 0, 0);
   private planarVelocity = new Vector3(0, 0, 0);
-  private world: World;
   private canJump: boolean;
-  constructor(controls: PointerLockControls, world: World) {
+  constructor(controls: PointerLockControls) {
     this.controls = controls;
-    this.world = world;
     this.canJump = false;
     this.addListeners();
   }
@@ -112,17 +109,18 @@ export class Player {
     return copy(this.controls.getObject().position);
   }
 
-  wouldCollideWithTerrain({ x, y, z }: Vector3) {
-    const { type: collision } = getVoxel(this.world.chunks, [x, y, z]);
+  wouldCollideWithTerrain({ x, y, z }: Vector3, terrain: Chunks) {
+    const { type: collision } = getVoxel(terrain, [x, y, z]);
     if (collision !== 0) return true;
     return false;
   }
 
-  get collidesWithTerrain(): boolean {
+  collidesWithTerrain(terrain: Chunks): boolean {
     return (
-      this.wouldCollideWithTerrain(this.position) ||
+      this.wouldCollideWithTerrain(this.position, terrain) ||
       this.wouldCollideWithTerrain(
-        this.position.sub(new Vector3(0, eyeLevel, 0))
+        this.position.sub(new Vector3(0, eyeLevel, 0)),
+        terrain
       )
     );
   }

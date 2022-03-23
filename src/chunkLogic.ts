@@ -1,7 +1,14 @@
-import { Chunks, fields, Position, terrainHeight } from "./constants";
+import {
+  Chunks,
+  fields,
+  neighborOffsets,
+  Position,
+  terrainHeight,
+} from "./constants";
 import { computeChunkId, computeVoxelIndex } from "./helpers";
 import { Noise } from "./noise";
 import { blocks } from "./blocks";
+import { updateGeometry } from "./chunkLogic/updateGeometry";
 const { birchwood, foliage, oakwood } = blocks;
 const noise = new Noise();
 
@@ -53,12 +60,19 @@ export function spawnTree(
     }
   }
   return chunk;
+}
 
-  // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ]);
-  // this.updateVoxelGeometry([currentX - leafWidth, leafHeightMax, currentZ]);
-  // this.updateVoxelGeometry([currentX + leafWidth, leafHeightMax, currentZ]);
-  // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ - leafWidth]);
-  // this.updateVoxelGeometry([currentX, leafHeightMax, currentZ + leafWidth]);
+export function updateVoxelGeometry(pos: Position) {
+  const updatedChunkIds = {};
+  for (const offset of neighborOffsets) {
+    const offsetPos = pos.map(
+      (coord, i) => coord + offset.toArray()[i]
+    ) as Position;
+    const chunkId = computeChunkId(offsetPos);
+    if (!updatedChunkIds[chunkId]) {
+      updatedChunkIds[chunkId] = true;
+    }
+  }
 }
 
 export function setVoxel(chunk: Uint8Array, pos: number[], type: number) {

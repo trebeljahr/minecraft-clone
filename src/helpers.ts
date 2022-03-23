@@ -167,7 +167,7 @@ export const toBlock = (block: number) => (num, index) => {
   return num;
 };
 
-export function addChunkAtChunkId(chunks: Chunks, id: string) {
+export async function addChunkAtChunkId(chunks: Chunks, id: string) {
   for (let xOff = -1; xOff <= 1; xOff++) {
     for (let zOff = -1; zOff <= 1; zOff++) {
       for (let yOff = -1; yOff <= 1; yOff++) {
