@@ -1,5 +1,5 @@
 import { expose } from "threads/worker";
-import { getLightValue, computeVoxelIndex, addChunkForVoxel } from "../helpers";
+import { getLightValue, computeVoxelIndex } from "../helpers";
 import {
   Position,
   transparentBlocks,
@@ -27,8 +27,9 @@ const floodLightWorker = {
 
         const [neighborsChunk, id] = getChunkForVoxel(chunks, [nx, ny, nz]);
         if (!neighborsChunk) {
-          console.log(id);
-          console.log(chunks);
+          console.log(chunks[id]);
+          console.log("No neighbour with id", id);
+          console.log("Current chunks", Object.keys(chunks).sort());
           return;
         }
 

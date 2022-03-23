@@ -3,20 +3,18 @@ import {
   computeChunkId,
   computeVoxelIndex,
   getVoxel,
-  addChunkForVoxel,
   addChunkAtChunkId,
   computeSmallChunkCornerFromId,
 } from "./helpers";
 import { neighborOffsets, Position, fields, Chunks } from "./constants";
 import { opaque } from "./voxelMaterial";
 import { chunkGeometryWorkerPool } from "./workers/workerPool";
-import { setVoxel } from "./chunkLogic";
+import { getChunkForVoxel, setVoxel } from "./chunkLogic";
 
 export class World {
   private internalChunks: Chunks;
   private chunkIdToMesh: Record<string, Mesh>;
   private scene: Scene;
-  private sunlightedChunksColumns: Record<string, boolean>;
   constructor(options: {
     tileSize: number;
     tileTextureWidth: number;
@@ -26,7 +24,6 @@ export class World {
     this.scene = options.scene;
     this.chunks = {};
     this.chunkIdToMesh = {};
-    this.sunlightedChunksColumns = {};
   }
 
   get chunks() {
@@ -120,8 +117,8 @@ export class World {
   }
 
   setLightValue(pos: Position, lightValue: number) {
-    const { chunk } = this.addChunkForVoxel(new Vector3(...pos));
     const blockIndex = computeVoxelIndex(pos);
+    const [chunk] = getChunkForVoxel(this.chunks, pos);
     chunk[blockIndex + fields.light] = lightValue;
   }
 
@@ -131,16 +128,7 @@ export class World {
 
   setVoxel(pos: Position, type: number) {
     const chunkId = computeChunkId(pos);
-    this.chunks[chunkId] = setVoxel(this.chunks[chunkId], pos, type);
-  }
-
-  addChunkForVoxel(pos: Vector3) {
-    const { addedChunk, addedChunkId } = addChunkForVoxel(
-      this.chunks,
-      pos.toArray()
-    );
-    this.chunks[addedChunkId] = addedChunk;
-    return { chunk: addedChunk, chunkId: addedChunkId };
+    this.chunks[chunkId].data = setVoxel(this.chunks[chunkId].data, pos, type);
   }
 
   async generateChunkData(chunkId: string) {
@@ -170,10 +158,6 @@ export class World {
         this.updateChunkGeometry(chunkId);
       }
     }
-  }
-
-  hasSunlight(columnId: string) {
-    return this.sunlightedChunksColumns[columnId];
   }
 
   async updateChunkGeometry(chunkId: string, defaultLight = false) {

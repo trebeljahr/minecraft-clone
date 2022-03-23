@@ -5,9 +5,11 @@ import {
   chunkSliceSize,
   Chunks,
   Position,
+  Chunk,
 } from "./constants";
 import { MathUtils, Vector3 } from "three";
 import { blocksLookup, blocks } from "./blocks";
+import { getChunkForVoxel } from "./chunkLogic";
 
 const { foliage } = blocks;
 const leftMouse = 0;
@@ -63,8 +65,8 @@ export class MouseClickEvent {
 }
 
 export function getLightValue(chunks: Chunks, pos: Position) {
-  const { addedChunk: chunk } = addChunkForVoxel(chunks, pos);
   const blockIndex = computeVoxelIndex(pos);
+  const [chunk] = getChunkForVoxel(chunks, pos);
   const blockLightValue = chunk[blockIndex + fields.light];
   return blockLightValue;
 }
@@ -89,19 +91,9 @@ export function setLightValue(
   pos: Position,
   lightValue: number
 ) {
-  const { addedChunk: chunk } = addChunkForVoxel(chunks, pos);
+  const [chunk] = getChunkForVoxel(chunks, pos);
   const blockIndex = computeVoxelIndex(pos);
   chunk[blockIndex + fields.light] = lightValue;
-}
-
-export function addChunkForVoxel(chunks: Chunks, pos: Position) {
-  const chunkId = computeChunkId(pos);
-  let chunk = chunks[chunkId];
-  if (!chunk) {
-    chunk = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
-    chunks[chunkId] = chunk;
-  }
-  return { addedChunk: chunk, addedChunkId: chunkId };
 }
 
 export function computeVoxelIndex(pos: number[]) {
@@ -175,16 +167,14 @@ export const toBlock = (block: number) => (num, index) => {
   return num;
 };
 
-export function generateSurroundingChunks(chunks: Chunks, id: string) {
+export function addChunkAtChunkId(chunks: Chunks, id: string) {
   for (let xOff = -1; xOff <= 1; xOff++) {
     for (let zOff = -1; zOff <= 1; zOff++) {
       for (let yOff = -1; yOff <= 1; yOff++) {
         const [x, y, z] = getChunkCoordinatesFromId(id);
-        const newChunkId = `${x + xOff}, ${y + yOff}, ${z + zOff}`;
+        const newChunkId = `${x + xOff},${y + yOff},${z + zOff}`;
         if (!chunks[newChunkId]) {
-          chunks[newChunkId] = new Uint8Array(
-            chunkSize * chunkSize * chunkSize * fields.count
-          );
+          chunks[newChunkId] = makeEmptyChunk();
         }
       }
     }
@@ -192,10 +182,12 @@ export function generateSurroundingChunks(chunks: Chunks, id: string) {
   return chunks;
 }
 
-export function addChunkAtChunkId(chunks: Chunks, id: string) {
-  chunks[id] = new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count);
-  chunks = generateSurroundingChunks(chunks, id);
-  return chunks;
+export function makeEmptyChunk(): Chunk {
+  return {
+    data: new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count),
+    needsLightUpdate: false,
+    isGenerated: false,
+  };
 }
 
 export function getChunkCoordinatesFromId(chunkId: string) {
@@ -221,7 +213,7 @@ export function computeVoxelCoordinates(pos: Vector3) {
 
 export function getVoxel(chunks: Chunks, pos: Position) {
   const chunkId = computeChunkId(pos);
-  const chunk = chunks[chunkId];
+  const chunk = chunks[chunkId]?.data;
   if (!chunk) {
     return {
       type: 0,

@@ -10,7 +10,6 @@ import {
   setLightValue,
   getSmallChunkCorner,
   computeVoxelIndex,
-  addChunkForVoxel,
   computeChunkId,
 } from "../helpers";
 import { expose } from "threads/worker";
@@ -26,8 +25,8 @@ function propagateSunlight(chunks: Chunks, queue: Position[]) {
     // console.log(computeChunkId([x, yBelow, z]));
     const [chunkBelow, chunkId] = getChunkForVoxel(chunks, [x, yBelow, z]);
     if (!chunkBelow || yBelow < 0) {
-      // console.log("No chunk found below?", chunkBelow);
-      // console.log("yBelow?", yBelow);
+      console.log("No chunk found below?", chunkBelow);
+      console.log("yBelow?", yBelow);
 
       continue;
     }
@@ -54,7 +53,7 @@ const sunlightWorker = {
       for (let zOff = 0; zOff < chunkSize; zOff++) {
         const newPos = [
           xOff + cx,
-          verticalNumberOfChunks * chunkSize,
+          verticalNumberOfChunks * chunkSize + chunkSize,
           zOff + cz,
         ] as Position;
         queue.push(newPos);

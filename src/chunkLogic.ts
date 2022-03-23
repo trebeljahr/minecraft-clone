@@ -1,4 +1,5 @@
 import {
+  Chunk,
   Chunks,
   chunkSize,
   fields,
@@ -28,7 +29,7 @@ const {
 } = blocks;
 const noise = new Noise();
 
-export function generateChunkData(chunk: Uint8Array, chunkId: string) {
+export function generateChunkData(chunk: Chunk, chunkId: string) {
   const pos = parseChunkId(chunkId);
   for (let y = chunkSize - 1; y >= 0; y--) {
     const underBedrock = pos.y + y <= 0;
@@ -41,27 +42,28 @@ export function generateChunkData(chunk: Uint8Array, chunkId: string) {
         // if (offsetPos.length !== 3) return;
         if (shouldPlaceBlock([...offsetPos])) {
           if (shouldSpawnGold([...offsetPos])) {
-            chunk = setVoxel(chunk, [...offsetPos], gold);
+            chunk.data = setVoxel(chunk.data, [...offsetPos], gold);
           } else if (shouldSpawnDiamonds([...offsetPos])) {
-            chunk = setVoxel(chunk, [...offsetPos], diamond);
+            chunk.data = setVoxel(chunk.data, [...offsetPos], diamond);
           } else if (shouldSpawnLapis([...offsetPos])) {
-            chunk = setVoxel(chunk, [...offsetPos], lapis);
+            chunk.data = setVoxel(chunk.data, [...offsetPos], lapis);
           } else if (shouldSpawnEmeralds([...offsetPos])) {
-            chunk = setVoxel(chunk, [...offsetPos], emerald);
+            chunk.data = setVoxel(chunk.data, [...offsetPos], emerald);
           } else if (shouldSpawnGrass([...offsetPos])) {
-            chunk = setVoxel(chunk, [...offsetPos], grass);
+            chunk.data = setVoxel(chunk.data, [...offsetPos], grass);
             // if (shouldSpawnTree()) {
-            //   chunks = spawnTree(chunks, pos.x + x, pos.y + y + 1, pos.z + z);
+            //   chunk.data = spawnTree(chunk.data, pos.x + x, pos.y + y + 1, pos.z + z);
             // }
           } else if (shouldSpawnDirt([...offsetPos])) {
-            chunk = setVoxel(chunk, [...offsetPos], dirt);
+            chunk.data = setVoxel(chunk.data, [...offsetPos], dirt);
           } else {
-            chunk = setVoxel(chunk, [...offsetPos], stone);
+            chunk.data = setVoxel(chunk.data, [...offsetPos], stone);
           }
         }
       }
     }
   }
+  chunk.isGenerated = true;
   return chunk;
 }
 
@@ -70,7 +72,7 @@ export function getChunkForVoxel(
   pos: number[]
 ): [Uint8Array, string] {
   const chunkId = computeChunkId(pos as Position);
-  const foundChunk = chunks[chunkId];
+  const foundChunk = chunks[chunkId]?.data;
   return [foundChunk, chunkId];
 }
 

@@ -8,7 +8,7 @@ export const terrainHeight = surface;
 export const blockLength = 100;
 
 import * as THREE from "three";
-import { Vector3 } from "three";
+import { BoxGeometry, BufferGeometry, Mesh, Vector3 } from "three";
 
 export type Position = [number, number, number];
 export function copy(vec: THREE.Vector3) {
@@ -133,7 +133,14 @@ export const faces = [
   },
 ];
 
-export type Chunks = Record<string, Uint8Array>;
+export interface Chunk {
+  data: Uint8Array;
+  mesh?: Mesh;
+  isGenerated: boolean;
+  needsLightUpdate: boolean;
+}
+
+export type Chunks = Record<string, Chunk>;
 // function getCurrentChunk(providedPos?: Vector3) {
 //   const pos = providedPos || player.position;
 //   return copy(pos).divideScalar(chunkSize).floor();
