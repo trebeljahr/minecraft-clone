@@ -1,71 +1,9 @@
-import {
-  Chunk,
-  Chunks,
-  chunkSize,
-  fields,
-  Position,
-  terrainHeight,
-} from "./constants";
-import {
-  computeChunkId,
-  computeChunkOffsetVector,
-  computeVoxelIndex,
-  parseChunkId,
-} from "./helpers";
+import { Chunks, fields, Position, terrainHeight } from "./constants";
+import { computeChunkId, computeVoxelIndex } from "./helpers";
 import { Noise } from "./noise";
 import { blocks } from "./blocks";
-import { Vector3 } from "three";
-const {
-  emerald,
-  lapis,
-  diamond,
-  gold,
-  stone,
-  grass,
-  dirt,
-  birchwood,
-  foliage,
-  oakwood,
-} = blocks;
+const { birchwood, foliage, oakwood } = blocks;
 const noise = new Noise();
-
-export function generateChunkData(chunk: Chunk, chunkId: string) {
-  const pos = parseChunkId(chunkId);
-  for (let y = chunkSize - 1; y >= 0; y--) {
-    const underBedrock = pos.y + y <= 0;
-    const overMaximumHeight = pos.y + y > terrainHeight;
-    if (overMaximumHeight || underBedrock) continue;
-
-    for (let z = 0; z < chunkSize; z++) {
-      for (let x = 0; x < chunkSize; x++) {
-        const offsetPos: Position = [pos.x + x, pos.y + y, pos.z + z];
-        // if (offsetPos.length !== 3) return;
-        if (shouldPlaceBlock([...offsetPos])) {
-          if (shouldSpawnGold([...offsetPos])) {
-            chunk.data = setVoxel(chunk.data, [...offsetPos], gold);
-          } else if (shouldSpawnDiamonds([...offsetPos])) {
-            chunk.data = setVoxel(chunk.data, [...offsetPos], diamond);
-          } else if (shouldSpawnLapis([...offsetPos])) {
-            chunk.data = setVoxel(chunk.data, [...offsetPos], lapis);
-          } else if (shouldSpawnEmeralds([...offsetPos])) {
-            chunk.data = setVoxel(chunk.data, [...offsetPos], emerald);
-          } else if (shouldSpawnGrass([...offsetPos])) {
-            chunk.data = setVoxel(chunk.data, [...offsetPos], grass);
-            // if (shouldSpawnTree()) {
-            //   chunk.data = spawnTree(chunk.data, pos.x + x, pos.y + y + 1, pos.z + z);
-            // }
-          } else if (shouldSpawnDirt([...offsetPos])) {
-            chunk.data = setVoxel(chunk.data, [...offsetPos], dirt);
-          } else {
-            chunk.data = setVoxel(chunk.data, [...offsetPos], stone);
-          }
-        }
-      }
-    }
-  }
-  chunk.isGenerated = true;
-  return chunk;
-}
 
 export function getChunkForVoxel(
   chunks: Chunks,
