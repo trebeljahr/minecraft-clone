@@ -4,6 +4,7 @@ import { BufferGeometry } from "three";
 import { computeSmallChunkCornerFromId } from "../helpers";
 import { opaque } from "../voxelMaterial";
 import { Chunks } from "../constants";
+import { generateGeometry } from "./generateGeometry";
 
 export async function updateGeometry(
   chunks: Chunks,
@@ -22,7 +23,7 @@ export async function updateGeometry(
 
   await chunkWorkerPool.queue(async (worker) => {
     const { positions, normals, uvs, indices, lightValues } =
-      await worker.generateupdate(chunks, chunkId, defaultLight);
+      await worker.generateGeometry(chunks, chunkId, defaultLight);
 
     const positionNumComponents = 3;
     geometry.setAttribute(

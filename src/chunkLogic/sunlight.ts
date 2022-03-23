@@ -15,7 +15,7 @@ import {
 import { getChunkForVoxel } from "../chunkLogic";
 
 export function propagateSunlight(chunks: Chunks, queue: Position[]) {
-  const floodLightQueue = [...queue] as Position[];
+  const sunlightQueue = [...queue] as Position[];
   while (queue.length > 0) {
     const [x, y, z] = queue.shift();
     const yBelow = y - 1;
@@ -32,25 +32,26 @@ export function propagateSunlight(chunks: Chunks, queue: Position[]) {
       queue.push([x, yBelow, z]);
       setLightValue(chunks, [x, yBelow, z], 15);
     } else {
-      floodLightQueue.push([x, y, z]);
+      sunlightQueue.push([x, y, z]);
     }
   }
-  return floodLightQueue;
+  return sunlightQueue;
 }
 
-export function sunlightChunks(chunks: Chunks) {
-  const chunksThatNeedToBeLit = Object.entries(chunks).filter(
+export async function createSunlightQueue(chunks: Chunks) {
+  const chunksThatNeedToBeUpdated = Object.entries(chunks).filter(
     ([id, { needsLightUpdate, isGenerated }]) => {
       const pos = parseChunkId(id);
-      if (needsLightUpdate && pos.y === 0 && isGenerated) {
+
+      const canBeLit = needsLightUpdate && pos.y === 0 && isGenerated;
+      if (canBeLit) {
         chunks[id].needsLightUpdate = false;
-        return true;
       }
-      return false;
+      return canBeLit;
     }
   );
 
-  const queue = chunksThatNeedToBeLit
+  const queue = chunksThatNeedToBeUpdated
     .map(([id]) => {
       const [cx, , cz] = computeSmallChunkCornerFromId(id);
       const queue = [] as Position[];
@@ -68,25 +69,12 @@ export function sunlightChunks(chunks: Chunks) {
     })
     .flat();
 
-  console.log(chunksThatNeedToBeLit.length * 16 * 16);
-  console.log(queue.length);
-  const floodLightQueue = propagateSunlight(chunks, queue);
-  return { floodLightQueue, chunks, chunksThatNeedToBeLit };
-}
-
-export function sunlightChunkColumnAt(pos: Position, chunks: Chunks) {
-  const [cx, _, cz] = getSmallChunkCorner(pos);
-  const queue = [] as Position[];
-  for (let xOff = 0; xOff < chunkSize; xOff++) {
-    for (let zOff = 0; zOff < chunkSize; zOff++) {
-      const newPos = [
-        xOff + cx,
-        verticalNumberOfChunks * chunkSize + chunkSize,
-        zOff + cz,
-      ] as Position;
-      queue.push(newPos);
-    }
-  }
-  const floodLightQueue = propagateSunlight(chunks, queue);
-  return { floodLightQueue, sunlitChunks: chunks };
+  console.log("Chunk Which Need Updates", chunksThatNeedToBeUpdated.length);
+  console.log("Sunlight queue", queue.length);
+  const sunlightQueue = propagateSunlight(chunks, queue);
+  console.log("FloodLight Queue", sunlightQueue.length);
+  return {
+    sunlightQueue,
+    chunks,
+  };
 }

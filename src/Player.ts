@@ -19,12 +19,14 @@ let isFlying = false;
 
 export class Player {
   public controls: PointerLockControls;
+  private chunks: Chunks;
   private velocity = new Vector3(0, 0, 0);
   private planarVelocity = new Vector3(0, 0, 0);
   private canJump: boolean;
-  constructor(controls: PointerLockControls) {
+  constructor(controls: PointerLockControls, chunks: Chunks) {
     this.controls = controls;
     this.canJump = false;
+    this.chunks = chunks;
     this.addListeners();
   }
   tick(delta: number) {
@@ -109,18 +111,17 @@ export class Player {
     return copy(this.controls.getObject().position);
   }
 
-  wouldCollideWithTerrain({ x, y, z }: Vector3, terrain: Chunks) {
-    const { type: collision } = getVoxel(terrain, [x, y, z]);
+  wouldCollideWithTerrain({ x, y, z }: Vector3) {
+    const { type: collision } = getVoxel(this.chunks, [x, y, z]);
     if (collision !== 0) return true;
     return false;
   }
 
-  collidesWithTerrain(terrain: Chunks): boolean {
+  get collidesWithTerrain(): boolean {
     return (
-      this.wouldCollideWithTerrain(this.position, terrain) ||
+      this.wouldCollideWithTerrain(this.position) ||
       this.wouldCollideWithTerrain(
-        this.position.sub(new Vector3(0, eyeLevel, 0)),
-        terrain
+        this.position.sub(new Vector3(0, eyeLevel, 0))
       )
     );
   }

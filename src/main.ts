@@ -13,19 +13,14 @@ import {
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
-  verticalNumberOfChunks,
   terrainHeight,
-  tileSize,
-  tileTextureWidth,
-  tileTextureHeight,
   chunkSize,
   neighborOffsets,
   glowingBlocks,
   surroundingOffsets,
   Position,
-  Chunks,
-  maxHeight,
   Chunk,
+  verticalNumberOfChunks,
 } from "./constants";
 import { Loop } from "./Loop";
 import { Player } from "./Player";
@@ -33,7 +28,6 @@ import { Player } from "./Player";
 import {
   ACESFilmicToneMapping,
   Color,
-  Material,
   Mesh,
   PerspectiveCamera,
   Scene,
@@ -41,11 +35,10 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { chunkWorkerPool } from "./workers/workerPool";
 import { intersectRay } from "./intersectRay";
-import { generateChunkData } from "./chunkLogic/generateData";
 import { setVoxel } from "./chunkLogic";
 import { updateGeometry } from "./chunkLogic/updateGeometry";
+import { pruneChunks, streamInChunks, sunlightChunks } from "./streamChunks";
 
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
@@ -64,118 +57,6 @@ let globalChunks: Record<string, Chunk> = {};
 let meshes: Record<string, Mesh> = {};
 
 init();
-
-async function sunlightChunks() {
-  const logTime = new SimpleTimer();
-  // const filteredChunks = getSurroundingChunksColumns(
-  //   chunks,
-  //   pos.toArray()
-  // );
-  // console.log("Filtered around:", computeChunkId(pos.toArray()));
-  // console.log("ChunkIds", Object.keys(filteredChunks));
-
-  await chunkWorkerPool.queue(async (worker) => {
-    const { chunks, floodLightQueue, chunksThatNeedToBeLit } =
-      await worker.sunlightChunks(globalChunks);
-    globalChunks = await worker.floodLight(chunks, floodLightQueue);
-
-    for (let yOff = verticalNumberOfChunks - 1; yOff >= 0; yOff--) {
-      chunksThatNeedToBeLit.forEach(async ([id]) => {
-        const [x, y, z] = getChunkCoordinatesFromId(id);
-        const newId = `${x},${y + yOff},${z}`;
-        console.log("Updating geometry for ", newId);
-      });
-    }
-  });
-
-  logTime.takenFor("sunlight");
-
-  logTime.takenFor("floodlight");
-
-  requestRenderIfNotRequested();
-}
-
-let chunksQueuedForGeneration: string[] = [];
-const viewDistance = 3;
-
-async function generateChunkAtPosition(newId: string) {
-  await addChunkAtChunkId(globalChunks, newId);
-  await generateChunkData(globalChunks[newId], newId);
-  // await updateChunkGeometry(newId, true);
-  // requestRenderIfNotRequested();
-}
-
-function streamInChunks() {
-  const iterator = viewDistance - 1;
-  const promises = [];
-  const chunkIdsForSunlight = [];
-  for (let y = verticalNumberOfChunks; y >= 0; y--) {
-    for (let z = -iterator; z <= iterator; z++) {
-      for (let x = -iterator; x <= iterator; x++) {
-        const chunkPos = new Vector3(
-          player.position.x + x * chunkSize,
-          y * chunkSize, // y position of player doesn't matter!
-          player.position.z + z * chunkSize
-        );
-
-        const chunkId = computeChunkId(chunkPos.toArray());
-        const chunkAlreadyQueued = chunksQueuedForGeneration.includes(chunkId);
-
-        if (chunkAlreadyQueued || globalChunks[chunkId]?.isGenerated) {
-          // continue NOT return!!!
-          continue;
-        }
-        chunksQueuedForGeneration.push(chunkId);
-
-        const promise = generateChunkAtPosition(chunkId);
-        promises.push(promise);
-        if (y === 0) {
-          chunkIdsForSunlight.push(chunkId);
-        }
-        promise.then(() => {
-          chunksQueuedForGeneration = chunksQueuedForGeneration.filter((id) => {
-            return id !== chunkId;
-          });
-        });
-      }
-    }
-  }
-  if (promises.length > 0) {
-    Promise.all(promises).then(() => {
-      sunlightChunks();
-    });
-  }
-}
-
-function pruneChunks() {
-  if (renderer.info.render.frame % 60 !== 0) return;
-
-  Object.keys(globalChunks)
-    .filter((id) => {
-      const currentChunkId = computeChunkId(player.position.toArray());
-      const [x, , z] = getChunkCoordinatesFromId(id);
-      const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
-      const outOfView =
-        Math.abs(x - x2) >= viewDistance || Math.abs(z - z2) >= viewDistance;
-      return outOfView;
-    })
-    .forEach((idToDelete) => {
-      delete meshes[idToDelete];
-      delete globalChunks[idToDelete];
-      const object = scene.getObjectByName(idToDelete) as Mesh;
-      object?.geometry?.dispose();
-      (object?.material as Material)?.dispose();
-      object && scene.remove(object);
-      renderer.renderLists.dispose();
-      requestRenderIfNotRequested();
-    });
-
-  Object.keys(globalChunks).forEach((id) => {
-    if (!globalChunks[id] && scene.getObjectByName(id)) {
-      console.log("We have a scene chunk without world chunk");
-    }
-  });
-}
 
 async function placeVoxel(event: MouseEvent) {
   const mouseClick = new MouseClickEvent(event);
@@ -255,6 +136,33 @@ async function placeVoxel(event: MouseEvent) {
     requestRenderIfNotRequested();
   }
 }
+let lastChunkId = "0,0,0";
+async function handleChunks() {
+  const newChunkId = computeChunkId(player.position.toArray());
+  if (lastChunkId !== newChunkId) {
+    lastChunkId = newChunkId;
+    console.log("Switching chunks!");
+    for (let y = verticalNumberOfChunks; y >= 0; y--) {
+      const [x, , z] = getChunkCoordinatesFromId(newChunkId);
+      const chunkIdForSpawning = `${x},${y},${z}`;
+      globalChunks = await streamInChunks(globalChunks, chunkIdForSpawning);
+      globalChunks = await sunlightChunks(globalChunks);
+    }
+
+    for (let y = verticalNumberOfChunks; y >= 0; y--) {
+      const [x, , z] = getChunkCoordinatesFromId(newChunkId);
+      const chunkIdForSpawning = `${x},${y},${z}`;
+      await updateGeometry(
+        globalChunks,
+        meshes,
+        scene,
+        chunkIdForSpawning
+        // true
+      );
+    }
+    pruneChunks(globalChunks, player.position, meshes, scene, renderer);
+  }
+}
 
 async function init() {
   const logTime = new SimpleTimer();
@@ -281,10 +189,13 @@ async function init() {
   scene.background = new Color("white");
 
   const loop = new Loop(camera, scene, renderer);
-  player = new Player(new PointerLockControls(camera, document.body));
+  player = new Player(
+    new PointerLockControls(camera, document.body),
+    globalChunks
+  );
   inventory = new Inventory();
   loop.register(player);
-  loop.register({ tick: streamInChunks });
+  loop.register({ tick: handleChunks });
   // loop.register({ tick: pruneChunks });
   loop.start();
 

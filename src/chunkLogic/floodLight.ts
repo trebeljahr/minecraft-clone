@@ -8,7 +8,7 @@ import {
 } from "../constants";
 import { computeVoxelIndex, getLightValue } from "../helpers";
 
-export function floodLight(chunks: Chunks, queue: Position[]) {
+export async function floodLight(chunks: Chunks, queue: Position[]) {
   const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
   let iterations = 0;
   while (queue.length > 0) {
