@@ -185,7 +185,7 @@ export function addChunkAtChunkId(chunks: Chunks, id: string) {
 export function makeEmptyChunk(): Chunk {
   return {
     data: new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count),
-    needsLightUpdate: false,
+    needsLightUpdate: true,
     isGenerated: false,
   };
 }

@@ -23,6 +23,7 @@ import {
   Position,
   Chunks,
   maxHeight,
+  Chunk,
 } from "./constants";
 import { World } from "./VoxelWorld";
 import { Loop } from "./Loop";
@@ -58,8 +59,10 @@ let menu = true;
 
 init();
 
-async function sunlightChunkAtPos(pos: Vector3) {
-  let sunlitChunks: Chunks, floodLightQueue: Position[];
+async function sunlightChunks() {
+  let chunks: Chunks,
+    floodLightQueue: Position[],
+    chunksThatNeedToBeLit: [string, Chunk][];
   const logTime = new SimpleTimer();
   // const filteredChunks = getSurroundingChunksColumns(
   //   world.chunks,
@@ -69,35 +72,37 @@ async function sunlightChunkAtPos(pos: Vector3) {
   // console.log("ChunkIds", Object.keys(filteredChunks));
 
   await sunlightWorkerPool.queue(async (worker) => {
-    ({ sunlitChunks, floodLightQueue } = await worker.sunlightChunkColumnAt(
-      pos.toArray(),
-      world.chunks
-    ));
+    ({ chunks, floodLightQueue, chunksThatNeedToBeLit } =
+      await worker.sunlightChunks(world.chunks));
   });
+  console.log(
+    "Chunks that need to be lit",
+    chunksThatNeedToBeLit.map(([id]) => id)
+  );
   logTime.takenFor("sunlight");
 
   await floodLightWorkerPool.queue(async (worker) => {
-    const chunkUpdates = await worker.floodLight(sunlitChunks, floodLightQueue);
+    const chunkUpdates = await worker.floodLight(chunks, floodLightQueue);
     // console.log("Original: ", world.chunks);
     // console.log("Update: ", chunkUpdates);
-    world.chunks = { ...world.chunks, ...chunkUpdates };
+
+    Object.keys(chunkUpdates).forEach((id) => {
+      if (!world.chunks[id]) {
+        console.log("Chunk already deleted");
+      } else {
+        world.chunks[id] = chunkUpdates[id];
+      }
+    });
   });
   logTime.takenFor("floodlight");
-
-  for (
-    let y = 0;
-    y < verticalNumberOfChunks * chunkSize + chunkSize;
-    y += chunkSize
-  ) {
-    for (let xOff = -1; xOff < 1; xOff++) {
-      for (let zOff = -1; zOff < 1; zOff++) {
-        world.updateChunkGeometry(
-          computeChunkId([pos.x + xOff, y, pos.z + zOff])
-        );
-      }
-    }
+  for (let yOff = 0; yOff < verticalNumberOfChunks; yOff++) {
+    chunksThatNeedToBeLit.forEach(async ([id]) => {
+      const [x, y, z] = getChunkCoordinatesFromId(id);
+      const newId = `${x},${y + yOff},${z}`;
+      console.log("Updating geometry for ", newId);
+      await world.updateChunkGeometry(newId);
+    });
   }
-
   requestRenderIfNotRequested();
 }
 
@@ -107,13 +112,12 @@ const viewDistance = 3;
 async function generateChunkAtPosition(newId: string) {
   await world.addChunkAtId(newId);
   await world.generateChunkData(newId);
-  await world.updateChunkGeometry(newId, true);
+  // await world.updateChunkGeometry(newId, true);
   requestRenderIfNotRequested();
 }
 
 function streamInChunks() {
-  // const iterator = viewDistance - 1;
-  const iterator = 1;
+  const iterator = viewDistance - 1;
   const promises = [];
   const chunkIdsForSunlight = [];
   for (let y = verticalNumberOfChunks; y >= 0; y--) {
@@ -147,16 +151,15 @@ function streamInChunks() {
       }
     }
   }
-
-  Promise.all(promises).then(() => {
-    chunkIdsForSunlight.forEach((chunkId) => {
-      sunlightChunkAtPos(parseChunkId(chunkId));
+  if (promises.length > 0) {
+    Promise.all(promises).then(() => {
+      sunlightChunks();
     });
-  });
+  }
 }
 
 function pruneChunks() {
-  if (renderer.info.render.frame % 120 !== 0) return;
+  if (renderer.info.render.frame % 60 !== 0) return;
 
   Object.keys(world.chunks).forEach((idToDelete) => {
     const currentChunkId = computeChunkId(player.position.toArray());
@@ -164,14 +167,14 @@ function pruneChunks() {
     const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
     const outOfView =
       Math.abs(x - x2) >= viewDistance || Math.abs(z - z2) >= viewDistance;
-    if (outOfView && !chunksQueuedForGeneration.includes(idToDelete)) {
+    if (outOfView) {
+      delete world.meshes[idToDelete];
+      delete world.chunks[idToDelete];
       const object = scene.getObjectByName(idToDelete) as Mesh;
       object?.geometry?.dispose();
       (object?.material as Material)?.dispose();
       object && scene.remove(object);
       renderer.renderLists.dispose();
-      delete world.meshes[idToDelete];
-      delete world.chunks[idToDelete];
       requestRenderIfNotRequested();
     }
   });

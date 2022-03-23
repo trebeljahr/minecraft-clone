@@ -27,9 +27,9 @@ const floodLightWorker = {
 
         const [neighborsChunk, id] = getChunkForVoxel(chunks, [nx, ny, nz]);
         if (!neighborsChunk) {
-          console.log(chunks[id]);
-          console.log("No neighbour with id", id);
-          console.log("Current chunks", Object.keys(chunks).sort());
+          // console.log(chunks[id]);
+          // console.log("No neighbour with id", id);
+          // console.log("Current chunks", Object.keys(chunks).sort());
           return;
         }
 
