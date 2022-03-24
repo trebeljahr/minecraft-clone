@@ -78,11 +78,11 @@ export class Player {
         this.velocity.y -= 9.8 * 5 * delta;
 
       if (!gravity && moveDown) {
-        console.log("moving down");
+        // console.log("moving down");
         this.pos.y -= (maxSpeed / 10) * delta;
       }
       if (!gravity && moveUp) {
-        console.log("moving up");
+        // console.log("moving up");
         this.pos.y += (maxSpeed / 10) * delta;
       }
 

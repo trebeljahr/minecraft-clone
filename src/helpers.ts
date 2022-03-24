@@ -66,24 +66,41 @@ export class MouseClickEvent {
 
 export function getLightValue(chunks: Chunks, pos: Position) {
   const blockIndex = computeVoxelIndex(pos);
-  const [chunk] = getChunkForVoxel(chunks, pos);
+
+  const [chunk, chunkId] = getChunkForVoxel(chunks, pos);
+  if (!chunk) {
+    // console.log(pos);
+    // console.log(chunkId);
+    // console.log(Object.keys(chunks).length);
+    return 0;
+  }
   const blockLightValue = chunk[blockIndex + fields.light];
   return blockLightValue;
 }
 
-export function computeChunkDistanceFromPoint(
-  point: Position,
-  chunkId: string
+export function addOffsetToChunkId(
+  id: string,
+  { x: xOff = 0, y: yOff = 0, z: zOff = 0 }
 ) {
-  // console.log(chunkId.split(",").map((elem) => parseInt(elem)));
-  const chunkPos = new Vector3(
-    ...chunkId.split(",").map((elem) => parseInt(elem))
-  );
-  const pos = new Vector3(...getChunkCoordinates(point));
-  // console.log(pos);
-  const distance = chunkPos.distanceTo(pos);
-  // console.log("Distance from point", distance);
-  return distance;
+  const [x, y, z] = getChunkCoordinatesFromId(id);
+  const newChunkId = `${x + xOff},${y + yOff},${z + zOff}`;
+  return newChunkId;
+}
+
+export function getDistanceBetweenPoints(vec1: Vector3, vec2: Vector3) {
+  return vec1.distanceTo(vec2);
+}
+
+export function getDistanceBetweenPositions(pos1: Position, pos2: Position) {
+  const vec1 = new Vector3(...pos1);
+  const vec2 = new Vector3(...pos2);
+  return vec1.distanceTo(vec2);
+}
+
+export function getDistanceBetweenChunks(chunkId1: string, chunkId2: string) {
+  const chunkPos1 = getChunkCoordinatesVector(chunkId1);
+  const chunkPos2 = getChunkCoordinatesVector(chunkId2);
+  return chunkPos1.distanceTo(chunkPos2);
 }
 
 export function setLightValue(
@@ -168,17 +185,17 @@ export const toBlock = (block: number) => (num, index) => {
 };
 
 export async function addChunkAtChunkId(chunks: Chunks, id: string) {
-  for (let xOff = -1; xOff <= 1; xOff++) {
-    for (let zOff = -1; zOff <= 1; zOff++) {
-      for (let yOff = -1; yOff <= 1; yOff++) {
-        const [x, y, z] = getChunkCoordinatesFromId(id);
-        const newChunkId = `${x + xOff},${y + yOff},${z + zOff}`;
-        if (!chunks[newChunkId]) {
-          chunks[newChunkId] = makeEmptyChunk();
-        }
-      }
-    }
+  // for (let x = -1; x <= 1; x++) {
+  //   for (let z = -1; z <= 1; z++) {
+  //     for (let y = -1; y <= 1; y++) {
+  // const newChunkId = addOffsetToChunkId(id, { x, y, z });
+  const newChunkId = id;
+  if (!chunks[newChunkId]) {
+    chunks[newChunkId] = makeEmptyChunk();
   }
+  //     }
+  //   }
+  // }
   return chunks;
 }
 
@@ -194,8 +211,17 @@ export function getChunkCoordinatesFromId(chunkId: string) {
   return chunkId.split(",").map((num) => parseInt(num));
 }
 
+export function getChunkCoordinatesVector(chunkId: string) {
+  return new Vector3(...getChunkCoordinatesFromId(chunkId));
+}
+
 export function computeChunkId(pos: number[]) {
   return getChunkCoordinates(pos).join(",");
+}
+
+export function computeChunkColumnId(pos: number[]) {
+  const [x, , z] = getChunkCoordinates(pos);
+  return [x, 0, z].join(",");
 }
 
 export function parseChunkId(chunkId: string) {

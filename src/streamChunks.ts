@@ -5,63 +5,40 @@ import {
   chunkSize,
   Position,
   verticalNumberOfChunks,
+  viewDistance,
 } from "./constants";
 import {
   addChunkAtChunkId,
+  computeChunkColumnId,
   computeChunkId,
   getChunkCoordinatesFromId,
+  getChunkCoordinatesVector,
+  getDistanceBetweenChunks,
+  makeEmptyChunk,
   SimpleTimer,
 } from "./helpers";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
-import { updateGeometry } from "./chunkLogic/updateGeometry";
 
-export function pruneChunks(
+export async function sunlightChunks(
   globalChunks: Chunks,
-  playerPosition: Vector3,
-  meshes: Record<string, Mesh>,
-  scene: Scene,
-  renderer: WebGLRenderer
+  chunksToSpawn: string[]
 ) {
-  Object.keys(globalChunks)
-    .filter((id) => {
-      const currentChunkId = computeChunkId(playerPosition.toArray());
-      const [x, , z] = getChunkCoordinatesFromId(id);
-      const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
-      const outOfView =
-        Math.abs(x - x2) >= viewDistance || Math.abs(z - z2) >= viewDistance;
-      return outOfView;
-    })
-    .forEach((idToDelete) => {
-      delete meshes[idToDelete];
-      delete globalChunks[idToDelete];
-      const object = scene.getObjectByName(idToDelete) as Mesh;
-      object?.geometry?.dispose();
-      (object?.material as Material)?.dispose();
-      object && scene.remove(object);
-      renderer.renderLists.dispose();
-    });
-
-  Object.keys(globalChunks).forEach((id) => {
-    if (!globalChunks[id] && scene.getObjectByName(id)) {
-      console.log("We have a scene chunk without world chunk");
-    }
-  });
-}
-
-export async function sunlightChunks(globalChunks: Chunks) {
   await chunkWorkerPool.queue(async (worker) => {
     const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-    const res = await chunkWorker.createSunlightQueue(globalChunks);
+    const res = await chunkWorker.createSunlightQueue(
+      globalChunks,
+      chunksToSpawn
+    );
     const { chunks, sunlightQueue } = res;
-    globalChunks = chunks;
     globalChunks = await chunkWorker.floodLight(chunks, sunlightQueue);
+    chunksToSpawn.forEach((id) => {
+      globalChunks[id].needsLightUpdate = false;
+    });
   });
 
   return globalChunks;
 }
-
-const viewDistance = 3;
 
 function queueChunks(
   globalChunks: Chunks,
@@ -91,11 +68,17 @@ function queueChunks(
   }
 }
 
-export async function streamInChunks(globalChunks: Chunks, chunkId: string) {
+export async function streamInChunk(globalChunks: Chunks, chunkId: string) {
   await chunkWorkerPool.queue(async (worker) => {
     const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
 
-    globalChunks = await chunkWorker.addChunkAtChunkId(globalChunks, chunkId);
+    // const newChunks = await chunkWorker.addChunkAtChunkId(
+    //   globalChunks,
+    //   chunkId
+    // );
+    if (!globalChunks[chunkId]) {
+      globalChunks[chunkId] = makeEmptyChunk();
+    }
     globalChunks[chunkId] = await chunkWorker.generateChunkData(
       globalChunks[chunkId],
       chunkId

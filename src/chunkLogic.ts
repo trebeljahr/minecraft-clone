@@ -8,7 +8,6 @@ import {
 import { computeChunkId, computeVoxelIndex } from "./helpers";
 import { Noise } from "./noise";
 import { blocks } from "./blocks";
-import { updateGeometry } from "./chunkLogic/updateGeometry";
 const { birchwood, foliage, oakwood } = blocks;
 const noise = new Noise();
 

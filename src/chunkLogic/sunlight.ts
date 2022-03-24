@@ -38,28 +38,31 @@ export function propagateSunlight(chunks: Chunks, queue: Position[]) {
   return sunlightQueue;
 }
 
-export async function createSunlightQueue(chunks: Chunks) {
-  const chunksThatNeedToBeUpdated = Object.entries(chunks).filter(
-    ([id, { needsLightUpdate, isGenerated }]) => {
-      const pos = parseChunkId(id);
+export async function createSunlightQueue(
+  chunks: Chunks,
+  chunksThatNeedToBeUpdated: string[]
+) {
+  // const chunksThatNeedToBeUpdated = Object.entries(chunks).filter(
+  //   ([id, { needsLightUpdate, isGenerated }]) => {
+  //     const pos = parseChunkId(id);
 
-      const canBeLit = needsLightUpdate && pos.y === 0 && isGenerated;
-      if (canBeLit) {
-        chunks[id].needsLightUpdate = false;
-      }
-      return canBeLit;
-    }
-  );
+  //     const canBeLit = needsLightUpdate && pos.y === 0 && isGenerated;
+  //     if (canBeLit) {
+  //       chunks[id].needsLightUpdate = false;
+  //     }
+  //     return canBeLit;
+  //   }
+  // );
 
   const queue = chunksThatNeedToBeUpdated
-    .map(([id]) => {
+    .map((id) => {
       const [cx, , cz] = computeSmallChunkCornerFromId(id);
       const queue = [] as Position[];
       for (let xOff = 0; xOff < chunkSize; xOff++) {
         for (let zOff = 0; zOff < chunkSize; zOff++) {
           const newPos = [
             xOff + cx,
-            verticalNumberOfChunks * chunkSize + chunkSize,
+            verticalNumberOfChunks * chunkSize,
             zOff + cz,
           ] as Position;
           queue.push(newPos);
@@ -69,10 +72,10 @@ export async function createSunlightQueue(chunks: Chunks) {
     })
     .flat();
 
-  console.log("Chunk Which Need Updates", chunksThatNeedToBeUpdated.length);
-  console.log("Sunlight queue", queue.length);
+  // console.log("Chunk Which Need Updates", chunksThatNeedToBeUpdated.length);
+  // console.log("Sunlight queue", queue.length);
   const sunlightQueue = propagateSunlight(chunks, queue);
-  console.log("FloodLight Queue", sunlightQueue.length);
+  // console.log("FloodLight Queue", sunlightQueue.length);
   return {
     sunlightQueue,
     chunks,

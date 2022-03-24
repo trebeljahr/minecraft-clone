@@ -2,13 +2,13 @@ import { blocks } from "./blocks";
 export const chunkSize = 16;
 export const halfChunk = chunkSize / 2;
 export const chunkSliceSize = chunkSize * chunkSize;
-export const verticalNumberOfChunks = 3;
-export const surface = verticalNumberOfChunks * chunkSize;
+export const verticalNumberOfChunks = 4;
+export const surface = (verticalNumberOfChunks - 1) * chunkSize;
 export const terrainHeight = surface;
 export const blockLength = 100;
 
 import * as THREE from "three";
-import { BoxGeometry, BufferGeometry, Mesh, Vector3 } from "three";
+import { Mesh, Vector3 } from "three";
 
 export type Position = [number, number, number];
 export function copy(vec: THREE.Vector3) {
@@ -19,6 +19,7 @@ export const maxHeight = terrainHeight + chunkSize / 2;
 export const tileSize = 16;
 export const tileTextureWidth = 320;
 export const tileTextureHeight = 48;
+export const viewDistance = 2;
 
 const { air, cactus, foliage } = blocks;
 
