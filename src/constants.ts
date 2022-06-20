@@ -136,7 +136,6 @@ export const faces = [
 
 export interface Chunk {
   data: Uint8Array;
-  mesh?: Mesh;
   isGenerated: boolean;
   needsLightUpdate: boolean;
 }

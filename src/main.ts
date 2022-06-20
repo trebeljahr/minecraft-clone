@@ -31,9 +31,13 @@ import { Player } from "./Player";
 
 import {
   ACESFilmicToneMapping,
+  BoxGeometry,
   BufferAttribute,
   BufferGeometry,
   Color,
+  EdgesGeometry,
+  LineBasicMaterial,
+  LineSegments,
   Material,
   Mesh,
   PerspectiveCamera,
@@ -41,6 +45,7 @@ import {
   sRGBEncoding,
   Vector3,
   WebGLRenderer,
+  WireframeGeometry,
 } from "three";
 import { intersectRay } from "./intersectRay";
 import { setVoxel } from "./chunkLogic";
@@ -64,6 +69,7 @@ let renderRequested = false;
 let menu = true;
 let globalChunks: Record<string, Chunk> = {};
 let meshes: Record<string, Mesh> = {};
+let debugMeshes: Record<string, Mesh> = {};
 let lastChunkId = "0,0,0";
 let queue = [];
 let counter = 0;
@@ -150,7 +156,7 @@ async function placeVoxel(event: MouseEvent) {
 }
 
 export async function updateGeometry(chunkId: string, defaultLight = false) {
-  const chunkOffset = computeSmallChunkCornerFromId(chunkId);
+  const pos = computeSmallChunkCornerFromId(chunkId);
 
   if (!globalChunks[chunkId]) return;
 
@@ -202,7 +208,14 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
     mesh.name = "chunk:" + chunkId;
     meshes[chunkId] = mesh;
     scene.add(mesh);
-    mesh.position.set(chunkOffset[0], chunkOffset[1], chunkOffset[2]);
+    mesh.position.set(...pos);
+
+    const chunkOutlines = new LineSegments(
+      new EdgesGeometry(new BoxGeometry(chunkSize, chunkSize, chunkSize)),
+      new LineBasicMaterial({ color: 0x00ff00 })
+    );
+    scene.add(chunkOutlines);
+    chunkOutlines.position.set(...pos);
   }
 }
 
@@ -273,6 +286,7 @@ export function pruneChunks(playerPosition: Vector3) {
     .forEach((idToDelete) => {
       // console.log(idToDelete);
       delete meshes[idToDelete];
+      // delete debugMeshes[idToDelete];
       delete globalChunks[idToDelete];
       const object = scene.getObjectByName("chunk:" + idToDelete) as Mesh;
       object?.geometry?.dispose();
@@ -307,7 +321,7 @@ async function handleChunks(newChunkId: string) {
   const chunksSpawned = await generate(chunksToSpawn);
 
   queue = queue.filter((id) => !chunksSpawned.includes(id));
-  pruneChunks(player.position);
+  // pruneChunks(player.position);
 }
 
 async function init() {
