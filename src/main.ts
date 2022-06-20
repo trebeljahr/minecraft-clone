@@ -215,7 +215,11 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
       new LineBasicMaterial({ color: 0x00ff00 })
     );
     scene.add(chunkOutlines);
-    chunkOutlines.position.set(...pos);
+    chunkOutlines.position.set(
+      pos[0] + chunkSize / 2,
+      pos[1] + chunkSize / 2,
+      pos[2] + chunkSize / 2
+    );
   }
 }
 
