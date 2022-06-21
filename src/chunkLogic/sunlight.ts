@@ -62,6 +62,7 @@ export async function createSunlightQueue(
     })
     .flat();
   // queue is correct length!
+
   const sunlightQueue = propagateSunlight(chunks, queue);
   return {
     sunlightQueue,

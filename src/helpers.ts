@@ -67,11 +67,8 @@ export class MouseClickEvent {
 export function getLightValue(chunks: Chunks, pos: Position) {
   const blockIndex = computeVoxelIndex(pos);
 
-  const [chunk, chunkId] = getChunkForVoxel(chunks, pos);
+  const [chunk] = getChunkForVoxel(chunks, pos);
   if (!chunk) {
-    // console.log(pos);
-    // console.log(chunkId);
-    // console.log(Object.keys(chunks).length);
     return 0;
   }
   const blockLightValue = chunk[blockIndex + fields.light];

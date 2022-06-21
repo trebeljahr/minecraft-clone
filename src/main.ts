@@ -14,6 +14,7 @@ import {
   computeChunkColumnId,
   computeSmallChunkCornerFromId,
   getSmallChunkCorner,
+  getChunkColumn,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -26,6 +27,7 @@ import {
   Chunk,
   verticalNumberOfChunks,
   viewDistance,
+  Chunks,
 } from "./constants";
 import { Loop } from "./Loop";
 import { Player } from "./Player";
@@ -50,7 +52,11 @@ import {
 } from "three";
 import { intersectRay } from "./intersectRay";
 import { setVoxel } from "./chunkLogic";
-import { streamInChunk, sunlightChunks } from "./streamChunks";
+import {
+  mergeChunkUpdates,
+  streamInChunk,
+  sunlightChunks,
+} from "./streamChunks";
 import { figureOutChunksToSpawn } from "./chunkLogic/figureOutChunksToSpawn";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { opaque } from "./voxelMaterial";
@@ -143,6 +149,13 @@ async function placeVoxel(event: MouseEvent) {
   }
 }
 
+export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
+  return neighborOffsets.reduce((output, offset) => {
+    const newChunkId = addOffsetToChunkId(chunkId, offset);
+    return { ...output, [newChunkId]: globalChunks[newChunkId] };
+  }, {});
+}
+
 export async function updateGeometry(chunkId: string, defaultLight = false) {
   const pos = computeSmallChunkCornerFromId(chunkId);
 
@@ -156,7 +169,11 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
     const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
 
     const { positions, normals, uvs, indices, lightValues } =
-      await chunkWorker.generateGeometry(globalChunks, chunkId, defaultLight);
+      await chunkWorker.generateGeometry(
+        pickSurroundingChunks(globalChunks, chunkId),
+        chunkId,
+        defaultLight
+      );
 
     const positionNumComponents = 3;
     geometry.setAttribute(
@@ -251,7 +268,11 @@ async function generate(chunksToSpawn: string[]) {
   console.log("Done chunk generation ", counter);
 
   for (let newChunkId of chunksToSpawn) {
-    globalChunks = await sunlightChunks(globalChunks, [newChunkId]);
+    const sunlitChunks = await sunlightChunks(
+      getChunkColumn(globalChunks, computeSmallChunkCornerFromId(newChunkId)),
+      [newChunkId]
+    );
+    mergeChunkUpdates(globalChunks, sunlitChunks);
   }
 
   const updateGeometryPromises = [];

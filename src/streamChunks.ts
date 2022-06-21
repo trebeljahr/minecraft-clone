@@ -20,20 +20,30 @@ import {
 import { chunkWorkerPool } from "./workers/workerPool";
 import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
 
+export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
+  Object.keys(updatedChunks).forEach((chunkId) => {
+    globalChunks[chunkId] = updatedChunks[chunkId];
+  });
+}
+
 export async function sunlightChunks(
   globalChunks: Chunks,
   chunksToLight: string[]
 ) {
   await chunkWorkerPool.queue(async (worker) => {
     const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-    const logTime = new SimpleTimer();
     const { chunks, sunlightQueue } = await chunkWorker.createSunlightQueue(
       globalChunks,
       chunksToLight
     );
-    globalChunks = chunks;
-    logTime.takenFor("Sunlight Propagation");
-    globalChunks = await chunkWorker.floodLight(chunks, sunlightQueue);
+    mergeChunkUpdates(globalChunks, chunks);
+    // logTime.takenFor("Sunlight Propagation");
+    const logTime = new SimpleTimer();
+    const sunlitChunks = await chunkWorker.floodLight(
+      globalChunks,
+      sunlightQueue
+    );
+    mergeChunkUpdates(globalChunks, sunlitChunks);
     logTime.takenFor("Floodlight Propagation");
   });
 
