@@ -132,12 +132,13 @@ export class Player {
   }
 
   onKeyDown(event: { code: string }) {
+    console.log("Pressed Key with code:", event.code);
     switch (event.code) {
-      case "KeyX":
+      case "KeyM":
         maxSpeed += 10;
         console.log("Max speed increased to: ", maxSpeed);
         break;
-      case "KeyY":
+      case "KeyN":
         maxSpeed = Math.max(0, maxSpeed - 10);
         console.log("Max speed decreased to: ", maxSpeed);
         break;

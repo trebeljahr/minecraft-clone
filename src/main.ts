@@ -13,6 +13,7 @@ import {
   addOffsetToChunkId,
   computeChunkColumnId,
   computeSmallChunkCornerFromId,
+  getSmallChunkCorner,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -53,6 +54,7 @@ import { streamInChunk, sunlightChunks } from "./streamChunks";
 import { figureOutChunksToSpawn } from "./chunkLogic/figureOutChunksToSpawn";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { opaque } from "./voxelMaterial";
+import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
 
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
@@ -69,7 +71,7 @@ let renderRequested = false;
 let menu = true;
 let globalChunks: Record<string, Chunk> = {};
 let meshes: Record<string, Mesh> = {};
-let debugMeshes: Record<string, Mesh> = {};
+let debugMeshes: Record<string, LineSegments> = {};
 let lastChunkId = "0,0,0";
 let queue = [];
 let counter = 0;
@@ -121,36 +123,22 @@ async function placeVoxel(event: MouseEvent) {
     console.log("Voxel at mouse click", getVoxel(globalChunks, pos));
     const chunkId = computeChunkId(pos);
     setVoxel(globalChunks[chunkId].data, pos, voxelId);
-    const emanatingLight = glowingBlocks.includes(voxelId) ? 15 : 0;
-    const neighborLight = neighborOffsets.reduce((maxLight, offset) => {
+    const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
+    const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
       const neighborPos = pos.map(
         (coord, i) => coord + offset.toArray()[i]
       ) as Position;
       const { light } = getVoxel(globalChunks, neighborPos);
-      return light > maxLight ? light : maxLight;
+      return Math.max(light, currentMax);
     }, 0);
-    const lightValue = Math.max(emanatingLight, neighborLight - 1);
+    const lightValue = Math.max(ownLight, neighborLight - 1);
     setLightValue(globalChunks, pos, lightValue);
     // await floodLightWorkerPool.queue(async (worker) => {
     //   const chunksUpdates = await worker.floodLight(chunks, [pos]);
     //   chunks = { ...chunks, ...chunksUpdates };
     // });
 
-    const chunksToUpdateSet = new Set<string>();
-    surroundingOffsets.forEach((dir) => {
-      const positionWithChunkOffset = pos.map(
-        (coord, i) => coord + dir[i] * (chunkSize - 2)
-      ) as Position;
-
-      const chunkIndex = computeChunkId(positionWithChunkOffset);
-      chunksToUpdateSet.add(chunkIndex);
-    });
-    chunksToUpdateSet.forEach((chunkId) => {
-      const chunkCoordinates = chunkId
-        .split(",")
-        .map((coord) => parseInt(coord) * chunkSize) as Position;
-      updateGeometry(chunkId);
-    });
+    updateSurroundingChunkGeometry(pos);
     requestRenderIfNotRequested();
   }
 }
@@ -165,8 +153,10 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
   const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
   await chunkWorkerPool.queue(async (worker) => {
+    const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
+
     const { positions, normals, uvs, indices, lightValues } =
-      await worker.generateGeometry(globalChunks, chunkId, defaultLight);
+      await chunkWorker.generateGeometry(globalChunks, chunkId, defaultLight);
 
     const positionNumComponents = 3;
     geometry.setAttribute(
@@ -210,12 +200,13 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
     scene.add(mesh);
     mesh.position.set(...pos);
 
-    const chunkOutlines = new LineSegments(
+    const chunkOutline = new LineSegments(
       new EdgesGeometry(new BoxGeometry(chunkSize, chunkSize, chunkSize)),
       new LineBasicMaterial({ color: 0x00ff00 })
     );
-    scene.add(chunkOutlines);
-    chunkOutlines.position.set(
+    debugMeshes[chunkId] = chunkOutline;
+    scene.add(chunkOutline);
+    chunkOutline.position.set(
       pos[0] + chunkSize / 2,
       pos[1] + chunkSize / 2,
       pos[2] + chunkSize / 2
@@ -223,10 +214,19 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
   }
 }
 
+function updateSurroundingChunkGeometry(pos: Position) {
+  const chunksToUpdateSet = new Set<string>();
+  const chunkId = computeChunkId(pos);
+  surroundingOffsets.forEach((dir) => {
+    const neighbourChunkId = addOffsetToChunkId(chunkId, new Vector3(...dir));
+    chunksToUpdateSet.add(neighbourChunkId);
+  });
+  console.log(chunksToUpdateSet);
+  chunksToUpdateSet.forEach((chunkId) => updateGeometry(chunkId));
+}
+
 async function generate(chunksToSpawn: string[]) {
-  // const logTime = new SimpleTimer();
   const promises = [];
-  // console.log("Now trying to spawn:", chunksToSpawn.length);
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
@@ -239,14 +239,12 @@ async function generate(chunksToSpawn: string[]) {
         chunkIdForSpawning
       ).then((chunks) => {
         globalChunks = chunks;
-
         return updateGeometry(chunkIdForSpawning, true);
       });
       promises.push(streamInChunksPromise);
     }
   }
 
-  // logTime.takenFor("Queuing up all chunk generation promises");
   await Promise.all(promises);
   console.log("Done chunk generation ", counter);
 
@@ -257,6 +255,10 @@ async function generate(chunksToSpawn: string[]) {
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
+
+      const pos = computeSmallChunkCornerFromId(chunkIdForSpawning);
+      updateSurroundingChunkGeometry(pos);
+
       updateGeometryPromises.push(updateGeometry(chunkIdForSpawning));
     }
   }
@@ -270,13 +272,11 @@ function shouldChunksUpdate() {
   const newChunkId = computeChunkColumnId(player.position.toArray());
   if (lastChunkId !== newChunkId) {
     lastChunkId = newChunkId;
-    // console.log("Switching chunks!");
     handleChunks(newChunkId);
   }
 }
 
 export function pruneChunks(playerPosition: Vector3) {
-  // console.log("Before pruning:", Object.keys(globalChunks).length);
   Object.keys(globalChunks)
     .filter((id) => {
       const currentChunkId = computeChunkId(playerPosition.toArray());
@@ -288,9 +288,7 @@ export function pruneChunks(playerPosition: Vector3) {
       return outOfView;
     })
     .forEach((idToDelete) => {
-      // console.log(idToDelete);
       delete meshes[idToDelete];
-      // delete debugMeshes[idToDelete];
       delete globalChunks[idToDelete];
       const object = scene.getObjectByName("chunk:" + idToDelete) as Mesh;
       object?.geometry?.dispose();
@@ -306,8 +304,8 @@ export function pruneChunks(playerPosition: Vector3) {
   );
   scene.children = [camera, ...chunks];
   console.log("Done pruning ", counter);
-  // console.log("After pruning: ", Object.keys(globalChunks).length);
 }
+
 async function handleChunks(newChunkId: string) {
   if (queue.length > 0) {
     return;
@@ -415,6 +413,12 @@ async function init() {
         pos.z = newPos.z;
 
         break;
+      case "KeyZ":
+        console.log("Pressed Z");
+        Object.keys(debugMeshes).forEach((chunkId) => {
+          debugMeshes[chunkId].visible = !debugMeshes[chunkId].visible;
+        });
+        break;
       case "KeyK":
         console.log("Camera Debug");
         const camDirection = new Vector3(0, 0, 0);
@@ -442,8 +446,6 @@ async function init() {
   scene.add(player.controls.getObject());
 
   window.addEventListener("resize", onWindowResize);
-  // await generateChunksAroundCamera();
-  // spawnSingleBlock();
 }
 
 function onWindowResize() {

@@ -31,9 +31,8 @@ export function propagateSunlight(chunks: Chunks, queue: Position[]) {
     if (canPropagateSunlight) {
       queue.push([x, yBelow, z]);
       setLightValue(chunks, [x, yBelow, z], 15);
-    } else {
-      sunlightQueue.push([x, y, z]);
     }
+    sunlightQueue.push([x, y, z]);
   }
   return sunlightQueue;
 }

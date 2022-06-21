@@ -8,7 +8,7 @@ export const terrainHeight = surface;
 export const blockLength = 100;
 
 import * as THREE from "three";
-import { Mesh, Vector3 } from "three";
+import { Vector3 } from "three";
 
 export type Position = [number, number, number];
 export function copy(vec: THREE.Vector3) {
@@ -19,7 +19,7 @@ export const maxHeight = terrainHeight + chunkSize / 2;
 export const tileSize = 16;
 export const tileTextureWidth = 320;
 export const tileTextureHeight = 48;
-export const viewDistance = 2;
+export const viewDistance = 0;
 
 const { air, cactus, foliage } = blocks;
 
@@ -141,28 +141,3 @@ export interface Chunk {
 }
 
 export type Chunks = Record<string, Chunk>;
-// function getCurrentChunk(providedPos?: Vector3) {
-//   const pos = providedPos || player.position;
-//   return copy(pos).divideScalar(chunkSize).floor();
-// }
-// function generateChunksInMovementDirection() {
-//   const currentChunk = getCurrentChunk();
-//   if (lastChunk === currentChunk) return;
-//   lastChunk = currentChunk;
-//   const dir = currentChunk.sub(lastChunk);
-
-//   var axis = new Vector3(0, 1, 0);
-//   var angle = Math.PI / 2;
-
-//   const rotatedOffset = copy(dir)
-//     .applyAxisAngle(axis, angle)
-//     .multiplyScalar(chunkSize);
-
-//   const offset = dir
-//     .multiplyScalar(chunkSize)
-//     .add(new Vector3(0, -chunkSize, 0));
-//   const newPos = player.position.add(offset);
-//   generateChunkAtPosition(newPos);
-//   generateChunkAtPosition(copy(newPos).add(rotatedOffset));
-//   generateChunkAtPosition(copy(newPos).sub(rotatedOffset));
-// }

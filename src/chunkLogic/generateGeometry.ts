@@ -11,7 +11,7 @@ import { getChunkCoordinatesFromId, getVoxel } from "../helpers";
 import { blocks } from "../blocks";
 const { cactus } = blocks;
 
-export function generateGeometry(
+export async function generateGeometry(
   chunks: Chunks,
   chunkId: string,
   defaultLight = false
