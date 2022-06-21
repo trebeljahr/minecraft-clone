@@ -39,6 +39,7 @@ import {
   BufferGeometry,
   Color,
   EdgesGeometry,
+  Fog,
   LineBasicMaterial,
   LineSegments,
   Material,
@@ -267,13 +268,17 @@ async function generate(chunksToSpawn: string[]) {
   await Promise.all(promises);
   console.log("Done chunk generation ", counter);
 
+  const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
-    const sunlitChunks = await sunlightChunks(
-      getChunkColumn(globalChunks, computeSmallChunkCornerFromId(newChunkId)),
-      [newChunkId]
+    sunlightPromises.push(
+      sunlightChunks(
+        getChunkColumn(globalChunks, computeSmallChunkCornerFromId(newChunkId)),
+        [newChunkId]
+      ).then((sunlitChunks) => mergeChunkUpdates(globalChunks, sunlitChunks))
     );
-    mergeChunkUpdates(globalChunks, sunlitChunks);
   }
+
+  await Promise.all(sunlightPromises);
 
   const updateGeometryPromises = [];
   for (let newChunkId of chunksToSpawn) {
@@ -356,7 +361,7 @@ async function init() {
     60,
     window.innerWidth / window.innerHeight,
     near,
-    20000
+    viewDistance * chunkSize
   );
   camera.position.y = terrainHeight + 5;
   console.log("initial position", camera.position.y);
@@ -468,6 +473,13 @@ async function init() {
   window.addEventListener("click", placeVoxel);
 
   scene.add(player.controls.getObject());
+  const color = "lightblue";
+  scene.fog = new Fog(
+    color,
+    viewDistance * chunkSize - chunkSize,
+    viewDistance * chunkSize
+  );
+  scene.background = new Color(color);
 
   window.addEventListener("resize", onWindowResize);
 }
