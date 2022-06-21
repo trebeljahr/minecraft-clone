@@ -79,9 +79,9 @@ let menu = true;
 let globalChunks: Record<string, Chunk> = {};
 let meshes: Record<string, Mesh> = {};
 let debugMeshes: Record<string, LineSegments> = {};
+let chunkHelperVisibility = false;
 let lastChunkId = "0,0,0";
 let queue = [];
-let counter = 0;
 
 init();
 
@@ -222,6 +222,8 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
       new EdgesGeometry(new BoxGeometry(chunkSize, chunkSize, chunkSize)),
       new LineBasicMaterial({ color: 0x00ff00 })
     );
+    chunkOutline.name = "debug:" + chunkId;
+    chunkOutline.visible = chunkHelperVisibility;
     debugMeshes[chunkId] = chunkOutline;
     scene.add(chunkOutline);
     chunkOutline.position.set(
@@ -259,14 +261,12 @@ async function generate(chunksToSpawn: string[]) {
         chunkIdForSpawning
       ).then((chunks) => {
         globalChunks = chunks;
-        return updateGeometry(chunkIdForSpawning, true);
       });
       promises.push(streamInChunksPromise);
     }
   }
 
   await Promise.all(promises);
-  console.log("Done chunk generation ", counter);
 
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
@@ -292,7 +292,6 @@ async function generate(chunksToSpawn: string[]) {
     }
   }
   await Promise.all(updateGeometryPromises);
-  console.log("Done geometry ", counter);
 
   return chunksToSpawn;
 }
@@ -318,6 +317,7 @@ export function pruneChunks(playerPosition: Vector3) {
     })
     .forEach((idToDelete) => {
       delete meshes[idToDelete];
+      delete debugMeshes[idToDelete];
       delete globalChunks[idToDelete];
       const object = scene.getObjectByName("chunk:" + idToDelete) as Mesh;
       object?.geometry?.dispose();
@@ -325,34 +325,23 @@ export function pruneChunks(playerPosition: Vector3) {
       object && scene.remove(object);
       renderer.renderLists.dispose();
     });
-
-  const chunks = scene.children.filter(
-    (thing) =>
-      thing.name.startsWith("chunk:") &&
-      Object.keys(globalChunks).includes(thing.name.split(":")[1])
-  );
-  scene.children = [camera, ...chunks];
-  console.log("Done pruning ", counter);
 }
 
 async function handleChunks(newChunkId: string) {
   if (queue.length > 0) {
     return;
   }
-  counter++;
 
-  console.log("Start handlin chunk streaming", counter);
   const chunksToSpawn = await figureOutChunksToSpawn(
     globalChunks,
     queue,
     newChunkId
   );
   queue.push(...chunksToSpawn);
-  console.log("Done chunks to spawn ", counter);
   const chunksSpawned = await generate(chunksToSpawn);
 
   queue = queue.filter((id) => !chunksSpawned.includes(id));
-  // pruneChunks(player.position);
+  pruneChunks(player.position);
 }
 
 async function init() {
@@ -364,7 +353,7 @@ async function init() {
     viewDistance * chunkSize
   );
   camera.position.y = terrainHeight + 5;
-  console.log("initial position", camera.position.y);
+  // console.log("initial position", camera.position.y);
   canvas = document.querySelector("#canvas");
   renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -444,8 +433,10 @@ async function init() {
         break;
       case "KeyZ":
         console.log("Pressed Z");
+        chunkHelperVisibility = !chunkHelperVisibility;
+
         Object.keys(debugMeshes).forEach((chunkId) => {
-          debugMeshes[chunkId].visible = !debugMeshes[chunkId].visible;
+          debugMeshes[chunkId].visible = chunkHelperVisibility;
         });
         break;
       case "KeyK":
@@ -476,7 +467,7 @@ async function init() {
   const color = "lightblue";
   scene.fog = new Fog(
     color,
-    viewDistance * chunkSize - chunkSize,
+    viewDistance * chunkSize - 2 * chunkSize,
     viewDistance * chunkSize
   );
   scene.background = new Color(color);

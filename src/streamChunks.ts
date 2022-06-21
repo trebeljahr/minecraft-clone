@@ -37,14 +37,11 @@ export async function sunlightChunks(
       chunksToLight
     );
     mergeChunkUpdates(globalChunks, chunks);
-    // logTime.takenFor("Sunlight Propagation");
-    const logTime = new SimpleTimer();
     const sunlitChunks = await chunkWorker.floodLight(
       globalChunks,
       sunlightQueue
     );
     mergeChunkUpdates(globalChunks, sunlitChunks);
-    logTime.takenFor("Floodlight Propagation");
   });
 
   return globalChunks;
