@@ -6,13 +6,12 @@ import {
   Position,
   transparentBlocks,
 } from "../constants";
-import { computeVoxelIndex, getLightValue } from "../helpers";
+import { computeVoxelIndex, getLightValue, SimpleTimer } from "../helpers";
 
 export async function floodLight(chunks: Chunks, queue: Position[]) {
   const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
   let iterations = 0;
   while (queue.length > 0) {
-    iterations++;
     const [x, y, z] = queue.shift();
     const newLightValue = getLightValue(chunks, [x, y, z]) - 1;
     if (newLightValue <= 0) continue;
@@ -34,13 +33,12 @@ export async function floodLight(chunks: Chunks, queue: Position[]) {
       const lightIsBrighter = newLightValue > lightValueInNeighbor;
       const neighborIsTransparent = transparentBlocks.includes(neighborType);
 
-      const shouldPropagate = lightIsBrighter && neighborIsTransparent;
-      if (shouldPropagate) {
+      if (lightIsBrighter && neighborIsTransparent) {
         neighborsChunk[neighborIndex + fields.light] = newLightValue;
         queue.push([nx, ny, nz]);
+        iterations++;
       }
     });
   }
-
   return chunks;
 }

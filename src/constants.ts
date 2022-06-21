@@ -19,7 +19,7 @@ export const maxHeight = terrainHeight + chunkSize / 2;
 export const tileSize = 16;
 export const tileTextureWidth = 320;
 export const tileTextureHeight = 48;
-export const viewDistance = 0;
+export const viewDistance = 2;
 
 const { air, cactus, foliage } = blocks;
 

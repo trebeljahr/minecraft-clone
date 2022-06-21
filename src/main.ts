@@ -214,15 +214,17 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
   }
 }
 
-function updateSurroundingChunkGeometry(pos: Position) {
+async function updateSurroundingChunkGeometry(pos: Position) {
   const chunksToUpdateSet = new Set<string>();
   const chunkId = computeChunkId(pos);
   surroundingOffsets.forEach((dir) => {
     const neighbourChunkId = addOffsetToChunkId(chunkId, new Vector3(...dir));
     chunksToUpdateSet.add(neighbourChunkId);
   });
-  console.log(chunksToUpdateSet);
-  chunksToUpdateSet.forEach((chunkId) => updateGeometry(chunkId));
+  const chunkUpdatePromises = [...chunksToUpdateSet].map((chunkId) =>
+    updateGeometry(chunkId)
+  );
+  return Promise.all(chunkUpdatePromises);
 }
 
 async function generate(chunksToSpawn: string[]) {
@@ -248,17 +250,18 @@ async function generate(chunksToSpawn: string[]) {
   await Promise.all(promises);
   console.log("Done chunk generation ", counter);
 
-  globalChunks = await sunlightChunks(globalChunks, chunksToSpawn);
-  console.log("Done sunlighting", counter);
+  for (let newChunkId of chunksToSpawn) {
+    globalChunks = await sunlightChunks(globalChunks, [newChunkId]);
+  }
 
   const updateGeometryPromises = [];
   for (let newChunkId of chunksToSpawn) {
+    // globalChunks = await sunlightChunks(globalChunks, [newChunkId]);
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
 
-      const pos = computeSmallChunkCornerFromId(chunkIdForSpawning);
-      updateSurroundingChunkGeometry(pos);
-
+      // const pos = computeSmallChunkCornerFromId(chunkIdForSpawning);
+      // updateGeometryPromises.push(updateSurroundingChunkGeometry(pos));
       updateGeometryPromises.push(updateGeometry(chunkIdForSpawning));
     }
   }
