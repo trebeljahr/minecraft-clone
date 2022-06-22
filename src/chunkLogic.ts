@@ -1,5 +1,6 @@
 import {
   Chunks,
+  chunkSize,
   fields,
   neighborOffsets,
   Position,
@@ -85,8 +86,13 @@ export function setVoxel(chunk: Uint8Array, pos: number[], type: number) {
   return chunk;
 }
 
+const minHeight = chunkSize;
+const amplitude = 8;
+
 export function getHeightValue(x: number, z: number) {
-  return (Math.sin(x) + 1) * (Math.sin(z) + 1) * 2 + 16;
+  return (
+    (Math.sin(x / 10) + 1) * (Math.sin(z / 10) + 1) * amplitude + minHeight
+  );
 }
 
 export function shouldPlaceBlock(pos: number[]) {
