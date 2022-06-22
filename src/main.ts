@@ -52,7 +52,7 @@ import {
   WireframeGeometry,
 } from "three";
 import { intersectRay } from "./intersectRay";
-import { setVoxel } from "./chunkLogic";
+import { getHeightValue, setVoxel } from "./chunkLogic";
 import {
   mergeChunkUpdates,
   streamInChunk,
@@ -456,6 +456,10 @@ async function init() {
         console.log(
           "Z is stuck",
           player.position.z - Math.floor(player.position.z) <= 0.001
+        );
+        console.log(
+          "Height Value here",
+          getHeightValue(player.position.x, player.position.z)
         );
         break;
     }
