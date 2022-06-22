@@ -98,8 +98,7 @@ export function getHeightValue(x: number, z: number) {
 export function shouldPlaceBlock(pos: number[]) {
   const [x, y, z] = pos;
   const noiseVal = noise.perlin3(x / 10, y / 10, z / 10);
-  // return noiseVal >= -0.3 &&
-  return y < getHeightValue(x, z);
+  return noiseVal >= -0.25 && y < getHeightValue(x, z);
 }
 
 export function wouldPlaceBlockAbove(pos: number[]) {
