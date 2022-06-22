@@ -88,7 +88,9 @@ export function setVoxel(chunk: Uint8Array, pos: number[], type: number) {
 export function shouldPlaceBlock(pos: number[]) {
   const [x, y, z] = pos;
   const noiseVal = noise.perlin3(x / 10, y / 10, z / 10);
-  return noiseVal >= -0.3 && y < terrainHeight;
+  const heightVal = noise.perlin3(x / 10, 0, z / 10);
+  // console.log(heightVal);
+  return noiseVal >= -0.3 && y < terrainHeight * heightVal * 100;
 }
 
 export function wouldPlaceBlockAbove(pos: number[]) {
