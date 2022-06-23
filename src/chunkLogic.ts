@@ -87,18 +87,31 @@ export function setVoxel(chunk: Uint8Array, pos: number[], type: number) {
 }
 
 const minHeight = chunkSize;
-const amplitude = 8;
+const amplitude = 16;
 
 export function getHeightValue(x: number, z: number) {
-  return (
-    (Math.sin(x / 10) + 1) * (Math.sin(z / 10) + 1) * amplitude + minHeight
-  );
+  return noise.perlin2(x, z) * amplitude * 2 + minHeight;
+  // return (
+  //   (Math.sin(x / 10) + 1) * (Math.sin(z / 10) + 1) * amplitude + minHeight
+  // );
 }
 
+let counter = 0;
 export function shouldPlaceBlock(pos: number[]) {
   const [x, y, z] = pos;
-  const noiseVal = noise.perlin3(x / 10, y / 10, z / 10);
-  return noiseVal >= -0.25 && y < getHeightValue(x, z);
+  // const noiseVal = noise.perlin3(x / 10, y / 10, z / 10);
+  // return noiseVal >= -0.25 &&
+  // console.log(y);
+  const heightValue = getHeightValue(x / 2, z / 2);
+  const shouldPlace = y <= heightValue;
+  counter++;
+  if (shouldPlace && counter % 10000 === 1) {
+    console.log("Could place", pos, heightValue);
+    // console.log(y, heightValue);
+  } else if (counter % 10000 === 1) {
+    console.log("Couldn't place", pos, heightValue);
+  }
+  return shouldPlace;
 }
 
 export function wouldPlaceBlockAbove(pos: number[]) {
