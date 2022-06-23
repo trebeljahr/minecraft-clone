@@ -8,28 +8,16 @@ import {
   shouldSpawnGrass,
   shouldSpawnLapis,
 } from "../chunkLogic";
-import { Chunk, chunkSize, Position, terrainHeight } from "../constants";
+import { Chunk, chunkSize, Position } from "../constants";
 import { parseChunkId } from "../helpers";
 import { blocks } from "../blocks";
-const {
-  emerald,
-  lapis,
-  diamond,
-  gold,
-  stone,
-  grass,
-  dirt,
-  birchwood,
-  foliage,
-  oakwood,
-} = blocks;
+const { emerald, lapis, diamond, gold, stone, grass, dirt } = blocks;
 
 export async function generateChunkData(chunk: Chunk, chunkId: string) {
   const pos = parseChunkId(chunkId);
   for (let y = chunkSize - 1; y >= 0; y--) {
     const underBedrock = pos.y + y <= 0;
-    const overMaximumHeight = pos.y + y > terrainHeight;
-    if (overMaximumHeight || underBedrock) continue;
+    if (underBedrock) continue;
 
     for (let z = 0; z < chunkSize; z++) {
       for (let x = 0; x < chunkSize; x++) {

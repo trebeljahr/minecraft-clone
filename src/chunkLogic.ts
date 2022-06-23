@@ -1,15 +1,15 @@
 import {
   Chunks,
+  chunkSize,
   fields,
   neighborOffsets,
   Position,
   terrainHeight,
 } from "./constants";
 import { computeChunkId, computeVoxelIndex } from "./helpers";
-import { Noise } from "./noise";
+import { perlin2, perlin3 } from "./noise";
 import { blocks } from "./blocks";
 const { birchwood, foliage, oakwood } = blocks;
-const noise = new Noise();
 
 export function getChunkForVoxel(
   chunks: Chunks,
@@ -85,10 +85,24 @@ export function setVoxel(chunk: Uint8Array, pos: number[], type: number) {
   return chunk;
 }
 
+const minHeight = chunkSize * 2;
+const amplitude = 16;
+const roughness = 0.05;
+
+export function getHeightValue(x: number, z: number) {
+  return perlin2(x * roughness, z * roughness) * amplitude * 2 + minHeight;
+  // return (
+  //   (Math.sin(x / 10) + 1) * (Math.sin(z / 10) + 1) * amplitude + minHeight
+  // );
+}
+
+let counter = 0;
 export function shouldPlaceBlock(pos: number[]) {
   const [x, y, z] = pos;
-  const noiseVal = noise.perlin3(x / 10, y / 10, z / 10);
-  return noiseVal >= -0.3 && y < terrainHeight;
+  const noiseVal = perlin3(x / 10, y / 10, z / 10);
+  const heightValue = getHeightValue(x, z);
+  const shouldPlace = y <= heightValue;
+  return noiseVal >= -0.25 && shouldPlace;
 }
 
 export function wouldPlaceBlockAbove(pos: number[]) {

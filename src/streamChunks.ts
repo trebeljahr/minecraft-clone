@@ -1,22 +1,5 @@
-import { Material, Mesh, Renderer, Scene, Vector3, WebGLRenderer } from "three";
-import { generateChunkData } from "./chunkLogic/generateData";
-import {
-  Chunks,
-  chunkSize,
-  Position,
-  verticalNumberOfChunks,
-  viewDistance,
-} from "./constants";
-import {
-  addChunkAtChunkId,
-  computeChunkColumnId,
-  computeChunkId,
-  getChunkCoordinatesFromId,
-  getChunkCoordinatesVector,
-  getDistanceBetweenChunks,
-  makeEmptyChunk,
-  SimpleTimer,
-} from "./helpers";
+import { Chunks } from "./constants";
+import { makeEmptyChunk } from "./helpers";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
 
