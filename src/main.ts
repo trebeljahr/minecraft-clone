@@ -15,6 +15,7 @@ import {
   computeSmallChunkCornerFromId,
   getSmallChunkCorner,
   getChunkColumn,
+  makeEmptyChunk,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -129,7 +130,7 @@ async function placeVoxel(event: MouseEvent) {
     console.log("Setting voxel at ", pos);
     console.log("Voxel at mouse click", getVoxel(globalChunks, pos));
     const chunkId = computeChunkId(pos);
-    setVoxel(globalChunks[chunkId].data, pos, voxelId);
+    setVoxel({ chunkId: globalChunks[chunkId] }, pos, voxelId);
     const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
     const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
       const neighborPos = pos.map(
@@ -151,9 +152,14 @@ async function placeVoxel(event: MouseEvent) {
 }
 
 export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
-  return neighborOffsets.reduce((output, offset) => {
-    const newChunkId = addOffsetToChunkId(chunkId, offset);
-    return { ...output, [newChunkId]: globalChunks[newChunkId] };
+  return surroundingOffsets.reduce((output, offset) => {
+    const nextChunkId = addOffsetToChunkId(chunkId, new Vector3(...offset));
+    const nextChunk = globalChunks[nextChunkId];
+    if (!nextChunk) {
+      console.log(chunkId, globalChunks, nextChunkId);
+      throw Error("No next chunk in global chunks");
+    }
+    return { ...output, [nextChunkId]: nextChunk };
   }, {});
 }
 
@@ -256,6 +262,14 @@ async function generate(chunksToSpawn: string[]) {
         console.log("Chunk already exists");
         continue;
       }
+      surroundingOffsets.forEach((offset) => {
+        const offVec = new Vector3(...offset);
+        if (!globalChunks[addOffsetToChunkId(newChunkId, offVec)]) {
+          globalChunks[addOffsetToChunkId(newChunkId, offVec)] =
+            makeEmptyChunk();
+        }
+      });
+
       const streamInChunksPromise = streamInChunk(
         globalChunks,
         chunkIdForSpawning
