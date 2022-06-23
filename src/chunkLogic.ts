@@ -96,7 +96,6 @@ export function getHeightValue(x: number, z: number) {
   // );
 }
 
-let counter = 0;
 export function shouldPlaceBlock(pos: number[]) {
   const [x, y, z] = pos;
   const noiseVal = perlin3(x / 10, y / 10, z / 10);
@@ -122,9 +121,6 @@ export function shouldSpawnGrass(pos: number[]) {
 export function shouldSpawnLapis(pos: number[]) {
   const [, currentY] = pos;
   if (currentY > 40) return false;
-  // for (let offset in neighborOffsets) {
-  //   getVoxel()
-  // }
   return Math.random() < 0.01;
 }
 
@@ -132,9 +128,6 @@ export function shouldSpawnDiamonds(pos: number[]) {
   const [, currentY] = pos;
 
   if (currentY > 40) return false;
-  // for (let offset in neighborOffsets) {
-  //   getVoxel()
-  // }
   return Math.random() < 0.01;
 }
 
@@ -142,9 +135,6 @@ export function shouldSpawnEmeralds(pos: number[]) {
   const [, currentY] = pos;
 
   if (currentY > 40) return false;
-  // for (let offset in neighborOffsets) {
-  //   getVoxel()
-  // }
   return Math.random() < 0.01;
 }
 
@@ -152,9 +142,6 @@ export function shouldSpawnGold(pos: number[]) {
   const [, currentY] = pos;
 
   if (currentY > 40) return false;
-  // for (let offset in neighborOffsets) {
-  //   getVoxel()
-  // }
   return Math.random() < 0.01;
 }
 

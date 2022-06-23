@@ -7,6 +7,8 @@ import {
   shouldSpawnGold,
   shouldSpawnGrass,
   shouldSpawnLapis,
+  shouldSpawnTree,
+  spawnTree,
 } from "../chunkLogic";
 import { Chunk, chunkSize, Position } from "../constants";
 import { parseChunkId } from "../helpers";
@@ -33,9 +35,14 @@ export async function generateChunkData(chunk: Chunk, chunkId: string) {
             chunk.data = setVoxel(chunk.data, [...offsetPos], emerald);
           } else if (shouldSpawnGrass([...offsetPos])) {
             chunk.data = setVoxel(chunk.data, [...offsetPos], grass);
-            // if (shouldSpawnTree()) {
-            //   chunk.data = spawnTree(chunk.data, pos.x + x, pos.y + y + 1, pos.z + z);
-            // }
+            if (shouldSpawnTree()) {
+              chunk.data = spawnTree(
+                chunk.data,
+                pos.x + x,
+                pos.y + y + 1,
+                pos.z + z
+              );
+            }
           } else if (shouldSpawnDirt([...offsetPos])) {
             chunk.data = setVoxel(chunk.data, [...offsetPos], dirt);
           } else {
