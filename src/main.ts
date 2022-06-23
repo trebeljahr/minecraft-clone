@@ -365,8 +365,6 @@ async function init() {
   global.scene = scene;
   global.Mesh = Mesh;
   global.globalChunks = globalChunks;
-  // scene.background = new Color(0xbfd1e5);
-  scene.background = new Color("white");
 
   const loop = new Loop(camera, scene, renderer);
   player = new Player(
