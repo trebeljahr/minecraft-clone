@@ -1,3 +1,20 @@
+// code taken and modified from https://github.com/josephg/noisejs
+
+// ISC License
+
+// Copyright (c) 2013, Joseph Gentle
+
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+// REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+// AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+// INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+// LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+// OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+// PERFORMANCE OF THIS SOFTWARE.
 class Grad {
   private x: number;
   private y: number;
@@ -11,7 +28,11 @@ class Grad {
   dot3(x: number, y: number, z: number) {
     return this.x * x + this.y * y + this.z * z;
   }
+  dot2(x: number, y: number) {
+    return this.x * x + this.y * y;
+  }
 }
+
 // 3D Perlin Noise
 export class Noise {
   private grad3: Grad[];
@@ -153,6 +174,34 @@ export class Noise {
       this.lerp(this.lerp(n000, n100, u), this.lerp(n001, n101, u), w),
       this.lerp(this.lerp(n010, n110, u), this.lerp(n011, n111, u), w),
       v
+    );
+  }
+
+  perlin2(x: number, y: number) {
+    // Find unit grid cell containing point
+    var X = Math.floor(x),
+      Y = Math.floor(y);
+    // Get relative xy coordinates of point within that cell
+    x = x - X;
+    y = y - Y;
+    // Wrap the integer cells at 255 (smaller integer period can be introduced here)
+    X = X & 255;
+    Y = Y & 255;
+
+    // Calculate noise contributions from each of the four corners
+    var n00 = this.gradP[X + this.perm[Y]].dot2(x, y);
+    var n01 = this.gradP[X + this.perm[Y + 1]].dot2(x, y - 1);
+    var n10 = this.gradP[X + 1 + this.perm[Y]].dot2(x - 1, y);
+    var n11 = this.gradP[X + 1 + this.perm[Y + 1]].dot2(x - 1, y - 1);
+
+    // Compute the fade curve value for x
+    var u = this.fade(x);
+
+    // Interpolate the four results
+    return this.lerp(
+      this.lerp(n00, n10, u),
+      this.lerp(n01, n11, u),
+      this.fade(y)
     );
   }
 }
