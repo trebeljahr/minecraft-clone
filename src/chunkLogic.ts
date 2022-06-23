@@ -10,7 +10,7 @@ import { computeChunkId, computeVoxelIndex } from "./helpers";
 import { Noise } from "./noise";
 import { blocks } from "./blocks";
 const { birchwood, foliage, oakwood } = blocks;
-const noise = new Noise();
+const noise = new Noise(0);
 
 export function getChunkForVoxel(
   chunks: Chunks,
@@ -102,7 +102,7 @@ export function shouldPlaceBlock(pos: number[]) {
   // const noiseVal = noise.perlin3(x / 10, y / 10, z / 10);
   // return noiseVal >= -0.25 &&
   // console.log(y);
-  const heightValue = getHeightValue(x / 2, z / 2);
+  const heightValue = getHeightValue(x / 100, z / 100);
   const shouldPlace = y <= heightValue;
   counter++;
   if (shouldPlace && counter % 10000 === 1) {
