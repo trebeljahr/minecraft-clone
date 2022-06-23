@@ -198,9 +198,10 @@ export class Noise {
     var u = this.fade(x);
 
     // Interpolate the four results
-    return (
-      this.lerp(this.lerp(n00, n10, u), this.lerp(n01, n11, u), this.fade(y)) +
-      1
+    return this.lerp(
+      this.lerp(n00, n10, u),
+      this.lerp(n01, n11, u),
+      this.fade(y)
     );
   }
 }
