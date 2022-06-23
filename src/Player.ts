@@ -1,12 +1,14 @@
 import { Vector3 } from "three";
 import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
-import { copy } from "./constants";
-import { World } from "./VoxelWorld";
+import { Chunks, copy } from "./constants";
+import { blocks } from "./blocks";
+
+const { foliage } = blocks;
 
 const eyeLevel = 1.5;
 const gravity = false; // can be set to disable/enable falling
-let maxSpeed = gravity ? 10 : 30;
+let maxSpeed = gravity ? 100 : 300;
 let moveForward = false;
 let moveBack = false;
 let moveLeft = false;
@@ -17,14 +19,14 @@ let isFlying = false;
 
 export class Player {
   public controls: PointerLockControls;
+  private chunks: Chunks;
   private velocity = new Vector3(0, 0, 0);
   private planarVelocity = new Vector3(0, 0, 0);
-  private world: World;
   private canJump: boolean;
-  constructor(controls: PointerLockControls, world: World) {
+  constructor(controls: PointerLockControls, chunks: Chunks) {
     this.controls = controls;
-    this.world = world;
     this.canJump = false;
+    this.chunks = chunks;
     this.addListeners();
   }
   tick(delta: number) {
@@ -37,59 +39,51 @@ export class Player {
       this.canJump = false;
     }
   }
-  standsOnGround(delta: number): boolean {
-    const resetVel = () => (this.pos.y -= this.velocity.y * delta);
-
-    this.pos.y += this.velocity.y * delta;
+  standsOnGround(): boolean {
     if (this.collidesWithTerrain) {
-      resetVel();
       return true;
     }
-    resetVel();
     return false;
   }
 
   movePlayer(delta: number) {
     if (this.controls.isLocked === true) {
+      // console.log(delta);
+      // const before = copy(this.position);
+      // console.log("before update: ", before);
       this.planarVelocity.x -= this.planarVelocity.x * 20 * delta;
       this.planarVelocity.z -= this.planarVelocity.z * 20 * delta;
-      if (!gravity) {
-        this.velocity.y -= this.velocity.y * 20 * delta;
-      }
 
-      const onGround = this.standsOnGround(delta);
-      if (onGround || !gravity) {
-        this.planarVelocity.z +=
-          ((this.directionPlayerWantsToMove.z * 300 * maxSpeed) / 10) * delta;
-        this.planarVelocity.x +=
-          ((this.directionPlayerWantsToMove.x * 300 * maxSpeed) / 10) * delta;
-      } else {
-        this.planarVelocity.z +=
-          ((this.directionPlayerWantsToMove.z * 100 * maxSpeed) / 10) * delta;
-        this.planarVelocity.x +=
-          ((this.directionPlayerWantsToMove.x * 100 * maxSpeed) / 10) * delta;
-      }
+      this.planarVelocity.z +=
+        this.directionPlayerWantsToMove.z * maxSpeed * delta;
+      this.planarVelocity.x +=
+        this.directionPlayerWantsToMove.x * maxSpeed * delta;
+
       this.planarVelocity.clampLength(0, maxSpeed);
       this.velocity.x = this.planarVelocity.x;
       this.velocity.z = this.planarVelocity.z;
 
-      if (this.velocity.y > -30 && !onGround && gravity)
-        this.velocity.y -= 9.8 * 5 * delta;
-      if (!gravity && moveDown) {
-        this.velocity.y -= ((300 * maxSpeed) / 10) * delta;
-        this.velocity.clampLength(0, maxSpeed);
-      }
-      if (!gravity && moveUp) {
-        this.velocity.y += ((300 * maxSpeed) / 10) * delta;
-        this.velocity.clampLength(0, maxSpeed);
-      }
-
       this.pos.y += this.velocity.y * delta;
-      if (this.collidesWithTerrain) {
+      const onGround = this.collidesWithTerrain;
+
+      if (onGround) {
         if (this.velocity.y < 0) {
           this.canJump = true;
         }
+        console.log("colliding with terrain on y direction");
         this.pos.y -= this.velocity.y * delta;
+      }
+
+      if (this.velocity.y > -30 && !onGround && gravity)
+        this.velocity.y -= 9.8 * 5 * delta;
+
+      if (!gravity && moveDown) {
+        // console.log("moving down");
+        this.pos.y -= (maxSpeed / 10) * delta;
+      }
+      if (!gravity && moveUp) {
+        // console.log("moving up");
+        this.pos.y += (maxSpeed / 10) * delta;
       }
 
       const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
@@ -118,7 +112,7 @@ export class Player {
   }
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
-    const { type: collision } = getVoxel(this.world.chunks, [x, y, z]);
+    const { type: collision } = getVoxel(this.chunks, [x, y, z]);
     if (collision !== 0) return true;
     return false;
   }
@@ -138,12 +132,13 @@ export class Player {
   }
 
   onKeyDown(event: { code: string }) {
+    // console.log("Pressed Key with code:", event.code);
     switch (event.code) {
-      case "KeyX":
+      case "KeyM":
         maxSpeed += 10;
         console.log("Max speed increased to: ", maxSpeed);
         break;
-      case "KeyY":
+      case "KeyN":
         maxSpeed = Math.max(0, maxSpeed - 10);
         console.log("Max speed decreased to: ", maxSpeed);
         break;

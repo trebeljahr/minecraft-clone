@@ -2,8 +2,8 @@ import { blocks } from "./blocks";
 export const chunkSize = 16;
 export const halfChunk = chunkSize / 2;
 export const chunkSliceSize = chunkSize * chunkSize;
-export const verticalNumberOfChunks = 3;
-export const surface = verticalNumberOfChunks * chunkSize;
+export const verticalNumberOfChunks = 4;
+export const surface = (verticalNumberOfChunks - 1) * chunkSize;
 export const terrainHeight = surface;
 export const blockLength = 100;
 
@@ -19,6 +19,7 @@ export const maxHeight = terrainHeight + chunkSize / 2;
 export const tileSize = 16;
 export const tileTextureWidth = 320;
 export const tileTextureHeight = 48;
+export const viewDistance = 5;
 
 const { air, cactus, foliage } = blocks;
 
@@ -133,29 +134,10 @@ export const faces = [
   },
 ];
 
-export type Chunks = Record<string, Uint8Array>;
-// function getCurrentChunk(providedPos?: Vector3) {
-//   const pos = providedPos || player.position;
-//   return copy(pos).divideScalar(chunkSize).floor();
-// }
-// function generateChunksInMovementDirection() {
-//   const currentChunk = getCurrentChunk();
-//   if (lastChunk === currentChunk) return;
-//   lastChunk = currentChunk;
-//   const dir = currentChunk.sub(lastChunk);
+export interface Chunk {
+  data: Uint8Array;
+  isGenerated: boolean;
+  needsLightUpdate: boolean;
+}
 
-//   var axis = new Vector3(0, 1, 0);
-//   var angle = Math.PI / 2;
-
-//   const rotatedOffset = copy(dir)
-//     .applyAxisAngle(axis, angle)
-//     .multiplyScalar(chunkSize);
-
-//   const offset = dir
-//     .multiplyScalar(chunkSize)
-//     .add(new Vector3(0, -chunkSize, 0));
-//   const newPos = player.position.add(offset);
-//   generateChunkAtPosition(newPos);
-//   generateChunkAtPosition(copy(newPos).add(rotatedOffset));
-//   generateChunkAtPosition(copy(newPos).sub(rotatedOffset));
-// }
+export type Chunks = Record<string, Chunk>;
