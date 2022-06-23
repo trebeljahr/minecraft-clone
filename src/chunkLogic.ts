@@ -7,10 +7,9 @@ import {
   terrainHeight,
 } from "./constants";
 import { computeChunkId, computeVoxelIndex } from "./helpers";
-import { Noise } from "./noise";
+import { perlin2 } from "./noise";
 import { blocks } from "./blocks";
 const { birchwood, foliage, oakwood } = blocks;
-const noise = new Noise(0);
 
 export function getChunkForVoxel(
   chunks: Chunks,
@@ -90,7 +89,7 @@ const minHeight = chunkSize;
 const amplitude = 16;
 
 export function getHeightValue(x: number, z: number) {
-  return noise.perlin2(x, z) * amplitude * 2 + minHeight;
+  return perlin2(x, z) * amplitude * 2 + minHeight;
   // return (
   //   (Math.sin(x / 10) + 1) * (Math.sin(z / 10) + 1) * amplitude + minHeight
   // );

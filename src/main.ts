@@ -455,10 +455,10 @@ async function init() {
           "Z is stuck",
           player.position.z - Math.floor(player.position.z) <= 0.001
         );
-        console.log(
-          "Height Value here",
-          getHeightValue(player.position.x, player.position.z)
-        );
+        // console.log(
+        //   "Height Value here",
+        //   getHeightValue(player.position.x, player.position.z)
+        // );
         break;
     }
   };
