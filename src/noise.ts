@@ -20,16 +20,16 @@ class Grad {
   private y: number;
   private z: number;
   constructor(x: number, y: number, z: number) {
-    x = x;
-    y = y;
-    z = z;
+    this.x = x;
+    this.y = y;
+    this.z = z;
   }
 
   dot3(x: number, y: number, z: number) {
-    return x * x + y * y + z * z;
+    return x * this.x + y * this.y + z * this.z;
   }
   dot2(x: number, y: number) {
-    return x * x + y * y;
+    return x * this.x + y * this.y;
   }
 }
 
@@ -75,7 +75,6 @@ const gradP = new Array(512);
 // This isn't a very good seeding function, but it works ok. It supports 2^16
 // different seed values. Write something better if you need more seeds.
 export function seed(seed: number) {
-  console.log("hello I am called");
   if (seed > 0 && seed < 1) {
     // Scale the seed out
     seed *= 65536;
@@ -99,7 +98,7 @@ export function seed(seed: number) {
   }
 }
 
-seed(0);
+seed(5000);
 
 function fade(t: number) {
   return t * t * t * (t * (t * 6 - 15) + 10);

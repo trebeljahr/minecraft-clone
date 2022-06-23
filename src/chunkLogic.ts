@@ -7,7 +7,7 @@ import {
   terrainHeight,
 } from "./constants";
 import { computeChunkId, computeVoxelIndex } from "./helpers";
-import { perlin2 } from "./noise";
+import { perlin2, perlin3 } from "./noise";
 import { blocks } from "./blocks";
 const { birchwood, foliage, oakwood } = blocks;
 
@@ -85,11 +85,12 @@ export function setVoxel(chunk: Uint8Array, pos: number[], type: number) {
   return chunk;
 }
 
-const minHeight = chunkSize;
+const minHeight = chunkSize * 2;
 const amplitude = 16;
+const roughness = 0.05;
 
 export function getHeightValue(x: number, z: number) {
-  return perlin2(x, z) * amplitude * 2 + minHeight;
+  return perlin2(x * roughness, z * roughness) * amplitude * 2 + minHeight;
   // return (
   //   (Math.sin(x / 10) + 1) * (Math.sin(z / 10) + 1) * amplitude + minHeight
   // );
@@ -98,19 +99,10 @@ export function getHeightValue(x: number, z: number) {
 let counter = 0;
 export function shouldPlaceBlock(pos: number[]) {
   const [x, y, z] = pos;
-  // const noiseVal = noise.perlin3(x / 10, y / 10, z / 10);
-  // return noiseVal >= -0.25 &&
-  // console.log(y);
-  const heightValue = getHeightValue(x / 100, z / 100);
+  const noiseVal = perlin3(x / 10, y / 10, z / 10);
+  const heightValue = getHeightValue(x, z);
   const shouldPlace = y <= heightValue;
-  counter++;
-  if (shouldPlace && counter % 10000 === 1) {
-    console.log("Could place", pos, heightValue);
-    // console.log(y, heightValue);
-  } else if (counter % 10000 === 1) {
-    console.log("Couldn't place", pos, heightValue);
-  }
-  return shouldPlace;
+  return noiseVal >= -0.25 && shouldPlace;
 }
 
 export function wouldPlaceBlockAbove(pos: number[]) {
