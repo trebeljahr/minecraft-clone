@@ -310,9 +310,7 @@ export function pruneChunks(playerPosition: Vector3) {
       const currentChunkId = computeChunkId(playerPosition.toArray());
       const [x, , z] = getChunkCoordinatesFromId(id);
       const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
-      const outOfView =
-        Math.abs(x - x2) > viewDistance + 1 ||
-        Math.abs(z - z2) > viewDistance + 1;
+      const outOfView = Math.abs(x - x2) > 5 + 1 || Math.abs(z - z2) > 5 + 1;
       return outOfView;
     })
     .forEach((idToDelete) => {
@@ -469,11 +467,8 @@ async function init() {
 
   scene.add(player.controls.getObject());
   const color = "lightblue";
-  scene.fog = new Fog(
-    color,
-    viewDistance * chunkSize - 2 * chunkSize,
-    viewDistance * chunkSize
-  );
+  const fogNear = Math.max(chunkSize, viewDistance * chunkSize - 2 * chunkSize);
+  scene.fog = new Fog(color, fogNear, fogNear + chunkSize);
   scene.background = new Color(color);
 
   window.addEventListener("resize", onWindowResize);
