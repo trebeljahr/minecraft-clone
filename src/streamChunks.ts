@@ -1,4 +1,4 @@
-import { Chunks } from "./constants";
+import { Chunks, LightUpdates } from "./constants";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
 import { pickSurroundingChunks } from "./main";
@@ -20,33 +20,30 @@ export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
 }
 
 export async function sunlightChunks(
-  globalChunks: Chunks,
+  availableChunks: Chunks,
   chunksToLight: string[]
 ) {
+  let stillNeedUpdates: LightUpdates;
   await chunkWorkerPool.queue(async (worker) => {
-    const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-    const { chunks, sunlightQueue } = await chunkWorker.createSunlightQueue(
-      globalChunks,
+    const { chunks, sunlightQueue } = await worker.createSunlightQueue(
+      availableChunks,
       chunksToLight
     );
-    mergeChunkUpdates(globalChunks, chunks);
-    const sunlitChunks = await chunkWorker.floodLight(
-      globalChunks,
+    mergeChunkUpdates(availableChunks, chunks);
+    const { updatedChunks, chunksThatNeedUpdates } = await worker.floodLight(
+      availableChunks,
       sunlightQueue
     );
-    mergeChunkUpdates(globalChunks, sunlitChunks);
+    mergeChunkUpdates(availableChunks, updatedChunks);
+    stillNeedUpdates = chunksThatNeedUpdates;
   });
 
-  return globalChunks;
+  return { updatedChunks: availableChunks, stillNeedUpdates };
 }
 
 export async function streamInChunk(globalChunks: Chunks, chunkId: string) {
   await chunkWorkerPool.queue(async (worker) => {
-    // console.log({ globalChunks });
-
-    const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-
-    const updatedChunks = await chunkWorker.generateChunkData(
+    const updatedChunks = await worker.generateChunkData(
       pickSurroundingChunks(globalChunks, chunkId),
       chunkId
     );

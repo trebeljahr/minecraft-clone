@@ -2,6 +2,8 @@ import { getChunkForVoxel } from "../chunkLogic";
 import {
   Chunks,
   fields,
+  LightUpdate,
+  LightUpdates,
   neighborOffsets,
   Position,
   transparentBlocks,
@@ -10,10 +12,14 @@ import { computeVoxelIndex, getLightValue, SimpleTimer } from "../helpers";
 
 const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
 
-export async function floodLight(chunks: Chunks, queue: Position[]) {
+export async function floodLight(chunks: Chunks, queue: LightUpdate[]) {
+  const chunksThatNeedUpdates: LightUpdates = {};
   while (queue.length > 0) {
-    const [x, y, z] = queue.shift();
-    const newLightValue = getLightValue(chunks, [x, y, z]) - 1;
+    const {
+      pos: [x, y, z],
+      lightValue,
+    } = queue.shift();
+    const newLightValue = lightValue - 1;
     if (newLightValue <= 0) continue;
 
     neighbors.forEach((offset) => {
@@ -21,8 +27,15 @@ export async function floodLight(chunks: Chunks, queue: Position[]) {
       const ny = y + offset.y;
       const nz = z + offset.z;
 
-      const [neighborsChunk] = getChunkForVoxel(chunks, [nx, ny, nz]);
+      const [neighborsChunk, chunkId] = getChunkForVoxel(chunks, [nx, ny, nz]);
       if (!neighborsChunk) {
+        if (!chunksThatNeedUpdates[chunkId]) {
+          chunksThatNeedUpdates[chunkId] = [];
+        }
+        chunksThatNeedUpdates[chunkId].push({
+          lightValue: newLightValue,
+          pos: [nx, ny, nz],
+        });
         return;
       }
 
@@ -35,9 +48,9 @@ export async function floodLight(chunks: Chunks, queue: Position[]) {
 
       if (lightIsBrighter && neighborIsTransparent) {
         neighborsChunk[neighborIndex + fields.light] = newLightValue;
-        queue.push([nx, ny, nz]);
+        queue.push({ pos: [nx, ny, nz], lightValue: newLightValue });
       }
     });
   }
-  return chunks;
+  return { updatedChunks: chunks, chunksThatNeedUpdates };
 }

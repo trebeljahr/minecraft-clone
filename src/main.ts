@@ -15,6 +15,7 @@ import {
   getSmallChunkCorner,
   getChunkColumn,
   makeEmptyChunk,
+  getSurroundingChunksColumns,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -131,6 +132,7 @@ async function placeVoxel(event: MouseEvent) {
     const chunkId = computeChunkId(pos);
     setVoxel({ [chunkId]: globalChunks[chunkId] }, pos, voxelId);
     const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
+
     const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
       const neighborPos = pos.map(
         (coord, i) => coord + offset.toArray()[i]
@@ -140,14 +142,20 @@ async function placeVoxel(event: MouseEvent) {
     }, 0);
     const lightValue = Math.max(ownLight, neighborLight - 1);
     setLightValue(globalChunks, pos, lightValue);
+
     await chunkWorkerPool.queue(async (worker) => {
-      const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-      const updatedChunks = await chunkWorker.floodLight(
+      const { updatedChunks } = await worker.floodLight(
         pickSurroundingChunks(globalChunks, chunkId),
-        [pos]
+        [{ pos, lightValue }]
       );
       mergeChunkUpdates(globalChunks, updatedChunks);
     });
+
+    const { updatedChunks } = await sunlightChunks(
+      getSurroundingChunksColumns(globalChunks, chunkId),
+      [chunkId]
+    );
+    mergeChunkUpdates(globalChunks, updatedChunks);
 
     updateSurroundingChunkGeometry(pos);
     requestRenderIfNotRequested();
@@ -176,10 +184,8 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
   const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
   await chunkWorkerPool.queue(async (worker) => {
-    const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-
     const { positions, normals, uvs, indices, lightValues } =
-      await chunkWorker.generateGeometry(
+      await worker.generateGeometry(
         pickSurroundingChunks(globalChunks, chunkId),
         chunkId,
         defaultLight
@@ -290,10 +296,7 @@ async function generate(chunksToSpawn: string[]) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
 
       await chunkWorkerPool.queue(async (worker) => {
-        // console.log({ globalChunks });
-
-        const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-        const updatedChunksWithTrees = await chunkWorker.growTrees(
+        const updatedChunksWithTrees = await worker.growTrees(
           pickSurroundingChunks(globalChunks, chunkIdForSpawning),
           chunkIdForSpawning
         );
@@ -305,10 +308,22 @@ async function generate(chunksToSpawn: string[]) {
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
     sunlightPromises.push(
-      sunlightChunks(
-        getChunkColumn(globalChunks, computeSmallChunkCornerFromId(newChunkId)),
-        [newChunkId]
-      ).then((sunlitChunks) => mergeChunkUpdates(globalChunks, sunlitChunks))
+      sunlightChunks(getChunkColumn(globalChunks, newChunkId), [
+        newChunkId,
+      ]).then(({ updatedChunks, stillNeedUpdates }) => {
+        mergeChunkUpdates(globalChunks, updatedChunks);
+        // Object.keys(stillNeedUpdates).forEach((chunkId) => {
+        //   sunlightPromises.push(
+        //     chunkWorkerPool.queue(async (worker) => {
+        //       const { updatedChunks } = await worker.floodLight(
+        //         pickSurroundingChunks(globalChunks, chunkId),
+        //         stillNeedUpdates[chunkId]
+        //       );
+        //       mergeChunkUpdates(globalChunks, updatedChunks);
+        //     })
+        //   );
+        // });
+      })
     );
   }
 

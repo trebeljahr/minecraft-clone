@@ -141,3 +141,10 @@ export interface Chunk {
 }
 
 export type Chunks = Record<string, Chunk>;
+
+export interface LightUpdate {
+  pos: Position;
+  lightValue: number;
+}
+
+export type LightUpdates = Record<string, LightUpdate[]>;
