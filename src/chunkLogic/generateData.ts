@@ -10,10 +10,26 @@ import {
   shouldSpawnTree,
   spawnTree,
 } from "../chunkLogic";
-import { Chunks, chunkSize, Position } from "../constants";
-import { parseChunkId } from "../helpers";
+import { Chunks, chunkSize, fields, Position } from "../constants";
+import { byBlockData, getVoxel, parseChunkId } from "../helpers";
 import { blocks } from "../blocks";
 const { emerald, lapis, diamond, gold, stone, grass, dirt } = blocks;
+
+export async function growTrees(chunks: Chunks, chunkId: string) {
+  const pos = parseChunkId(chunkId);
+  for (let y = 0; y < chunkSize; y++) {
+    for (let z = 0; z < chunkSize; z++) {
+      for (let x = 0; x < chunkSize; x++) {
+        const newPos: Position = [x + pos.x, y + pos.y, z + pos.z];
+        const { type } = getVoxel(chunks, newPos);
+        if (type === grass && shouldSpawnTree()) {
+          chunks = spawnTree(chunks, ...newPos);
+        }
+      }
+    }
+  }
+  return chunks;
+}
 
 export async function generateChunkData(chunks: Chunks, chunkId: string) {
   if (Object.keys(chunks).length === 0) {
@@ -38,9 +54,6 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
             chunks = setVoxel(chunks, [...offsetPos], emerald);
           } else if (shouldSpawnGrass([...offsetPos])) {
             chunks = setVoxel(chunks, [...offsetPos], grass);
-            if (shouldSpawnTree()) {
-              chunks = spawnTree(chunks, pos.x + x, pos.y + y + 1, pos.z + z);
-            }
           } else if (shouldSpawnDirt([...offsetPos])) {
             chunks = setVoxel(chunks, [...offsetPos], dirt);
           } else {

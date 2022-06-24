@@ -285,6 +285,23 @@ async function generate(chunksToSpawn: string[]) {
 
   await Promise.all(promises);
 
+  for (let newChunkId of chunksToSpawn) {
+    for (let y = verticalNumberOfChunks; y >= 0; y--) {
+      const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
+
+      await chunkWorkerPool.queue(async (worker) => {
+        // console.log({ globalChunks });
+
+        const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
+        const updatedChunksWithTrees = await chunkWorker.growTrees(
+          pickSurroundingChunks(globalChunks, chunkIdForSpawning),
+          chunkIdForSpawning
+        );
+        mergeChunkUpdates(globalChunks, updatedChunksWithTrees);
+      });
+    }
+  }
+
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
     sunlightPromises.push(
