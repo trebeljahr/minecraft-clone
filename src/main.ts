@@ -143,11 +143,11 @@ async function placeVoxel(event: MouseEvent) {
     setLightValue(globalChunks, pos, lightValue);
     await chunkWorkerPool.queue(async (worker) => {
       const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-      const updatedChunks = await chunkWorker.floodLight(
-        pickSurroundingChunks(globalChunks, chunkId),
-        [pos]
-      );
-      mergeChunkUpdates(globalChunks, updatedChunks);
+      // const updatedChunks = await chunkWorker.floodLight(
+      //   pickSurroundingChunks(globalChunks, chunkId),
+      //   [{ pos, isSunlight: false }]
+      // );
+      // mergeChunkUpdates(globalChunks, updatedChunks);
     });
 
     updateSurroundingChunkGeometry(pos);
@@ -306,13 +306,9 @@ async function generate(chunksToSpawn: string[]) {
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
     sunlightPromises.push(
-      sunlightChunk(
-        getSurroundingChunksColumns(
-          globalChunks,
-          computeSmallChunkCornerFromId(newChunkId)
-        ),
-        newChunkId
-      ).then((sunlitChunks) => mergeChunkUpdates(globalChunks, sunlitChunks))
+      sunlightChunk(globalChunks, newChunkId).then((sunlitChunks) =>
+        mergeChunkUpdates(globalChunks, sunlitChunks)
+      )
     );
   }
 

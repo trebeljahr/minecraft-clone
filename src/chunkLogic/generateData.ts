@@ -13,7 +13,7 @@ import {
 import { Chunks, chunkSize, Position } from "../constants";
 import { getVoxel, parseChunkId } from "../helpers";
 import { blocks } from "../blocks";
-const { emerald, lapis, diamond, gold, stone, grass, dirt } = blocks;
+const { emerald, lapis, diamond, gold, coal, stone, grass, dirt } = blocks;
 
 export async function growTrees(chunks: Chunks, chunkId: string) {
   const pos = parseChunkId(chunkId);
@@ -37,12 +37,17 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
   }
   const pos = parseChunkId(chunkId);
   for (let y = chunkSize - 1; y >= 0; y--) {
-    const underBedrock = pos.y + y <= 0;
+    const underBedrock = pos.y + y < 0;
     if (underBedrock) continue;
 
     for (let z = 0; z < chunkSize; z++) {
       for (let x = 0; x < chunkSize; x++) {
         const offsetPos: Position = [pos.x + x, pos.y + y, pos.z + z];
+        const bedrock = pos.y + y === 0;
+        if (bedrock) {
+          chunks = setVoxel(chunks, [...offsetPos], coal);
+          continue;
+        }
         if (shouldPlaceBlock([...offsetPos])) {
           if (shouldSpawnGold([...offsetPos])) {
             chunks = setVoxel(chunks, [...offsetPos], gold);

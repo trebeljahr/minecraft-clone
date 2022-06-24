@@ -4,6 +4,7 @@ import {
   transparentBlocks,
   Chunks,
   verticalNumberOfChunks,
+  LightQueue,
 } from "../constants";
 import {
   setLightValue,
@@ -17,9 +18,7 @@ import { getChunkForVoxel } from "../chunkLogic";
 
 export function propagateSunlight(chunks: Chunks, queue: Position[]) {
   const sunlightQueue = [...queue] as Position[];
-  let iterations = 0;
   while (queue.length > 0) {
-    iterations++;
     const [x, y, z] = queue.shift();
     const yBelow = y - 1;
     const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
@@ -40,23 +39,19 @@ export function propagateSunlight(chunks: Chunks, queue: Position[]) {
   return sunlightQueue;
 }
 
-export async function createSunlightQueue(chunks: Chunks, chunkId: string) {
+export async function createSunlightQueue(chunkId: string) {
   const [cx, , cz] = computeSmallChunkCornerFromId(chunkId);
-  const queue = [] as Position[];
+  const sunlightQueue = [] as LightQueue;
   for (let xOff = 0; xOff < chunkSize; xOff++) {
     for (let zOff = 0; zOff < chunkSize; zOff++) {
-      const newPos = [
+      const pos = [
         xOff + cx,
         verticalNumberOfChunks * chunkSize,
         zOff + cz,
       ] as Position;
-      queue.push(newPos);
+      sunlightQueue.push({ pos, isSunlight: true, lightValue: 15 });
     }
   }
 
-  const sunlightQueue = propagateSunlight(chunks, queue);
-  return {
-    sunlightQueue,
-    chunks,
-  };
+  return sunlightQueue;
 }
