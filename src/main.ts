@@ -15,6 +15,7 @@ import {
   getSmallChunkCorner,
   getChunkColumn,
   makeEmptyChunk,
+  getSurroundingChunksColumns,
 } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import {
@@ -56,7 +57,7 @@ import { getHeightValue, setVoxel } from "./chunkLogic";
 import {
   mergeChunkUpdates,
   streamInChunk,
-  sunlightChunks,
+  sunlightChunk,
 } from "./streamChunks";
 import { figureOutChunksToSpawn } from "./chunkLogic/figureOutChunksToSpawn";
 import { chunkWorkerPool } from "./workers/workerPool";
@@ -305,9 +306,12 @@ async function generate(chunksToSpawn: string[]) {
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
     sunlightPromises.push(
-      sunlightChunks(
-        getChunkColumn(globalChunks, computeSmallChunkCornerFromId(newChunkId)),
-        [newChunkId]
+      sunlightChunk(
+        getSurroundingChunksColumns(
+          globalChunks,
+          computeSmallChunkCornerFromId(newChunkId)
+        ),
+        newChunkId
       ).then((sunlitChunks) => mergeChunkUpdates(globalChunks, sunlitChunks))
     );
   }

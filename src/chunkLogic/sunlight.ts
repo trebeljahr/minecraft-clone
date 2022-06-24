@@ -40,28 +40,19 @@ export function propagateSunlight(chunks: Chunks, queue: Position[]) {
   return sunlightQueue;
 }
 
-export async function createSunlightQueue(
-  chunks: Chunks,
-  chunksThatNeedToBeUpdated: string[]
-) {
-  const queue = chunksThatNeedToBeUpdated
-    .map((id) => {
-      const [cx, , cz] = computeSmallChunkCornerFromId(id);
-      const queue = [] as Position[];
-      for (let xOff = 0; xOff < chunkSize; xOff++) {
-        for (let zOff = 0; zOff < chunkSize; zOff++) {
-          const newPos = [
-            xOff + cx,
-            verticalNumberOfChunks * chunkSize,
-            zOff + cz,
-          ] as Position;
-          queue.push(newPos);
-        }
-      }
-      return queue;
-    })
-    .flat();
-  // queue is correct length!
+export async function createSunlightQueue(chunks: Chunks, chunkId: string) {
+  const [cx, , cz] = computeSmallChunkCornerFromId(chunkId);
+  const queue = [] as Position[];
+  for (let xOff = 0; xOff < chunkSize; xOff++) {
+    for (let zOff = 0; zOff < chunkSize; zOff++) {
+      const newPos = [
+        xOff + cx,
+        verticalNumberOfChunks * chunkSize,
+        zOff + cz,
+      ] as Position;
+      queue.push(newPos);
+    }
+  }
 
   const sunlightQueue = propagateSunlight(chunks, queue);
   return {

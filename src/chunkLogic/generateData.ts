@@ -10,8 +10,8 @@ import {
   shouldSpawnTree,
   spawnTree,
 } from "../chunkLogic";
-import { Chunks, chunkSize, fields, Position } from "../constants";
-import { byBlockData, getVoxel, parseChunkId } from "../helpers";
+import { Chunks, chunkSize, Position } from "../constants";
+import { getVoxel, parseChunkId } from "../helpers";
 import { blocks } from "../blocks";
 const { emerald, lapis, diamond, gold, stone, grass, dirt } = blocks;
 

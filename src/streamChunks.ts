@@ -19,19 +19,16 @@ export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
   });
 }
 
-export async function sunlightChunks(
-  globalChunks: Chunks,
-  chunksToLight: string[]
-) {
+export async function sunlightChunk(globalChunks: Chunks, chunkId: string) {
   await chunkWorkerPool.queue(async (worker) => {
     const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
     const { chunks, sunlightQueue } = await chunkWorker.createSunlightQueue(
-      globalChunks,
-      chunksToLight
+      pickSurroundingChunks(globalChunks, chunkId),
+      chunkId
     );
     mergeChunkUpdates(globalChunks, chunks);
     const sunlitChunks = await chunkWorker.floodLight(
-      globalChunks,
+      pickSurroundingChunks(globalChunks, chunkId),
       sunlightQueue
     );
     mergeChunkUpdates(globalChunks, sunlitChunks);
