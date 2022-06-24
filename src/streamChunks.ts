@@ -1,13 +1,17 @@
-import { Chunks, neighborOffsets, surroundingOffsets } from "./constants";
-import { addOffsetToChunkId, makeEmptyChunk } from "./helpers";
+import { Chunks } from "./constants";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
 import { pickSurroundingChunks } from "./main";
-import { Vector3 } from "three";
 
 export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
   Object.keys(updatedChunks).forEach((chunkId) => {
+    const shouldntMerge =
+      globalChunks[chunkId]?.isGenerated &&
+      !updatedChunks[chunkId]?.isGenerated;
     if (updatedChunks[chunkId]) {
+      if (shouldntMerge) {
+        return;
+      }
       globalChunks[chunkId] = updatedChunks[chunkId];
     } else {
       throw Error("Trying to merge empty chunks...");

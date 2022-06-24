@@ -8,7 +8,6 @@ import {
   getVoxel,
   parseChunkId,
   getChunkCoordinatesFromId,
-  addChunkAtChunkId,
   setLightValue,
   addOffsetToChunkId,
   computeChunkColumnId,
@@ -155,11 +154,11 @@ export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
   return surroundingOffsets.reduce((output, offset) => {
     const nextChunkId = addOffsetToChunkId(chunkId, new Vector3(...offset));
     const nextChunk = globalChunks[nextChunkId];
-    if (!nextChunk) {
-      console.log(chunkId, globalChunks, nextChunkId);
-      throw Error("No next chunk in global chunks");
-    }
-    return { ...output, [nextChunkId]: nextChunk };
+    // if (!nextChunk) {
+    //   console.log(chunkId, globalChunks, nextChunkId);
+    //   throw Error("No next chunk in global chunks");
+    // }
+    return { ...output, [nextChunkId]: nextChunk || makeEmptyChunk() };
   }, {});
 }
 

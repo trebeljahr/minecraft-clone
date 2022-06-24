@@ -181,21 +181,6 @@ export const toBlock = (block: number) => (num, index) => {
   return num;
 };
 
-export async function addChunkAtChunkId(chunks: Chunks, id: string) {
-  // for (let x = -1; x <= 1; x++) {
-  //   for (let z = -1; z <= 1; z++) {
-  //     for (let y = -1; y <= 1; y++) {
-  // const newChunkId = addOffsetToChunkId(id, { x, y, z });
-  const newChunkId = id;
-  if (!chunks[newChunkId]) {
-    chunks[newChunkId] = makeEmptyChunk();
-  }
-  //     }
-  //   }
-  // }
-  return chunks;
-}
-
 export function makeEmptyChunk(): Chunk {
   return {
     data: new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count),
