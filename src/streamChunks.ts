@@ -1,38 +1,37 @@
-import { Chunk, Chunks } from "./constants";
+import { Chunks } from "./constants";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
 import { pickSurroundingChunks } from "./main";
-import {
-  computeSmallChunkCornerFromId,
-  getChunkColumn,
-  getSurroundingChunksColumns,
-  parseChunkId,
-} from "./helpers";
 
-function canMergeWithoutOverwrite(older: Chunk, newer: Chunk) {
-  return (
-    !(older.isGenerated && !newer.isGenerated) &&
-    !(!older.needsLightUpdate && newer.needsLightUpdate)
-  );
-}
-export function mergeChunkUpdates(oldChunks: Chunks, updatedChunks: Chunks) {
+export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
   Object.keys(updatedChunks).forEach((chunkId) => {
-    const older = oldChunks[chunkId];
-    const newer = updatedChunks[chunkId];
-    if (!older || canMergeWithoutOverwrite(older, newer)) {
-      oldChunks[chunkId] = updatedChunks[chunkId];
+    if (updatedChunks[chunkId]) {
+      const shouldMerge = !(
+        globalChunks[chunkId]?.isGenerated &&
+        !updatedChunks[chunkId]?.isGenerated
+      );
+      if (shouldMerge) {
+        globalChunks[chunkId] = updatedChunks[chunkId];
+      }
+    } else {
+      throw Error("Trying to merge empty chunks...");
     }
   });
 }
 
 export async function sunlightChunk(globalChunks: Chunks, chunkId: string) {
-  const columns = getSurroundingChunksColumns(globalChunks, chunkId);
   await chunkWorkerPool.queue(async (worker) => {
     const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
-    const sunlightQueue = await chunkWorker.createSunlightQueue(chunkId);
-    const floodlitChunks = await chunkWorker.floodLight(columns, sunlightQueue);
-    globalChunks[chunkId].needsLightUpdate = false;
-    mergeChunkUpdates(globalChunks, floodlitChunks);
+    const { chunks, sunlightQueue } = await chunkWorker.createSunlightQueue(
+      pickSurroundingChunks(globalChunks, chunkId),
+      chunkId
+    );
+    mergeChunkUpdates(globalChunks, chunks);
+    const sunlitChunks = await chunkWorker.floodLight(
+      pickSurroundingChunks(globalChunks, chunkId),
+      sunlightQueue
+    );
+    mergeChunkUpdates(globalChunks, sunlitChunks);
   });
 
   return globalChunks;

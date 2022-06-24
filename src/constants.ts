@@ -142,9 +142,3 @@ export interface Chunk {
 }
 
 export type Chunks = Record<string, Chunk>;
-
-export type LightQueue = {
-  pos: Position;
-  lightValue: number;
-  isSunlight: boolean;
-}[];
