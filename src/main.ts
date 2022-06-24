@@ -129,7 +129,7 @@ async function placeVoxel(event: MouseEvent) {
     console.log("Setting voxel at ", pos);
     console.log("Voxel at mouse click", getVoxel(globalChunks, pos));
     const chunkId = computeChunkId(pos);
-    setVoxel({ chunkId: globalChunks[chunkId] }, pos, voxelId);
+    setVoxel({ [chunkId]: globalChunks[chunkId] }, pos, voxelId);
     const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
     const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
       const neighborPos = pos.map(
@@ -140,10 +140,14 @@ async function placeVoxel(event: MouseEvent) {
     }, 0);
     const lightValue = Math.max(ownLight, neighborLight - 1);
     setLightValue(globalChunks, pos, lightValue);
-    // await floodLightWorkerPool.queue(async (worker) => {
-    //   const chunksUpdates = await worker.floodLight(chunks, [pos]);
-    //   chunks = { ...chunks, ...chunksUpdates };
-    // });
+    await chunkWorkerPool.queue(async (worker) => {
+      const chunkWorker = worker as unknown as typeof ChunkWorkerObject;
+      const updatedChunks = await chunkWorker.floodLight(
+        pickSurroundingChunks(globalChunks, chunkId),
+        [pos]
+      );
+      mergeChunkUpdates(globalChunks, updatedChunks);
+    });
 
     updateSurroundingChunkGeometry(pos);
     requestRenderIfNotRequested();

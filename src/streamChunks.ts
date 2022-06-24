@@ -5,14 +5,14 @@ import { pickSurroundingChunks } from "./main";
 
 export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
   Object.keys(updatedChunks).forEach((chunkId) => {
-    const shouldntMerge =
-      globalChunks[chunkId]?.isGenerated &&
-      !updatedChunks[chunkId]?.isGenerated;
     if (updatedChunks[chunkId]) {
-      if (shouldntMerge) {
-        return;
+      const shouldMerge = !(
+        globalChunks[chunkId]?.isGenerated &&
+        !updatedChunks[chunkId]?.isGenerated
+      );
+      if (shouldMerge) {
+        globalChunks[chunkId] = updatedChunks[chunkId];
       }
-      globalChunks[chunkId] = updatedChunks[chunkId];
     } else {
       throw Error("Trying to merge empty chunks...");
     }
