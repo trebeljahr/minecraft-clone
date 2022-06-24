@@ -117,15 +117,15 @@ export function computeVoxelIndex(pos: number[]) {
   return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
 }
 
-export function getSurroundingChunksColumns(chunks: Chunks, pos: Position) {
-  let filteredChunks = {};
-  for (let x = -1; x < 1; x++) {
-    for (let z = -1; z < 1; z++) {
-      filteredChunks = { ...filteredChunks, ...getChunkColumn(chunks, pos) };
-    }
-  }
-  return filteredChunks;
-}
+// export function getSurroundingChunksColumns(chunks: Chunks, pos: Position) {
+//   let filteredChunks = {};
+//   for (let x = -1; x < 1; x++) {
+//     for (let z = -1; z < 1; z++) {
+//       filteredChunks = { ...filteredChunks, ...getChunkColumn(chunks, pos) };
+//     }
+//   }
+//   return filteredChunks;
+// }
 
 export function getChunkColumn(chunks: Chunks, pos: Position) {
   // console.log(pos);
@@ -185,7 +185,6 @@ export function makeEmptyChunk(): Chunk {
   return {
     data: new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count),
     needsLightUpdate: true,
-    needsGeometryUpdate: true,
     isGenerated: false,
   };
 }

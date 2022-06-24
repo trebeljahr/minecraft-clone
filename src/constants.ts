@@ -138,7 +138,6 @@ export interface Chunk {
   data: Uint8Array;
   isGenerated: boolean;
   needsLightUpdate: boolean;
-  needsGeometryUpdate: boolean;
 }
 
 export type Chunks = Record<string, Chunk>;

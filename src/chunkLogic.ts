@@ -88,8 +88,6 @@ export function setVoxel(chunks: Chunks, pos: number[], type: number) {
     console.log(pos, chunks, chunkId);
     throw err;
   }
-  chunks[chunkId].needsGeometryUpdate = true;
-  chunks[chunkId].needsLightUpdate = true;
   return chunks;
 }
 
