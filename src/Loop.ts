@@ -1,6 +1,5 @@
 import { Clock, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import Stats from "three/examples/jsm/libs/stats.module.js";
-import { Player } from "./Player";
 import { world } from "./world";
 
 interface Animatable {

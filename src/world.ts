@@ -16,7 +16,6 @@ import {
   viewDistance,
 } from "./constants";
 import { Inventory } from "./inventory";
-import { Player } from "./Player";
 
 interface World {
   meshes: Record<string, Mesh>;
@@ -24,7 +23,6 @@ interface World {
   camera: PerspectiveCamera;
   scene: Scene;
   inventory: Inventory;
-  player: Player;
   menu: boolean;
   globalChunks: Chunks;
   chunkHelperVisibility: boolean;
@@ -46,10 +44,6 @@ export let world: World = {
   menu: true,
   chunkHelperVisibility: true,
   scene: new Scene(),
-  player: new Player(
-    new PointerLockControls(camera, document.body),
-    globalChunks
-  ),
   globalChunks,
   inventory: new Inventory(),
 };

@@ -15,6 +15,7 @@ import {
   getChunkCoordinatesFromId,
   makeEmptyChunk,
 } from "./helpers";
+import { player } from "./Player";
 import { updateGeometry } from "./updateGeometry";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { world } from "./world";
@@ -50,7 +51,7 @@ export async function updateSurroundingChunkGeometry(pos: Position) {
 }
 
 export function shouldChunksUpdate() {
-  const newChunkId = computeChunkColumnId(world.player.position.toArray());
+  const newChunkId = computeChunkColumnId(player.position.toArray());
   if (world.lastChunkId !== newChunkId) {
     world.lastChunkId = newChunkId;
     handleChunks();
@@ -92,7 +93,7 @@ export async function handleChunks() {
   chunkLoadingQueue = chunkLoadingQueue.filter(
     (id) => !chunksSpawned.includes(id)
   );
-  pruneChunks(world.player.position);
+  pruneChunks(player.position);
 }
 
 export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {

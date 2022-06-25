@@ -11,7 +11,7 @@ import {
 } from "./helpers";
 import { intersectRay, Intersection } from "./intersectRay";
 import { Inventory } from "./inventory";
-import { Player } from "./Player";
+import { player } from "./Player";
 import { requestRenderIfNotRequested } from "./rendering";
 import {
   mergeChunkUpdates,
@@ -47,8 +47,8 @@ export function areSame(a: any[], b: any[]) {
 }
 export function isOutOfPlayer(pos: Position) {
   const blockPos = pos.map(Math.floor);
-  const playerHead = world.player.position.toArray().map(Math.floor);
-  const playerFeet = world.player.position
+  const playerHead = player.position.toArray().map(Math.floor);
+  const playerFeet = player.position
     .sub(new Vector3(0, 1, 0))
     .toArray()
     .map(Math.floor);

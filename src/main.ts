@@ -27,7 +27,6 @@ import {
   Chunks,
 } from "./constants";
 import { Loop } from "./Loop";
-import { Player } from "./Player";
 
 import {
   ACESFilmicToneMapping,
@@ -71,6 +70,7 @@ import { generate } from "./generateChunks";
 import { world } from "./world";
 import { setupControls } from "./controls";
 import { onWindowResize, requestRenderIfNotRequested } from "./rendering";
+import { player } from "./Player";
 
 init();
 
@@ -79,7 +79,7 @@ async function init() {
 
   const logTime = new SimpleTimer();
   handleChunks().then(() => logTime.takenFor("Init"));
-  loop.register(world.player);
+  loop.register(player);
   loop.register({ tick: shouldChunksUpdate });
   loop.start();
   setupControls();
