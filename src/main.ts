@@ -232,6 +232,7 @@ async function generate(chunksToSpawn: string[]) {
       [newChunkId]
     );
     mergeChunkUpdates(globalChunks, updatedChunks);
+    console.log(Object.keys(stillNeedUpdates).length);
     // Object.keys(stillNeedUpdates).forEach((chunkId) => {
     //   sunlightPromises.push(
     //     chunkWorkerPool.queue(async (worker) => {
@@ -249,7 +250,6 @@ async function generate(chunksToSpawn: string[]) {
 
   const updateGeometryPromises = [];
   for (let newChunkId of chunksToSpawn) {
-    // globalChunks = await sunlightChunks(globalChunks, [newChunkId]);
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
 
@@ -320,7 +320,6 @@ async function init() {
     viewDistance * chunkSize
   );
   camera.position.y = terrainHeight + 5;
-  // console.log("initial position", camera.position.y);
   canvas = document.querySelector("#canvas");
   renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -345,7 +344,6 @@ async function init() {
   handleChunks(lastChunkId).then(() => logTime.takenFor("Init"));
   loop.register(player);
   loop.register({ tick: shouldChunksUpdate });
-  // loop.register({ tick: pruneChunks });
   loop.start();
 
   blocker.addEventListener("click", function () {
@@ -454,7 +452,6 @@ function onWindowResize() {
 
 function render() {
   renderRequested = false;
-  // pruneChunks();
   renderer.render(scene, camera);
 }
 
