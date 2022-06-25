@@ -204,7 +204,7 @@ export class Inventory {
     };
   }
 
-  selectFromActiveHotbarSlot() {
+  takeOutItem() {
     const { amount, itemType } = this.parse(this.activeHotbarElement.dataset);
 
     if (itemType === air) return air;

@@ -1,14 +1,25 @@
-import { Vector3 } from "three";
+import { Material, Mesh, Vector3 } from "three";
+import { figureOutChunksToSpawn } from "./chunkLogic/figureOutChunksToSpawn";
 import {
   Chunks,
   LightUpdates,
   Position,
   surroundingOffsets,
+  viewDistance,
 } from "./constants";
-import { addOffsetToChunkId, computeChunkId, makeEmptyChunk } from "./helpers";
+import { generate } from "./generateChunks";
+import {
+  addOffsetToChunkId,
+  computeChunkColumnId,
+  computeChunkId,
+  getChunkCoordinatesFromId,
+  makeEmptyChunk,
+} from "./helpers";
 import { updateGeometry } from "./updateGeometry";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { world } from "./world";
+
+let chunkLoadingQueue: string[] = [];
 
 export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
   return surroundingOffsets.reduce((output, offset) => {
@@ -36,6 +47,52 @@ export async function updateSurroundingChunkGeometry(pos: Position) {
     updateGeometry(chunkId)
   );
   return Promise.all(chunkUpdatePromises);
+}
+
+export function shouldChunksUpdate() {
+  const newChunkId = computeChunkColumnId(world.player.position.toArray());
+  if (world.lastChunkId !== newChunkId) {
+    world.lastChunkId = newChunkId;
+    handleChunks();
+  }
+}
+
+export function pruneChunks(playerPosition: Vector3) {
+  Object.keys(world.globalChunks)
+    .filter((id) => {
+      const currentChunkId = computeChunkId(playerPosition.toArray());
+      const [x, , z] = getChunkCoordinatesFromId(id);
+      const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
+      const outOfView =
+        Math.abs(x - x2) > viewDistance + 1 ||
+        Math.abs(z - z2) > viewDistance + 1;
+      return outOfView;
+    })
+    .forEach((idToDelete) => {
+      delete world.meshes[idToDelete];
+      delete world.debugMeshes[idToDelete];
+      delete world.globalChunks[idToDelete];
+      const object = world.scene.getObjectByName("chunk:" + idToDelete) as Mesh;
+      object?.geometry?.dispose();
+      (object?.material as Material)?.dispose();
+      object && world.scene.remove(object);
+      world.renderer.renderLists.dispose();
+    });
+}
+
+export async function handleChunks() {
+  if (chunkLoadingQueue.length > 0) {
+    return;
+  }
+
+  const chunksToSpawn = await figureOutChunksToSpawn(chunkLoadingQueue);
+  chunkLoadingQueue.push(...chunksToSpawn);
+  const chunksSpawned = await generate(world.globalChunks, chunksToSpawn);
+
+  chunkLoadingQueue = chunkLoadingQueue.filter(
+    (id) => !chunksSpawned.includes(id)
+  );
+  pruneChunks(world.player.position);
 }
 
 export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
