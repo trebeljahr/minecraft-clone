@@ -187,7 +187,9 @@ export const toBlock = (block: number) => (num, index) => {
 export function makeEmptyChunk(): Chunk {
   return {
     data: new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count),
-    needsLightUpdate: true,
+    isSunlit: false,
+    isFloodlit: false,
+    isGeometrized: false,
     isGenerated: false,
   };
 }

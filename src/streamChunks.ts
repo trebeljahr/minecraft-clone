@@ -1,7 +1,38 @@
-import { Chunks, LightUpdates } from "./constants";
+import { Vector3 } from "three";
+import {
+  Chunks,
+  LightUpdates,
+  Position,
+  surroundingOffsets,
+} from "./constants";
+import { addOffsetToChunkId, computeChunkId, makeEmptyChunk } from "./helpers";
+import { updateGeometry } from "./main";
 import { chunkWorkerPool } from "./workers/workerPool";
-import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
-import { pickSurroundingChunks } from "./main";
+
+export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
+  return surroundingOffsets.reduce((output, offset) => {
+    const nextChunkId = addOffsetToChunkId(chunkId, new Vector3(...offset));
+    const nextChunk = globalChunks[nextChunkId];
+    // if (!nextChunk) {
+    //   console.log(chunkId, globalChunks, nextChunkId);
+    //   throw Error("No next chunk in global chunks");
+    // }
+    return { ...output, [nextChunkId]: nextChunk || makeEmptyChunk() };
+  }, {});
+}
+
+export async function updateSurroundingChunkGeometry(pos: Position) {
+  const chunksToUpdateSet = new Set<string>();
+  const chunkId = computeChunkId(pos);
+  surroundingOffsets.forEach((dir) => {
+    const neighbourChunkId = addOffsetToChunkId(chunkId, new Vector3(...dir));
+    chunksToUpdateSet.add(neighbourChunkId);
+  });
+  const chunkUpdatePromises = [...chunksToUpdateSet].map((chunkId) =>
+    updateGeometry(chunkId)
+  );
+  return Promise.all(chunkUpdatePromises);
+}
 
 export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
   Object.keys(updatedChunks).forEach((chunkId) => {

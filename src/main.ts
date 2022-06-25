@@ -6,14 +6,11 @@ import {
   SimpleTimer,
   computeChunkId,
   getVoxel,
-  parseChunkId,
   getChunkCoordinatesFromId,
   setLightValue,
   addOffsetToChunkId,
   computeChunkColumnId,
   computeSmallChunkCornerFromId,
-  getSmallChunkCorner,
-  getChunkColumn,
   makeEmptyChunk,
   getSurroundingChunksColumns,
 } from "./helpers";
@@ -50,24 +47,30 @@ import {
   sRGBEncoding,
   Vector3,
   WebGLRenderer,
-  WireframeGeometry,
 } from "three";
 import { intersectRay } from "./intersectRay";
 import { getHeightValue, setVoxel } from "./chunkLogic";
 import {
   mergeChunkUpdates,
+  pickSurroundingChunks,
   streamInChunk,
   sunlightChunks,
+  updateSurroundingChunkGeometry,
 } from "./streamChunks";
 import { figureOutChunksToSpawn } from "./chunkLogic/figureOutChunksToSpawn";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { opaque } from "./voxelMaterial";
-import { ChunkWorkerObject } from "./workers/chunkWorkerObject";
+import {
+  convertIntersectionToPosition,
+  getIntersection as getIntersection,
+  placeVoxel,
+  isOutOfPlayer,
+} from "./placeVoxel";
 
+const { air } = blocks;
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
-const { air } = blocks;
 
 let camera: PerspectiveCamera;
 let scene: Scene;
@@ -86,92 +89,22 @@ let queue = [];
 
 init();
 
-async function placeVoxel(event: MouseEvent) {
+function handleMouseClick(event: MouseEvent) {
+  if (menu) return;
   const mouseClick = new MouseClickEvent(event);
-  if (!(mouseClick.right || mouseClick.left) || menu === true) return;
-  const selectedBlock = inventory.selectFromActiveHotbarSlot();
-  if (selectedBlock === air && mouseClick.right) {
-    console.log("Skipping because trying to place air block");
-    return;
-  }
-
-  const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-  const x = (pos.x / window.innerWidth) * 2 - 1;
-  const y = (pos.y / window.innerHeight) * -2 + 1;
-
-  const start = new Vector3();
-  const end = new Vector3();
-  start.setFromMatrixPosition(camera.matrixWorld);
-  end.set(x, y, 1).unproject(camera);
-
-  const intersection = intersectRay(globalChunks, start, end);
+  const intersection = getIntersection(mouseClick, camera, globalChunks);
+  const block = mouseClick.right ? inventory.selectFromActiveHotbarSlot() : air;
   if (intersection) {
-    const voxelId = event.button === 0 ? 0 : selectedBlock;
-    const pos = intersection.position
-      .map((v, ndx) => {
-        return v + intersection.normal[ndx] * (voxelId > 0 ? 0.5 : -0.5);
-      })
-      .map((coord) => Math.floor(coord)) as Position;
-
-    const distanceFromPlayerHead = new Vector3(...pos)
-      .sub(player.position)
-      .length();
-    const distanceFromPlayerFeet = new Vector3(...pos)
-      .sub(player.position)
-      .setY(player.position.y - 1)
-      .length();
-    if (
-      (distanceFromPlayerHead < 1 || distanceFromPlayerFeet < 1) &&
-      voxelId !== 0
-    ) {
-      console.log("Trying to create block within player!");
+    const pos = convertIntersectionToPosition(intersection, block);
+    if (mouseClick.right && (!isOutOfPlayer(pos, player) || block === air))
       return;
-    }
-    console.log("Setting voxel at ", pos);
-    console.log("Voxel at mouse click", getVoxel(globalChunks, pos));
-    const chunkId = computeChunkId(pos);
-    setVoxel({ [chunkId]: globalChunks[chunkId] }, pos, voxelId);
-    const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
 
-    const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
-      const neighborPos = pos.map(
-        (coord, i) => coord + offset.toArray()[i]
-      ) as Position;
-      const { light } = getVoxel(globalChunks, neighborPos);
-      return Math.max(light, currentMax);
-    }, 0);
-    const lightValue = Math.max(ownLight, neighborLight - 1);
-    setLightValue(globalChunks, pos, lightValue);
-
-    await chunkWorkerPool.queue(async (worker) => {
-      const { updatedChunks } = await worker.floodLight(
-        pickSurroundingChunks(globalChunks, chunkId),
-        [{ pos, lightValue }]
-      );
-      mergeChunkUpdates(globalChunks, updatedChunks);
+    placeVoxel(block, globalChunks, pos).then((chunkUpdates) => {
+      mergeChunkUpdates(globalChunks, chunkUpdates);
+      updateSurroundingChunkGeometry(pos);
+      requestRenderIfNotRequested();
     });
-
-    const { updatedChunks } = await sunlightChunks(
-      getSurroundingChunksColumns(globalChunks, chunkId),
-      [chunkId]
-    );
-    mergeChunkUpdates(globalChunks, updatedChunks);
-
-    updateSurroundingChunkGeometry(pos);
-    requestRenderIfNotRequested();
   }
-}
-
-export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
-  return surroundingOffsets.reduce((output, offset) => {
-    const nextChunkId = addOffsetToChunkId(chunkId, new Vector3(...offset));
-    const nextChunk = globalChunks[nextChunkId];
-    // if (!nextChunk) {
-    //   console.log(chunkId, globalChunks, nextChunkId);
-    //   throw Error("No next chunk in global chunks");
-    // }
-    return { ...output, [nextChunkId]: nextChunk || makeEmptyChunk() };
-  }, {});
 }
 
 export async function updateGeometry(chunkId: string, defaultLight = false) {
@@ -247,19 +180,6 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
       pos[2] + chunkSize / 2
     );
   }
-}
-
-async function updateSurroundingChunkGeometry(pos: Position) {
-  const chunksToUpdateSet = new Set<string>();
-  const chunkId = computeChunkId(pos);
-  surroundingOffsets.forEach((dir) => {
-    const neighbourChunkId = addOffsetToChunkId(chunkId, new Vector3(...dir));
-    chunksToUpdateSet.add(neighbourChunkId);
-  });
-  const chunkUpdatePromises = [...chunksToUpdateSet].map((chunkId) =>
-    updateGeometry(chunkId)
-  );
-  return Promise.all(chunkUpdatePromises);
 }
 
 async function generate(chunksToSpawn: string[]) {
@@ -502,15 +422,17 @@ async function init() {
           "Z is stuck",
           player.position.z - Math.floor(player.position.z) <= 0.001
         );
-        // console.log(
-        //   "Height Value here",
-        //   getHeightValue(player.position.x, player.position.z)
-        // );
+        break;
+      case "KeyK":
+        console.log(
+          "Height Value here",
+          getHeightValue(player.position.x, player.position.z)
+        );
         break;
     }
   };
   document.addEventListener("keypress", onKeyPress);
-  window.addEventListener("click", placeVoxel);
+  window.addEventListener("click", handleMouseClick);
 
   scene.add(player.controls.getObject());
   const color = "lightblue";

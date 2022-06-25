@@ -2,16 +2,18 @@ import { Vector3 } from "three";
 import { Chunks, Position } from "./constants";
 import { getVoxel } from "./helpers";
 
+export interface Intersection {
+  position: Position;
+  normal: Position;
+  voxel: number;
+}
+
 export function intersectRay(
   chunks: Chunks,
   start: Vector3,
   end: Vector3,
   velocity = 6
-): {
-  position: Position;
-  normal: Position;
-  voxel: number;
-} {
+): Intersection | null {
   const {
     x: dx,
     y: dy,
