@@ -8,7 +8,7 @@ export const terrainHeight = surface;
 export const blockLength = 100;
 
 import * as THREE from "three";
-import { Vector3 } from "three";
+import { LineSegments, Mesh, Vector3 } from "three";
 
 export type Position = [number, number, number];
 export function copy(vec: THREE.Vector3) {
@@ -136,6 +136,8 @@ export const faces = [
 
 export interface Chunk {
   data: Uint8Array;
+  mesh?: Mesh;
+  debugMesh?: LineSegments;
   isGenerated: boolean;
   isSunlit: boolean;
   isFloodlit: boolean;
