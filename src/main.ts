@@ -307,24 +307,22 @@ async function generate(chunksToSpawn: string[]) {
 
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
-    sunlightPromises.push(
-      sunlightChunks(getChunkColumn(globalChunks, newChunkId), [
-        newChunkId,
-      ]).then(({ updatedChunks, stillNeedUpdates }) => {
-        mergeChunkUpdates(globalChunks, updatedChunks);
-        // Object.keys(stillNeedUpdates).forEach((chunkId) => {
-        //   sunlightPromises.push(
-        //     chunkWorkerPool.queue(async (worker) => {
-        //       const { updatedChunks } = await worker.floodLight(
-        //         pickSurroundingChunks(globalChunks, chunkId),
-        //         stillNeedUpdates[chunkId]
-        //       );
-        //       mergeChunkUpdates(globalChunks, updatedChunks);
-        //     })
-        //   );
-        // });
-      })
+    const { updatedChunks, stillNeedUpdates } = await sunlightChunks(
+      getSurroundingChunksColumns(globalChunks, newChunkId),
+      [newChunkId]
     );
+    mergeChunkUpdates(globalChunks, updatedChunks);
+    // Object.keys(stillNeedUpdates).forEach((chunkId) => {
+    //   sunlightPromises.push(
+    //     chunkWorkerPool.queue(async (worker) => {
+    //       const { updatedChunks } = await worker.floodLight(
+    //         pickSurroundingChunks(globalChunks, chunkId),
+    //         stillNeedUpdates[chunkId]
+    //       );
+    //       mergeChunkUpdates(globalChunks, updatedChunks);
+    //     })
+    //   );
+    // });
   }
 
   await Promise.all(sunlightPromises);

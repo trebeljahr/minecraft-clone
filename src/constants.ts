@@ -137,7 +137,9 @@ export const faces = [
 export interface Chunk {
   data: Uint8Array;
   isGenerated: boolean;
-  needsLightUpdate: boolean;
+  isSunlit: boolean;
+  isFloodlit: boolean;
+  isGeometrized: boolean;
 }
 
 export type Chunks = Record<string, Chunk>;

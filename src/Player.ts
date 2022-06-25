@@ -2,12 +2,9 @@ import { Vector3 } from "three";
 import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
 import { Chunks, copy } from "./constants";
-import { blocks } from "./blocks";
-
-const { foliage } = blocks;
 
 const eyeLevel = 1.5;
-const gravity = false; // can be set to disable/enable falling
+let gravity = false; // can be set to disable/enable falling
 let maxSpeed = gravity ? 100 : 300;
 let moveForward = false;
 let moveBack = false;
@@ -165,7 +162,8 @@ export class Player {
       case "KeyC":
         moveDown = true;
         break;
-
+      case "KeyJ":
+        gravity = !gravity;
       case "Space":
         if (!gravity) {
           moveUp = true;
