@@ -81,6 +81,8 @@ let renderer: WebGLRenderer;
 let renderRequested = false;
 let menu = true;
 let globalChunks: Record<string, Chunk> = {};
+let meshes: Record<string, Mesh> = {};
+let debugMeshes: Record<string, LineSegments> = {};
 let chunkHelperVisibility = false;
 let lastChunkId = "0,0,0";
 let queue = [];
@@ -110,7 +112,7 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
 
   if (!globalChunks[chunkId]) return;
 
-  let mesh = globalChunks[chunkId].mesh;
+  let mesh = meshes[chunkId];
 
   const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
@@ -160,7 +162,7 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
   if (!mesh) {
     mesh = new Mesh(geometry, opaque);
     mesh.name = "chunk:" + chunkId;
-    globalChunks[chunkId].mesh = mesh;
+    meshes[chunkId] = mesh;
     scene.add(mesh);
     mesh.position.set(...pos);
 
@@ -170,7 +172,7 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
     );
     chunkOutline.name = "debug:" + chunkId;
     chunkOutline.visible = chunkHelperVisibility;
-    globalChunks[chunkId].debugMesh = chunkOutline;
+    debugMeshes[chunkId] = chunkOutline;
     scene.add(chunkOutline);
     chunkOutline.position.set(
       pos[0] + chunkSize / 2,
@@ -281,6 +283,8 @@ export function pruneChunks(playerPosition: Vector3) {
       return outOfView;
     })
     .forEach((idToDelete) => {
+      delete meshes[idToDelete];
+      delete debugMeshes[idToDelete];
       delete globalChunks[idToDelete];
       const object = scene.getObjectByName("chunk:" + idToDelete) as Mesh;
       object?.geometry?.dispose();
@@ -396,8 +400,8 @@ async function init() {
         console.log("Pressed Z");
         chunkHelperVisibility = !chunkHelperVisibility;
 
-        Object.keys(globalChunks).forEach((chunkId) => {
-          globalChunks[chunkId].debugMesh.visible = chunkHelperVisibility;
+        Object.keys(debugMeshes).forEach((chunkId) => {
+          debugMeshes[chunkId].visible = chunkHelperVisibility;
         });
         break;
       case "KeyK":
