@@ -184,9 +184,10 @@ export const toBlock = (block: number) => (num, index) => {
   return num;
 };
 
-export function makeEmptyChunk(): Chunk {
+export function makeEmptyChunk(chunkId: string): Chunk {
   return {
     data: new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count),
+    chunkId,
     isSunlit: false,
     isFloodlit: false,
     isGeometrized: false,

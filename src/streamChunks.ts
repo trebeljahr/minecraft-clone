@@ -6,8 +6,9 @@ import {
   surroundingOffsets,
 } from "./constants";
 import { addOffsetToChunkId, computeChunkId, makeEmptyChunk } from "./helpers";
-import { updateGeometry } from "./main";
+import { updateGeometry } from "./updateGeometry";
 import { chunkWorkerPool } from "./workers/workerPool";
+import { world } from "./world";
 
 export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
   return surroundingOffsets.reduce((output, offset) => {
@@ -17,7 +18,10 @@ export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
     //   console.log(chunkId, globalChunks, nextChunkId);
     //   throw Error("No next chunk in global chunks");
     // }
-    return { ...output, [nextChunkId]: nextChunk || makeEmptyChunk() };
+    return {
+      ...output,
+      [nextChunkId]: nextChunk || makeEmptyChunk(nextChunkId),
+    };
   }, {});
 }
 

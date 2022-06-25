@@ -1,5 +1,4 @@
 import "./main.css";
-import { Inventory } from "./inventory";
 import { blocks } from "./blocks";
 import {
   MouseClickEvent,
@@ -66,205 +65,51 @@ import {
   placeVoxel,
   isOutOfPlayer,
 } from "./placeVoxel";
+import { generate } from "./generateChunks";
+import { world } from "./world";
 
 const { air } = blocks;
 const blocker = document.getElementById("blocker");
 const crosshairs = document.getElementById("crosshairContainer");
 const instructions = document.getElementById("instructions");
 
-let camera: PerspectiveCamera;
-let scene: Scene;
-let inventory: Inventory;
 let canvas: HTMLCanvasElement;
-let player: Player;
 let renderer: WebGLRenderer;
-let renderRequested = false;
-let menu = true;
-let globalChunks: Record<string, Chunk> = {};
-let meshes: Record<string, Mesh> = {};
-let debugMeshes: Record<string, LineSegments> = {};
-let chunkHelperVisibility = false;
+let renderRequested: boolean;
 let lastChunkId = "0,0,0";
-let queue = [];
+let chunkLoadingQueue: string[] = [];
 
 init();
 
 function handleMouseClick(event: MouseEvent) {
-  if (menu) return;
+  if (world.menu) return;
   const mouseClick = new MouseClickEvent(event);
-  const intersection = getIntersection(mouseClick, camera, globalChunks);
-  const block = mouseClick.right ? inventory.selectFromActiveHotbarSlot() : air;
+  const intersection = getIntersection(
+    mouseClick,
+    world.camera,
+    world.globalChunks
+  );
+  const block = mouseClick.right
+    ? world.inventory.selectFromActiveHotbarSlot()
+    : air;
   if (intersection) {
     const pos = convertIntersectionToPosition(intersection, block);
-    if (mouseClick.right && (!isOutOfPlayer(pos, player) || block === air))
+    if (
+      mouseClick.right &&
+      (!isOutOfPlayer(pos, world.player) || block === air)
+    )
       return;
 
-    placeVoxel(block, globalChunks, pos).then((chunkUpdates) => {
-      mergeChunkUpdates(globalChunks, chunkUpdates);
+    placeVoxel(block, world.globalChunks, pos).then((chunkUpdates) => {
+      mergeChunkUpdates(world.globalChunks, chunkUpdates);
       updateSurroundingChunkGeometry(pos);
       requestRenderIfNotRequested();
     });
   }
 }
 
-export async function updateGeometry(chunkId: string, defaultLight = false) {
-  const pos = computeSmallChunkCornerFromId(chunkId);
-
-  if (!globalChunks[chunkId]) return;
-
-  let mesh = meshes[chunkId];
-
-  const geometry = mesh ? mesh.geometry : new BufferGeometry();
-
-  await chunkWorkerPool.queue(async (worker) => {
-    const { positions, normals, uvs, indices, lightValues } =
-      await worker.generateGeometry(
-        pickSurroundingChunks(globalChunks, chunkId),
-        chunkId,
-        defaultLight
-      );
-
-    const positionNumComponents = 3;
-    geometry.setAttribute(
-      "position",
-      new BufferAttribute(new Float32Array(positions), positionNumComponents)
-    );
-    const normalNumComponents = 3;
-    geometry.setAttribute(
-      "normal",
-      new BufferAttribute(new Float32Array(normals), normalNumComponents)
-    );
-    const uvNumComponents = 2;
-    geometry.setAttribute(
-      "uv",
-      new BufferAttribute(new Float32Array(uvs), uvNumComponents)
-    );
-    geometry.setIndex(indices);
-    geometry.computeBoundingSphere();
-
-    geometry.setAttribute(
-      "light",
-      new BufferAttribute(new Float32Array(lightValues), 1)
-    );
-    geometry.setAttribute(
-      "color",
-      new BufferAttribute(
-        new Float32Array(
-          positions.map(() => {
-            return 255;
-          })
-        ),
-        3
-      )
-    );
-  });
-
-  if (!mesh) {
-    mesh = new Mesh(geometry, opaque);
-    mesh.name = "chunk:" + chunkId;
-    meshes[chunkId] = mesh;
-    scene.add(mesh);
-    mesh.position.set(...pos);
-
-    const chunkOutline = new LineSegments(
-      new EdgesGeometry(new BoxGeometry(chunkSize, chunkSize, chunkSize)),
-      new LineBasicMaterial({ color: 0x00ff00 })
-    );
-    chunkOutline.name = "debug:" + chunkId;
-    chunkOutline.visible = chunkHelperVisibility;
-    debugMeshes[chunkId] = chunkOutline;
-    scene.add(chunkOutline);
-    chunkOutline.position.set(
-      pos[0] + chunkSize / 2,
-      pos[1] + chunkSize / 2,
-      pos[2] + chunkSize / 2
-    );
-  }
-}
-
-async function generate(chunksToSpawn: string[]) {
-  const promises = [];
-  for (let newChunkId of chunksToSpawn) {
-    for (let y = verticalNumberOfChunks; y >= 0; y--) {
-      const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
-      if (globalChunks[chunkIdForSpawning]?.isGenerated) {
-        console.log("Chunk already exists");
-        continue;
-      }
-      surroundingOffsets.forEach((offset) => {
-        const offVec = new Vector3(...offset);
-        if (!globalChunks[addOffsetToChunkId(newChunkId, offVec)]) {
-          globalChunks[addOffsetToChunkId(newChunkId, offVec)] =
-            makeEmptyChunk();
-        }
-      });
-
-      const streamInChunksPromise = streamInChunk(
-        globalChunks,
-        chunkIdForSpawning
-      ).then((chunks) => {
-        globalChunks = chunks;
-      });
-      promises.push(streamInChunksPromise);
-    }
-  }
-
-  await Promise.all(promises);
-
-  for (let newChunkId of chunksToSpawn) {
-    for (let y = verticalNumberOfChunks; y >= 0; y--) {
-      const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
-
-      await chunkWorkerPool.queue(async (worker) => {
-        const updatedChunksWithTrees = await worker.growTrees(
-          pickSurroundingChunks(globalChunks, chunkIdForSpawning),
-          chunkIdForSpawning
-        );
-        mergeChunkUpdates(globalChunks, updatedChunksWithTrees);
-      });
-    }
-  }
-
-  const sunlightPromises = [];
-  for (let newChunkId of chunksToSpawn) {
-    const { updatedChunks, stillNeedUpdates } = await sunlightChunks(
-      getSurroundingChunksColumns(globalChunks, newChunkId),
-      [newChunkId]
-    );
-    mergeChunkUpdates(globalChunks, updatedChunks);
-    console.log(Object.keys(stillNeedUpdates).length);
-    // Object.keys(stillNeedUpdates).forEach((chunkId) => {
-    //   sunlightPromises.push(
-    //     chunkWorkerPool.queue(async (worker) => {
-    //       const { updatedChunks } = await worker.floodLight(
-    //         pickSurroundingChunks(globalChunks, chunkId),
-    //         stillNeedUpdates[chunkId]
-    //       );
-    //       mergeChunkUpdates(globalChunks, updatedChunks);
-    //     })
-    //   );
-    // });
-  }
-
-  await Promise.all(sunlightPromises);
-
-  const updateGeometryPromises = [];
-  for (let newChunkId of chunksToSpawn) {
-    for (let y = verticalNumberOfChunks; y >= 0; y--) {
-      const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
-
-      // const pos = computeSmallChunkCornerFromId(chunkIdForSpawning);
-      // updateGeometryPromises.push(updateSurroundingChunkGeometry(pos));
-      updateGeometryPromises.push(updateGeometry(chunkIdForSpawning));
-    }
-  }
-  await Promise.all(updateGeometryPromises);
-
-  return chunksToSpawn;
-}
-
 function shouldChunksUpdate() {
-  const newChunkId = computeChunkColumnId(player.position.toArray());
+  const newChunkId = computeChunkColumnId(world.player.position.toArray());
   if (lastChunkId !== newChunkId) {
     lastChunkId = newChunkId;
     handleChunks(newChunkId);
@@ -272,7 +117,7 @@ function shouldChunksUpdate() {
 }
 
 export function pruneChunks(playerPosition: Vector3) {
-  Object.keys(globalChunks)
+  Object.keys(world.globalChunks)
     .filter((id) => {
       const currentChunkId = computeChunkId(playerPosition.toArray());
       const [x, , z] = getChunkCoordinatesFromId(id);
@@ -283,43 +128,37 @@ export function pruneChunks(playerPosition: Vector3) {
       return outOfView;
     })
     .forEach((idToDelete) => {
-      delete meshes[idToDelete];
-      delete debugMeshes[idToDelete];
-      delete globalChunks[idToDelete];
-      const object = scene.getObjectByName("chunk:" + idToDelete) as Mesh;
+      delete world.meshes[idToDelete];
+      delete world.debugMeshes[idToDelete];
+      delete world.globalChunks[idToDelete];
+      const object = world.scene.getObjectByName("chunk:" + idToDelete) as Mesh;
       object?.geometry?.dispose();
       (object?.material as Material)?.dispose();
-      object && scene.remove(object);
+      object && world.scene.remove(object);
       renderer.renderLists.dispose();
     });
 }
 
 async function handleChunks(newChunkId: string) {
-  if (queue.length > 0) {
+  if (chunkLoadingQueue.length > 0) {
     return;
   }
 
   const chunksToSpawn = await figureOutChunksToSpawn(
-    globalChunks,
-    queue,
+    world.globalChunks,
+    chunkLoadingQueue,
     newChunkId
   );
-  queue.push(...chunksToSpawn);
-  const chunksSpawned = await generate(chunksToSpawn);
+  chunkLoadingQueue.push(...chunksToSpawn);
+  const chunksSpawned = await generate(world.globalChunks, chunksToSpawn);
 
-  queue = queue.filter((id) => !chunksSpawned.includes(id));
-  pruneChunks(player.position);
+  chunkLoadingQueue = chunkLoadingQueue.filter(
+    (id) => !chunksSpawned.includes(id)
+  );
+  pruneChunks(world.player.position);
 }
 
 async function init() {
-  const near = 0.01;
-  camera = new PerspectiveCamera(
-    60,
-    window.innerWidth / window.innerHeight,
-    near,
-    viewDistance * chunkSize
-  );
-  camera.position.y = terrainHeight + 5;
   canvas = document.querySelector("#canvas");
   renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -329,43 +168,34 @@ async function init() {
   renderer.shadowMap.enabled = true;
   renderer.physicallyCorrectLights = true;
 
-  scene = new Scene();
-  global.scene = scene;
-  global.Mesh = Mesh;
-  global.globalChunks = globalChunks;
+  const loop = new Loop(renderer);
 
-  const loop = new Loop(camera, scene, renderer);
-  player = new Player(
-    new PointerLockControls(camera, document.body),
-    globalChunks
-  );
-  inventory = new Inventory();
   const logTime = new SimpleTimer();
   handleChunks(lastChunkId).then(() => logTime.takenFor("Init"));
-  loop.register(player);
+  loop.register(world.player);
   loop.register({ tick: shouldChunksUpdate });
   loop.start();
 
   blocker.addEventListener("click", function () {
-    player.controls.lock();
+    world.player.controls.lock();
   });
 
-  player.controls.addEventListener("lock", function () {
-    menu = false;
+  world.player.controls.addEventListener("lock", function () {
+    world.menu = false;
     instructions.style.display = "none";
     blocker.style.display = "none";
-    if (!inventory.isOpen) {
+    if (!world.inventory.isOpen) {
       crosshairs.style.display = "flex";
-      inventory.hotbarElement.style.display = "flex";
+      world.inventory.hotbarElement.style.display = "flex";
     }
   });
 
-  player.controls.addEventListener("unlock", function () {
-    menu = true;
-    if (!inventory.isOpen) {
+  world.player.controls.addEventListener("unlock", function () {
+    world.menu = true;
+    if (!world.inventory.isOpen) {
       blocker.style.display = "flex";
       instructions.style.display = "block";
-      inventory.hotbarElement.style.display = "none";
+      world.inventory.hotbarElement.style.display = "none";
     }
     crosshairs.style.display = "none";
   });
@@ -376,18 +206,20 @@ async function init() {
     }
     switch (event.code) {
       case "KeyE":
-        if (!player.controls.isLocked && !inventory.isOpen) return;
-        inventory.toggle();
-        inventory.isOpen ? player.controls.unlock() : player.controls.lock();
+        if (!world.player.controls.isLocked && !world.inventory.isOpen) return;
+        world.inventory.toggle();
+        world.inventory.isOpen
+          ? world.player.controls.unlock()
+          : world.player.controls.lock();
         break;
       case "KeyH":
         console.log(
-          "Player Position: ",
-          player.position.toArray().map((elem) => Math.floor(elem))
+          "world.Player Position: ",
+          world.player.position.toArray().map((elem) => Math.floor(elem))
         );
         break;
       case "KeyF":
-        const pos = player.controls.getObject().position;
+        const pos = world.player.controls.getObject().position;
         const newPos = new Vector3(0, terrainHeight + 5, 0);
         pos.y = newPos.y;
         pos.x = newPos.x;
@@ -396,35 +228,35 @@ async function init() {
         break;
       case "KeyZ":
         console.log("Pressed Z");
-        chunkHelperVisibility = !chunkHelperVisibility;
+        world.chunkHelperVisibility = !world.chunkHelperVisibility;
 
-        Object.keys(debugMeshes).forEach((chunkId) => {
-          debugMeshes[chunkId].visible = chunkHelperVisibility;
+        Object.keys(world.debugMeshes).forEach((chunkId) => {
+          world.debugMeshes[chunkId].visible = world.chunkHelperVisibility;
         });
         break;
       case "KeyK":
         console.log("Camera Debug");
         const camDirection = new Vector3(0, 0, 0);
-        camera.getWorldDirection(camDirection);
+        world.camera.getWorldDirection(camDirection);
 
         console.log("direction", camDirection);
-        console.log("position:", camera.position);
+        console.log("position:", world.camera.position);
         break;
       case "KeyG":
-        console.log("Pressed G", player.position);
+        console.log("Pressed G", world.player.position);
         console.log(
           "X is stuck",
-          player.position.x - Math.floor(player.position.x) <= 0.001
+          world.player.position.x - Math.floor(world.player.position.x) <= 0.001
         );
         console.log(
           "Z is stuck",
-          player.position.z - Math.floor(player.position.z) <= 0.001
+          world.player.position.z - Math.floor(world.player.position.z) <= 0.001
         );
         break;
       case "KeyK":
         console.log(
           "Height Value here",
-          getHeightValue(player.position.x, player.position.z)
+          getHeightValue(world.player.position.x, world.player.position.z)
         );
         break;
     }
@@ -432,27 +264,27 @@ async function init() {
   document.addEventListener("keypress", onKeyPress);
   window.addEventListener("click", handleMouseClick);
 
-  scene.add(player.controls.getObject());
+  world.scene.add(world.player.controls.getObject());
   const color = "lightblue";
-  scene.fog = new Fog(
+  world.scene.fog = new Fog(
     color,
     viewDistance * chunkSize - 2 * chunkSize,
     viewDistance * chunkSize
   );
-  scene.background = new Color(color);
+  world.scene.background = new Color(color);
 
   window.addEventListener("resize", onWindowResize);
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  world.camera.aspect = window.innerWidth / window.innerHeight;
+  world.camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function render() {
   renderRequested = false;
-  renderer.render(scene, camera);
+  renderer.render(world.scene, world.camera);
 }
 
 function requestRenderIfNotRequested() {
@@ -463,18 +295,18 @@ function requestRenderIfNotRequested() {
 }
 
 // function spawnSingleBlock() {
-//   const [x, y, z] = player.pos.toArray();
+//   const [x, y, z] = world.player.pos.toArray();
 //   const initialBlockPos = [x, y - 2, z - 3] as Position;
 //   const hardcodedCameraPosition = {
 //     x: 2.2839938822872243,
 //     y: 85,
 //     z: -0.8391258104030554,
 //   };
-//   camera.position.y = hardcodedCameraPosition.y;
-//   camera.position.x = hardcodedCameraPosition.x;
-//   camera.position.z = hardcodedCameraPosition.z;
+//   world.camera.position.y = hardcodedCameraPosition.y;
+//   world.camera.position.x = hardcodedCameraPosition.x;
+//   world.camera.position.z = hardcodedCameraPosition.z;
 //   const camDirection = new Vector3(...initialBlockPos);
 //   camDirection.y -= 0.5;
-//   camera.lookAt(camDirection);
+//   world.camera.lookAt(camDirection);
 //   setVoxel(initialBlockPos, blocks.coal);
 // }

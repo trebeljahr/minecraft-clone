@@ -136,6 +136,7 @@ export const faces = [
 
 export interface Chunk {
   data: Uint8Array;
+  chunkId: string;
   isGenerated: boolean;
   isSunlit: boolean;
   isFloodlit: boolean;
