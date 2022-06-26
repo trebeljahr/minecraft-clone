@@ -33,7 +33,9 @@ export async function generateChunks(chunksToSpawn: string[]) {
         }
       });
 
-      const streamInChunksPromise = streamInChunk(chunkIdForSpawning);
+      const streamInChunksPromise = streamInChunk(chunkIdForSpawning).then(() =>
+        console.log("Chunkdata done")
+      );
       promises.push(streamInChunksPromise);
     }
   }
@@ -51,6 +53,7 @@ export async function generateChunks(chunksToSpawn: string[]) {
         );
         mergeChunkUpdates(updatedChunksWithTrees);
       });
+      console.log("Trees done");
     }
   }
 
@@ -60,18 +63,7 @@ export async function generateChunks(chunksToSpawn: string[]) {
       getSurroundingChunksColumns(newChunkId),
       [newChunkId]
     );
-    console.log(Object.keys(stillNeedUpdates).length);
-    // Object.keys(stillNeedUpdates).forEach((chunkId) => {
-    //   sunlightPromises.push(
-    //     chunkWorkerPool.queue(async (worker) => {
-    //       const { updatedChunks } = await worker.floodLight(
-    //         pickSurroundingChunks(globalChunks, chunkId),
-    //         stillNeedUpdates[chunkId]
-    //       );
-    //       mergeChunkUpdates(globalChunks, updatedChunks);
-    //     })
-    //   );
-    // });
+    console.log("Sunlight done", Object.keys(stillNeedUpdates).length);
   }
 
   await Promise.all(sunlightPromises);
@@ -80,9 +72,6 @@ export async function generateChunks(chunksToSpawn: string[]) {
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
-
-      // const pos = computeSmallChunkCornerFromId(chunkIdForSpawning);
-      // updateGeometryPromises.push(updateSurroundingChunkGeometry(pos));
       updateGeometryPromises.push(updateGeometry(chunkIdForSpawning));
     }
   }
