@@ -8,7 +8,7 @@ import {
   Chunk,
 } from "./constants";
 import { MathUtils, Vector3 } from "three";
-import { blocksLookup, blocks } from "./blocks";
+import { blocksLookup } from "./blocks";
 import { getChunkForVoxel } from "./chunkLogic";
 
 const leftMouse = 0;
@@ -114,38 +114,6 @@ export function computeVoxelIndex(pos: number[]) {
     .map((coord) => MathUtils.euclideanModulo(coord, chunkSize))
     .map((value) => value | 0);
   return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
-}
-
-export function getSurroundingChunksColumns(chunks: Chunks, chunkId: string) {
-  let filteredChunks: Chunks = {};
-  for (let x = -1; x <= 1; x++) {
-    for (let z = -1; z <= 1; z++) {
-      filteredChunks = {
-        ...filteredChunks,
-        ...getChunkColumn(chunks, addOffsetToChunkId(chunkId, { x, z })),
-      };
-    }
-  }
-  // console.log(filteredChunks);
-  // console.log(Object.keys(filteredChunks).length);
-  return filteredChunks;
-}
-
-export function getChunkColumn(chunks: Chunks, chunkIdTarget: string) {
-  const chunkEntries = Object.entries(chunks);
-  const filteredEntries = chunkEntries.filter(([chunkId]) => {
-    const pos1 = parseChunkId(chunkId);
-    const pos2 = parseChunkId(chunkIdTarget);
-    const sameX = pos1.x === pos2.x;
-    const sameZ = pos1.z === pos2.z;
-    if (sameX && sameZ) {
-      return true;
-    }
-    return false;
-  });
-  const column: Chunks = Object.fromEntries(filteredEntries);
-
-  return column;
 }
 
 export function computeChunkOffsetVector(pos: Position) {

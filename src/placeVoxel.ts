@@ -4,7 +4,6 @@ import { setVoxel } from "./chunkLogic";
 import { Chunks, glowingBlocks, neighborOffsets, Position } from "./constants";
 import {
   computeChunkId,
-  getSurroundingChunksColumns,
   getVoxel,
   MouseClickEvent,
   setLightValue,
@@ -14,6 +13,7 @@ import { Inventory } from "./inventory";
 import { player } from "./Player";
 import { requestRenderIfNotRequested } from "./rendering";
 import {
+  getSurroundingChunksColumns,
   mergeChunkUpdates,
   pickSurroundingChunks,
   sunlightChunks,
@@ -96,17 +96,13 @@ export async function placeVoxel(voxelId: number, pos: Position) {
 
   await chunkWorkerPool.queue(async (worker) => {
     const { updatedChunks } = await worker.floodLight(
-      pickSurroundingChunks(world.globalChunks, chunkId),
+      pickSurroundingChunks(chunkId),
       [{ pos, lightValue }]
     );
-    mergeChunkUpdates(world.globalChunks, updatedChunks);
+    mergeChunkUpdates(updatedChunks);
   });
 
-  const { updatedChunks } = await sunlightChunks(
-    getSurroundingChunksColumns(world.globalChunks, chunkId),
-    [chunkId]
-  );
-  mergeChunkUpdates(world.globalChunks, updatedChunks);
+  await sunlightChunks(getSurroundingChunksColumns(chunkId), [chunkId]);
 
   updateSurroundingChunkGeometry(pos);
   requestRenderIfNotRequested();

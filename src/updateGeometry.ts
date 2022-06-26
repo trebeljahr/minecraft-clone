@@ -24,7 +24,7 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
   await chunkWorkerPool.queue(async (worker) => {
     const { positions, normals, uvs, indices, lightValues } =
       await worker.generateGeometry(
-        pickSurroundingChunks(world.globalChunks, chunkId),
+        pickSurroundingChunks(chunkId),
         chunkId,
         defaultLight
       );

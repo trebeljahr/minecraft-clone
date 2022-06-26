@@ -7,13 +7,14 @@ import {
   surroundingOffsets,
   viewDistance,
 } from "./constants";
-import { generate } from "./generateChunks";
+import { generateChunks } from "./generateChunks";
 import {
   addOffsetToChunkId,
   computeChunkColumnId,
   computeChunkId,
   getChunkCoordinatesFromId,
   makeEmptyChunk,
+  parseChunkId,
 } from "./helpers";
 import { player } from "./Player";
 import { updateGeometry } from "./updateGeometry";
@@ -22,10 +23,10 @@ import { world } from "./world";
 
 let chunkLoadingQueue: string[] = [];
 
-export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
+export function pickSurroundingChunks(chunkId: string) {
   return surroundingOffsets.reduce((output, offset) => {
     const nextChunkId = addOffsetToChunkId(chunkId, new Vector3(...offset));
-    const nextChunk = globalChunks[nextChunkId];
+    const nextChunk = world.globalChunks[nextChunkId];
     // if (!nextChunk) {
     //   console.log(chunkId, globalChunks, nextChunkId);
     //   throw Error("No next chunk in global chunks");
@@ -35,6 +36,38 @@ export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
       [nextChunkId]: nextChunk || makeEmptyChunk(nextChunkId),
     };
   }, {});
+}
+
+export function getChunkColumn(chunkIdTarget: string) {
+  const chunkEntries = Object.entries(world.globalChunks);
+  const filteredEntries = chunkEntries.filter(([chunkId]) => {
+    const pos1 = parseChunkId(chunkId);
+    const pos2 = parseChunkId(chunkIdTarget);
+    const sameX = pos1.x === pos2.x;
+    const sameZ = pos1.z === pos2.z;
+    if (sameX && sameZ) {
+      return true;
+    }
+    return false;
+  });
+  const column: Chunks = Object.fromEntries(filteredEntries);
+
+  return column;
+}
+
+export function getSurroundingChunksColumns(chunkId: string) {
+  let filteredChunks: Chunks = {};
+  for (let x = -1; x <= 1; x++) {
+    for (let z = -1; z <= 1; z++) {
+      filteredChunks = {
+        ...filteredChunks,
+        ...getChunkColumn(addOffsetToChunkId(chunkId, { x, z })),
+      };
+    }
+  }
+  // console.log(filteredChunks);
+  // console.log(Object.keys(filteredChunks).length);
+  return filteredChunks;
 }
 
 export async function updateSurroundingChunkGeometry(pos: Position) {
@@ -88,7 +121,7 @@ export async function handleChunks() {
 
   const chunksToSpawn = await figureOutChunksToSpawn(chunkLoadingQueue);
   chunkLoadingQueue.push(...chunksToSpawn);
-  const chunksSpawned = await generate(world.globalChunks, chunksToSpawn);
+  const chunksSpawned = await generateChunks(chunksToSpawn);
 
   chunkLoadingQueue = chunkLoadingQueue.filter(
     (id) => !chunksSpawned.includes(id)
@@ -96,15 +129,15 @@ export async function handleChunks() {
   pruneChunks(player.position);
 }
 
-export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
+export function mergeChunkUpdates(updatedChunks: Chunks) {
   Object.keys(updatedChunks).forEach((chunkId) => {
     if (updatedChunks[chunkId]) {
       const shouldMerge = !(
-        globalChunks[chunkId]?.isGenerated &&
+        world.globalChunks[chunkId]?.isGenerated &&
         !updatedChunks[chunkId]?.isGenerated
       );
       if (shouldMerge) {
-        globalChunks[chunkId] = updatedChunks[chunkId];
+        world.globalChunks[chunkId] = updatedChunks[chunkId];
       }
     } else {
       throw Error("Trying to merge empty chunks...");
@@ -122,25 +155,24 @@ export async function sunlightChunks(
       availableChunks,
       chunksToLight
     );
-    mergeChunkUpdates(availableChunks, chunks);
+    mergeChunkUpdates(chunks);
     const { updatedChunks, chunksThatNeedUpdates } = await worker.floodLight(
       availableChunks,
       sunlightQueue
     );
-    mergeChunkUpdates(availableChunks, updatedChunks);
+    mergeChunkUpdates(updatedChunks);
     stillNeedUpdates = chunksThatNeedUpdates;
   });
 
-  return { updatedChunks: availableChunks, stillNeedUpdates };
+  return { stillNeedUpdates };
 }
 
-export async function streamInChunk(globalChunks: Chunks, chunkId: string) {
+export async function streamInChunk(chunkId: string) {
   await chunkWorkerPool.queue(async (worker) => {
     const updatedChunks = await worker.generateChunkData(
-      pickSurroundingChunks(globalChunks, chunkId),
+      pickSurroundingChunks(chunkId),
       chunkId
     );
-    mergeChunkUpdates(globalChunks, updatedChunks);
+    mergeChunkUpdates(updatedChunks);
   });
-  return globalChunks;
 }

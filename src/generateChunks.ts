@@ -3,13 +3,10 @@ import {
   surroundingOffsets,
   verticalNumberOfChunks,
 } from "./constants";
-import {
-  addOffsetToChunkId,
-  getSurroundingChunksColumns,
-  makeEmptyChunk,
-} from "./helpers";
+import { addOffsetToChunkId, makeEmptyChunk } from "./helpers";
 import { updateGeometry } from "./updateGeometry";
 import {
+  getSurroundingChunksColumns,
   mergeChunkUpdates,
   pickSurroundingChunks,
   streamInChunk,
@@ -19,29 +16,24 @@ import { chunkWorkerPool } from "./workers/workerPool";
 import { Vector3 } from "three";
 import { world } from "./world";
 
-export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
+export async function generateChunks(chunksToSpawn: string[]) {
   const promises = [];
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
-      if (chunks[chunkIdForSpawning]?.isGenerated) {
+      if (world.globalChunks[chunkIdForSpawning]?.isGenerated) {
         console.log("Chunk already exists");
         continue;
       }
       surroundingOffsets.forEach((offset) => {
         const offVec = new Vector3(...offset);
-        if (!chunks[addOffsetToChunkId(newChunkId, offVec)]) {
-          chunks[addOffsetToChunkId(newChunkId, offVec)] =
+        if (!world.globalChunks[addOffsetToChunkId(newChunkId, offVec)]) {
+          world.globalChunks[addOffsetToChunkId(newChunkId, offVec)] =
             makeEmptyChunk(newChunkId);
         }
       });
 
-      const streamInChunksPromise = streamInChunk(
-        chunks,
-        chunkIdForSpawning
-      ).then((chunks) => {
-        chunks = chunks;
-      });
+      const streamInChunksPromise = streamInChunk(chunkIdForSpawning);
       promises.push(streamInChunksPromise);
     }
   }
@@ -54,21 +46,20 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
 
       await chunkWorkerPool.queue(async (worker) => {
         const updatedChunksWithTrees = await worker.growTrees(
-          pickSurroundingChunks(chunks, chunkIdForSpawning),
+          pickSurroundingChunks(chunkIdForSpawning),
           chunkIdForSpawning
         );
-        mergeChunkUpdates(chunks, updatedChunksWithTrees);
+        mergeChunkUpdates(updatedChunksWithTrees);
       });
     }
   }
 
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
-    const { updatedChunks, stillNeedUpdates } = await sunlightChunks(
-      getSurroundingChunksColumns(chunks, newChunkId),
+    const { stillNeedUpdates } = await sunlightChunks(
+      getSurroundingChunksColumns(newChunkId),
       [newChunkId]
     );
-    mergeChunkUpdates(chunks, updatedChunks);
     console.log(Object.keys(stillNeedUpdates).length);
     // Object.keys(stillNeedUpdates).forEach((chunkId) => {
     //   sunlightPromises.push(
