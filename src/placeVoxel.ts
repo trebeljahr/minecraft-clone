@@ -24,7 +24,7 @@ import { world } from "./world";
 
 const { air } = blocks;
 
-export function getIntersection(mouseClick: MouseClickEvent) {
+function getIntersection(mouseClick: MouseClickEvent) {
   if (!(mouseClick.right || mouseClick.left)) return;
 
   const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -40,12 +40,13 @@ export function getIntersection(mouseClick: MouseClickEvent) {
   return intersection;
 }
 
-export function areSame(a: any[], b: any[]) {
+function areSame(a: any[], b: any[]) {
   return (
     a.every((item) => b.includes(item)) && b.every((item) => a.includes(item))
   );
 }
-export function isOutOfPlayer(pos: Position) {
+
+function isOutOfPlayer(pos: Position) {
   const blockPos = pos.map(Math.floor);
   const playerHead = player.position.toArray().map(Math.floor);
   const playerFeet = player.position
@@ -65,7 +66,7 @@ export function isOutOfPlayer(pos: Position) {
   return true;
 }
 
-export function convertIntersectionToPosition(
+function convertIntersectionToPosition(
   intersection: Intersection,
   voxelId: number
 ) {
@@ -77,7 +78,7 @@ export function convertIntersectionToPosition(
   return pos;
 }
 
-export async function placeVoxel(voxelId: number, pos: Position) {
+async function placeVoxel(voxelId: number, pos: Position) {
   console.log("Setting voxel at ", pos);
   console.log("Voxel at mouse click", getVoxel(world.globalChunks, pos));
   const chunkId = computeChunkId(pos);
