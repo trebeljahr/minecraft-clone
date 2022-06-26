@@ -1,6 +1,6 @@
 import { Clock, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import Stats from "three/examples/jsm/libs/stats.module.js";
-import { Player } from "./Player";
+import { world } from "./world";
 
 interface Animatable {
   tick: (delta: number) => void;
@@ -10,17 +10,10 @@ const clock = new Clock();
 
 class Loop {
   private camera: PerspectiveCamera;
-  private scene: Scene;
   private renderer: WebGLRenderer;
   private updatables: Animatable[];
   private stats = Stats();
-  constructor(
-    camera: PerspectiveCamera,
-    scene: Scene,
-    renderer: WebGLRenderer
-  ) {
-    this.camera = camera;
-    this.scene = scene;
+  constructor(renderer: WebGLRenderer) {
     this.renderer = renderer;
     this.updatables = [];
     document.body.appendChild(this.stats.dom);
@@ -32,7 +25,7 @@ class Loop {
   public start() {
     this.renderer.setAnimationLoop(() => {
       this.tick();
-      this.renderer.render(this.scene, this.camera);
+      this.renderer.render(world.scene, world.camera);
     });
   }
 

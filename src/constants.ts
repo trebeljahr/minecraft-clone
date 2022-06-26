@@ -19,7 +19,7 @@ export const maxHeight = terrainHeight + chunkSize / 2;
 export const tileSize = 16;
 export const tileTextureWidth = 320;
 export const tileTextureHeight = 48;
-export const viewDistance = 5;
+export const viewDistance = 3;
 
 const { air, cactus, foliage } = blocks;
 
@@ -136,8 +136,18 @@ export const faces = [
 
 export interface Chunk {
   data: Uint8Array;
+  chunkId: string;
   isGenerated: boolean;
-  needsLightUpdate: boolean;
+  isSunlit: boolean;
+  isFloodlit: boolean;
+  isGeometrized: boolean;
 }
 
 export type Chunks = Record<string, Chunk>;
+
+export interface LightUpdate {
+  pos: Position;
+  lightValue: number;
+}
+
+export type LightUpdates = Record<string, LightUpdate[]>;

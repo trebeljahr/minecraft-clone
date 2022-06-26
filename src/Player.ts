@@ -2,32 +2,27 @@ import { Vector3 } from "three";
 import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
 import { Chunks, copy } from "./constants";
-import { blocks } from "./blocks";
+import { world } from "./world";
 
-const { foliage } = blocks;
-
-const eyeLevel = 1.5;
-const gravity = false; // can be set to disable/enable falling
-let maxSpeed = gravity ? 100 : 300;
-let moveForward = false;
-let moveBack = false;
-let moveLeft = false;
-let moveRight = false;
-let moveUp = false;
-let moveDown = false;
-let isFlying = false;
-
-export class Player {
+class Player {
   public controls: PointerLockControls;
-  private chunks: Chunks;
   private velocity = new Vector3(0, 0, 0);
   private planarVelocity = new Vector3(0, 0, 0);
-  private canJump: boolean;
-  constructor(controls: PointerLockControls, chunks: Chunks) {
-    this.controls = controls;
+  public canJump: boolean;
+  public moveForward = false;
+  public moveBackward = false;
+  public moveLeft = false;
+  public moveRight = false;
+  public moveUp = false;
+  public moveDown = false;
+  public isFlying = false;
+  public gravity = false;
+  public eyeLevel = 1.5;
+  public maxSpeed = this.gravity ? 100 : 300;
+
+  constructor() {
+    this.controls = new PointerLockControls(world.camera, document.body);
     this.canJump = false;
-    this.chunks = chunks;
-    this.addListeners();
   }
   tick(delta: number) {
     this.movePlayer(delta);
@@ -55,11 +50,11 @@ export class Player {
       this.planarVelocity.z -= this.planarVelocity.z * 20 * delta;
 
       this.planarVelocity.z +=
-        this.directionPlayerWantsToMove.z * maxSpeed * delta;
+        this.directionPlayerWantsToMove.z * this.maxSpeed * delta;
       this.planarVelocity.x +=
-        this.directionPlayerWantsToMove.x * maxSpeed * delta;
+        this.directionPlayerWantsToMove.x * this.maxSpeed * delta;
 
-      this.planarVelocity.clampLength(0, maxSpeed);
+      this.planarVelocity.clampLength(0, this.maxSpeed);
       this.velocity.x = this.planarVelocity.x;
       this.velocity.z = this.planarVelocity.z;
 
@@ -74,16 +69,16 @@ export class Player {
         this.pos.y -= this.velocity.y * delta;
       }
 
-      if (this.velocity.y > -30 && !onGround && gravity)
+      if (this.velocity.y > -30 && !onGround && this.gravity)
         this.velocity.y -= 9.8 * 5 * delta;
 
-      if (!gravity && moveDown) {
+      if (!this.gravity && this.moveDown) {
         // console.log("moving down");
-        this.pos.y -= (maxSpeed / 10) * delta;
+        this.pos.y -= (this.maxSpeed / 10) * delta;
       }
-      if (!gravity && moveUp) {
+      if (!this.gravity && this.moveUp) {
         // console.log("moving up");
-        this.pos.y += (maxSpeed / 10) * delta;
+        this.pos.y += (this.maxSpeed / 10) * delta;
       }
 
       const clippingOffsetX = this.velocity.x < 0 ? -0.5 : 0.5;
@@ -112,7 +107,7 @@ export class Player {
   }
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
-    const { type: collision } = getVoxel(this.chunks, [x, y, z]);
+    const { type: collision } = getVoxel(world.globalChunks, [x, y, z]);
     if (collision !== 0) return true;
     return false;
   }
@@ -121,101 +116,20 @@ export class Player {
     return (
       this.wouldCollideWithTerrain(this.position) ||
       this.wouldCollideWithTerrain(
-        this.position.sub(new Vector3(0, eyeLevel, 0))
+        this.position.sub(new Vector3(0, this.eyeLevel, 0))
       )
     );
   }
   get directionPlayerWantsToMove(): Vector3 {
-    const forwardBack = Number(moveForward) - Number(moveBack);
-    const leftRight = Number(moveRight) - Number(moveLeft);
+    const forwardBack = Number(this.moveForward) - Number(this.moveBackward);
+    const leftRight = Number(this.moveRight) - Number(this.moveLeft);
     return new Vector3(leftRight, 0, forwardBack).normalize();
   }
 
-  onKeyDown(event: { code: string }) {
-    // console.log("Pressed Key with code:", event.code);
-    switch (event.code) {
-      case "KeyM":
-        maxSpeed += 10;
-        console.log("Max speed increased to: ", maxSpeed);
-        break;
-      case "KeyN":
-        maxSpeed = Math.max(0, maxSpeed - 10);
-        console.log("Max speed decreased to: ", maxSpeed);
-        break;
-      case "ArrowUp":
-      case "KeyW":
-        moveForward = true;
-        break;
-
-      case "ArrowLeft":
-      case "KeyA":
-        moveLeft = true;
-        break;
-
-      case "ArrowDown":
-      case "KeyS":
-        moveBack = true;
-        break;
-
-      case "ArrowRight":
-      case "KeyD":
-        moveRight = true;
-        break;
-
-      case "KeyC":
-        moveDown = true;
-        break;
-
-      case "Space":
-        if (!gravity) {
-          moveUp = true;
-        }
-        if (!isFlying) {
-          this.jump();
-        }
-        break;
-    }
-  }
-
-  onKeyUp(event: { code: string }) {
-    switch (event.code) {
-      case "ArrowUp":
-      case "KeyW":
-        moveForward = false;
-        break;
-
-      case "ArrowLeft":
-      case "KeyA":
-        moveLeft = false;
-        break;
-
-      case "ArrowDown":
-      case "KeyS":
-        moveBack = false;
-        break;
-
-      case "ArrowRight":
-      case "KeyD":
-        moveRight = false;
-        break;
-
-      case "KeyC":
-        moveDown = false;
-        break;
-
-      case "Space":
-        moveUp = false;
-        break;
-    }
-  }
-
-  addListeners() {
-    document.addEventListener("keydown", this.onKeyDown.bind(this));
-    document.addEventListener("keyup", this.onKeyUp);
-  }
-
-  removeListeners() {
-    document.removeEventListener("keydown", this.onKeyDown);
-    document.removeEventListener("keyup", this.onKeyUp);
+  controlMaxSpeed(update: number) {
+    this.maxSpeed += Math.max(0, this.maxSpeed + update);
+    console.log("New Max Speed", this.maxSpeed);
   }
 }
+
+export const player = new Player();
