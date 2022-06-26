@@ -107,3 +107,14 @@ export async function placeVoxel(voxelId: number, pos: Position) {
   updateSurroundingChunkGeometry(pos);
   requestRenderIfNotRequested();
 }
+
+export function handlePlayerClickIntoWorld(mouseClick: MouseClickEvent) {
+  const intersection = getIntersection(mouseClick);
+  const block = mouseClick.right ? world.inventory.takeOutItem() : air;
+  if (intersection) {
+    const pos = convertIntersectionToPosition(intersection, block);
+    if (mouseClick.right && (!isOutOfPlayer(pos) || block === air)) return;
+
+    placeVoxel(block, pos);
+  }
+}

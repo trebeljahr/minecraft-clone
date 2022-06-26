@@ -1,30 +1,16 @@
 import { Vector3 } from "three";
-import { blocks } from "./blocks";
 import { getHeightValue } from "./chunkLogic";
 import { terrainHeight } from "./constants";
 import { MouseClickEvent } from "./helpers";
-import {
-  convertIntersectionToPosition,
-  getIntersection,
-  isOutOfPlayer,
-  placeVoxel,
-} from "./placeVoxel";
+import { handlePlayerClickIntoWorld } from "./placeVoxel";
 import { player } from "./Player";
 import { world } from "./world";
 
-const { air } = blocks;
-
 function handleMouseClick(event: MouseEvent) {
-  if (world.menu) return;
   const mouseClick = new MouseClickEvent(event);
-  const intersection = getIntersection(mouseClick);
-  const block = mouseClick.right ? world.inventory.takeOutItem() : air;
-  if (intersection) {
-    const pos = convertIntersectionToPosition(intersection, block);
-    if (mouseClick.right && (!isOutOfPlayer(pos) || block === air)) return;
 
-    placeVoxel(block, pos);
-  }
+  if (world.menu) return;
+  handlePlayerClickIntoWorld(mouseClick);
 }
 
 const keyboardControls = (event: KeyboardEvent) => {
