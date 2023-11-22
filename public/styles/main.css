@@ -12,6 +12,10 @@
   display: none;
 }
 
+html {
+  font-family: Arial, Helvetica, sans-serif
+}
+
 :root {
   --item-box-size: 7vw;
 }
@@ -77,6 +81,23 @@
   /* border: 6px solid rgb(68, 64, 64); */
 }
 
+#controlsScreen, #optionsScreen, #menuScreen {
+  display: none;
+  flex-direction: column;
+  color: white;
+  justify-content: center;
+  align-items: center;
+}
+
+#menuScreen {
+  display: flex;
+}
+
+#menu h2 {
+  font-size: 2.5em;
+  margin-bottom: 5vh;
+}
+
 #hotbarElement {
   display: flex;
   flex-direction: row;
@@ -129,19 +150,6 @@ body {
   overflow: hidden;
 }
 
-#blocker {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 5;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
 
 .dg.ac {
   z-index: 30 !important;

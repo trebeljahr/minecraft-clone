@@ -78,8 +78,6 @@ export function convertIntersectionToPosition(
 }
 
 export async function placeVoxel(voxelId: number, pos: Position) {
-  console.log("Setting voxel at ", pos);
-  console.log("Voxel at mouse click", getVoxel(world.globalChunks, pos));
   const chunkId = computeChunkId(pos);
   setVoxel({ [chunkId]: world.globalChunks[chunkId] }, pos, voxelId);
   const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;

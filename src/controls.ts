@@ -25,12 +25,9 @@ function placeBlockFromInventory(intersection: Intersection) {
 }
 
 function mineBlockFromWorld(intersection: Intersection) {
-  console.log("Mining");
   const pos = convertIntersectionToPosition(intersection, air);
   const minedVoxel = getVoxel(world.globalChunks, pos);
   placeVoxel(air, pos);
-
-  console.log(minedVoxel);
   world.inventory.addIntoInventory(minedVoxel.type, 1);
 }
 
@@ -110,8 +107,37 @@ const keyboardControls = (event: KeyboardEvent) => {
 export function setupControls() {
   const crosshairs = document.getElementById("crosshairContainer");
   const menu = document.getElementById("menu");
-
   const playButton = document.getElementById("playButton");
+  const controlsButton = document.getElementById("controlsButton");
+  const optionsButton = document.getElementById("optionsButton");
+  const controls = document.getElementById("controlsScreen");
+  const options = document.getElementById("optionsScreen");
+  const optionsBackButton = document.getElementById("optionsBackButton");
+  const controlsBackButton = document.getElementById("controlsBackButton");
+  const menuScreen = document.getElementById("menuScreen");
+
+  controlsButton.addEventListener("click", () => {
+    console.log("Clicked controls");
+    controls.style.display = "flex";
+    menuScreen.style.display = "none";
+  });
+
+  optionsButton.addEventListener("click", () => {
+    console.log("Clicked options");
+    options.style.display = "flex";
+    menuScreen.style.display = "none";
+  });
+
+  optionsBackButton.addEventListener("click", () => {
+    options.style.display = "none";
+    menuScreen.style.display = "flex";
+  });
+
+  controlsBackButton.addEventListener("click", () => {
+    controls.style.display = "none";
+    menuScreen.style.display = "flex";
+  });
+
   playButton.addEventListener("click", () => {
     menu.style.opacity = "0";
     crosshairs.style.display = "flex";
@@ -152,7 +178,6 @@ export function setupControls() {
 }
 
 function onKeyDown(event: { code: string }) {
-  // console.log("Pressed Key with code:", event.code);
   switch (event.code) {
     case "KeyM":
       player.controlMaxSpeed(10);
@@ -192,6 +217,9 @@ function onKeyDown(event: { code: string }) {
       if (!player.isFlying) {
         player.jump();
       }
+      break;
+    default:
+      console.log("Pressed Key with code:", event.code);
       break;
   }
 }
