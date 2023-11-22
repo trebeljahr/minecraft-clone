@@ -115,6 +115,7 @@ export function setupControls() {
   const optionsBackButton = document.getElementById("optionsBackButton");
   const controlsBackButton = document.getElementById("controlsBackButton");
   const menuScreen = document.getElementById("menuScreen");
+  const loadingScreen = document.getElementById("loadingScreen");
 
   controlsButton.addEventListener("click", () => {
     console.log("Clicked controls");
@@ -139,7 +140,9 @@ export function setupControls() {
   });
 
   playButton.addEventListener("click", () => {
-    menu.style.opacity = "0";
+    loadingScreen.style.display = "flex";
+    menuScreen.style.display = "none";
+
     crosshairs.style.display = "flex";
     world.inventory.hotbarContainerElement.style.display = "flex";
 
@@ -161,7 +164,9 @@ export function setupControls() {
     world.menu = true;
     if (!world.inventory.isOpen) {
       menu.style.display = "flex";
-      menu.style.opacity = "1";
+      menuScreen.style.display = "flex";
+      loadingScreen.style.display = "none";
+
       document.body.style.cursor = "pointer";
       world.inventory.hotbarContainerElement.style.display = "none";
     }
