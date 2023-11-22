@@ -98,6 +98,19 @@ html {
   margin-bottom: 5vh;
 }
 
+#menu button {
+  border:solid 2px #fff;
+  background: transparent;
+  color: #fff !important;
+  transition: all 0.4s ease;
+  margin: 10px;
+}
+#menu button:hover{
+  border:solid 2px #fff;
+  background: #fff;
+  color: #1f1f1f !important;
+}
+
 #hotbarElement {
   display: flex;
   flex-direction: row;
@@ -177,7 +190,7 @@ html {
 
 #menu {
   position: absolute;
-  background-color: black;
+  background-color: #1f1f1f;
   top: 0;
   left: 0;
   z-index: 100;
