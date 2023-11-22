@@ -69,7 +69,8 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
       [newChunkId]
     );
     mergeChunkUpdates(chunks, updatedChunks);
-    console.log(Object.keys(stillNeedUpdates).length);
+    // console.log(Object.keys(stillNeedUpdates).length);
+
     // Object.keys(stillNeedUpdates).forEach((chunkId) => {
     //   sunlightPromises.push(
     //     chunkWorkerPool.queue(async (worker) => {
