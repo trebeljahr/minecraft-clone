@@ -71,21 +71,20 @@ interface InventorySlot {
 const inventoryRows = 3;
 const inventoryCols = 9;
 
-type Remainder = number;
 export class Inventory {
   public isOpen = false;
-  private slots: InventorySlot[];
+  private inventorySlots: InventorySlot[];
   private hotbarSlots: HotbarContents;
   private activeHotbarSlot = 0;
 
   constructor() {
-    this.slots = Array(inventoryRows * inventoryCols).fill({
+    this.inventorySlots = Array(inventoryRows * inventoryCols).fill({
       itemType: air,
       amount: 0,
     });
     this.hotbarSlots = initialHotbarSlots;
 
-    for (let slot of this.slots) {
+    for (let slot of this.inventorySlots) {
       const node = this.makeInventoryNode(slot.itemType, 0);
       this.inventoryElement.appendChild(node);
     }
@@ -160,9 +159,31 @@ export class Inventory {
     itemNode.appendChild(imgElem);
   }
 
-  findFreeSlot() {
-    const slot = this.slots.findIndex((item) => item.itemType === air);
-    return { hasFreeSlot: slot !== 1, index: slot };
+  findFreeSlot(itemTypeToInsert: number) {
+    const fittingSlotIndex = this.allSlots.findIndex((item) => {
+      const slot = item.firstChild as HTMLElement;
+
+      const { itemType, amount } = this.parse(slot.dataset);
+
+      console.log({ itemType, itemTypeToInsert, amount: amount + 1 });
+      return itemType === itemTypeToInsert && amount + 1 <= maxItemStack;
+    });
+
+    if (fittingSlotIndex !== -1) {
+      return {
+        hasFreeSlot: true,
+        isHotbarSlot: fittingSlotIndex <= 8,
+        index: fittingSlotIndex,
+      };
+    }
+
+    const slot = this.allSlots.findIndex((item) => {
+      const slot = item.firstChild as HTMLElement;
+
+      const { itemType } = this.parse(slot.dataset);
+      return itemType === air;
+    });
+    return { hasFreeSlot: slot !== 1, isHotbarSlot: false, index: slot };
   }
 
   toggle() {
@@ -171,40 +192,37 @@ export class Inventory {
   }
 
   addIntoInventory(itemTypeToInsert: number, amountToInsert: number) {
-    let slot = 0;
     let amountLeft = amountToInsert;
-    while (amountLeft > 0 && slot < inventoryCols * inventoryRows) {
-      amountLeft = this.addIntoSlot(slot, itemTypeToInsert, amountLeft);
-      slot++;
+    while (amountLeft > 0) {
+      const hadFreeSlot = this.addTo(itemTypeToInsert);
+      if (hadFreeSlot) amountLeft--;
+      else {
+        console.log("No free slot");
+        break;
+      }
     }
   }
 
-  addIntoSlot(index: number, itemTypeToInsert: number, amountToInsert: number) {
-    const slot = this.getInventorySlot(index);
-    const { amount: amountPresent, itemType: slotType } = this.parse(
-      slot.dataset
-    );
-    const canInsert = slotType === itemTypeToInsert || slotType === air;
-    if (!canInsert) return amountToInsert as Remainder;
-    if (slotType === air) {
+  addTo(itemTypeToInsert: number) {
+    const { hasFreeSlot, index } = this.findFreeSlot(itemTypeToInsert);
+    if (hasFreeSlot) {
+      const { amount } = this.parse(
+        this.getInventoryOrHotbarSlot(index).dataset
+      );
+      const newAmount = amount + 1;
+      const slot = this.getInventoryOrHotbarSlot(index);
+
       slot.dataset.itemType = `${itemTypeToInsert}`;
       const image = itemImages[itemTypeToInsert];
 
-      if (image !== undefined && image !== "") {
+      if (image !== undefined && image !== "" && slot.children.length === 0) {
         this.attachBlockImageTo(itemTypeToInsert, slot);
       }
-    }
-    const total = Math.min(maxItemStack, amountToInsert + amountPresent);
-    slot.dataset.amount = `${total}`;
-    const spaceLeft = maxItemStack - amountPresent;
-    return Math.abs(Math.min(spaceLeft - amountToInsert, 0)) as Remainder;
-  }
 
-  addTo(itemType: number, amount: number) {
-    const { hasFreeSlot, index } = this.findFreeSlot();
-    if (hasFreeSlot) {
-      this.slots[index] = { itemType, amount };
+      slot.dataset.amount = `${newAmount}`;
     }
+
+    return hasFreeSlot;
   }
 
   changeHotbarItem(itemType: number, amount: number, hotbarIndex: number) {
@@ -228,6 +246,7 @@ export class Inventory {
   parse({ amount: a, itemType: i }: Record<string, string>) {
     const amount = parseInt(a);
     const itemType = parseInt(i);
+    console.log(amount, itemType);
     return {
       amount: isNaN(amount) ? 0 : amount,
       itemType: isNaN(itemType) ? air : itemType,
@@ -279,9 +298,18 @@ export class Inventory {
     return [...this.inventoryElement.children] as HTMLElement[];
   }
 
+  get allSlots() {
+    return [...this.hotbarItemSlotElements, ...this.inventoryItemSlotElements];
+  }
+
+  getInventoryOrHotbarSlot(index: number) {
+    return this.allSlots[index].firstChild as HTMLElement;
+  }
+
   getInventorySlot(index: number) {
     return this.inventoryItemSlotElements[index].firstChild as HTMLElement;
   }
+
   getHotbarSlot(index: number) {
     return this.hotbarItemSlotElements[index].firstChild as HTMLElement;
   }
