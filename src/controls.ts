@@ -2,7 +2,7 @@ import { Vector3 } from "three";
 import { blocks } from "./blocks";
 import { getHeightValue } from "./chunkLogic";
 import { terrainHeight } from "./constants";
-import { MouseClickEvent } from "./helpers";
+import { MouseClickEvent, getVoxel } from "./helpers";
 import {
   convertIntersectionToPosition,
   getIntersection,
@@ -11,19 +11,37 @@ import {
 } from "./placeVoxel";
 import { player } from "./Player";
 import { world } from "./world";
+import { Intersection } from "./intersectRay";
 
 const { air } = blocks;
 
+function placeBlockFromInventory(intersection: Intersection) {
+  const block = world.inventory.getActiveItemInHotbar();
+  const pos = convertIntersectionToPosition(intersection, block);
+  if (!isOutOfPlayer(pos) || block === air) return;
+
+  placeVoxel(block, pos);
+  if (!air) world.inventory.takeOutItem();
+}
+
+function mineBlockFromWorld(intersection: Intersection) {
+  console.log("Mining");
+  const pos = convertIntersectionToPosition(intersection, air);
+  const minedVoxel = getVoxel(world.globalChunks, pos);
+  placeVoxel(air, pos);
+
+  console.log(minedVoxel);
+  world.inventory.addIntoInventory(minedVoxel.type, 1);
+}
+
 function handleMouseClick(event: MouseEvent) {
   if (world.menu) return;
+
   const mouseClick = new MouseClickEvent(event);
   const intersection = getIntersection(mouseClick);
-  const block = mouseClick.right ? world.inventory.takeOutItem() : air;
   if (intersection) {
-    const pos = convertIntersectionToPosition(intersection, block);
-    if (mouseClick.right && (!isOutOfPlayer(pos) || block === air)) return;
-
-    placeVoxel(block, pos);
+    if (mouseClick.right) placeBlockFromInventory(intersection);
+    if (mouseClick.left) mineBlockFromWorld(intersection);
   }
 }
 
@@ -35,9 +53,9 @@ const keyboardControls = (event: KeyboardEvent) => {
     case "KeyE":
       if (!player.controls.isLocked && !world.inventory.isOpen) return;
       world.inventory.toggle();
-      world.inventory.isOpen
-        ? player.controls.unlock()
-        : player.controls.lock();
+      if (world.inventory.isOpen) player.controls.unlock();
+      else player.controls.lock();
+
       break;
     case "KeyH":
       console.log(
@@ -95,24 +113,21 @@ export function setupControls() {
 
   const playButton = document.getElementById("playButton");
   playButton.addEventListener("click", () => {
-    console.log(menu);
-    console.log(menu.style);
+    menu.style.opacity = "0";
+    crosshairs.style.display = "flex";
+    world.inventory.hotbarContainerElement.style.display = "flex";
 
-    menu.style.display = "none";
-    player.controls.lock();
+    setTimeout(() => {
+      player.controls.lock();
+    }, 1000);
   });
-
-  // blocker.addEventListener("click", () => {
-  //   player.controls.lock();
-  // });
 
   player.controls.addEventListener("lock", () => {
     world.menu = false;
 
-    menu.style.display = "none";
     if (!world.inventory.isOpen) {
       crosshairs.style.display = "flex";
-      world.inventory.hotbarElement.style.display = "flex";
+      menu.style.display = "none";
     }
   });
 
@@ -120,7 +135,9 @@ export function setupControls() {
     world.menu = true;
     if (!world.inventory.isOpen) {
       menu.style.display = "flex";
-      world.inventory.hotbarElement.style.display = "none";
+      menu.style.opacity = "1";
+      document.body.style.cursor = "pointer";
+      world.inventory.hotbarContainerElement.style.display = "none";
     }
     crosshairs.style.display = "none";
   });

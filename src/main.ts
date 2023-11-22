@@ -1,8 +1,6 @@
 import { chunkSize, viewDistance } from "./constants";
 import { SimpleTimer } from "./helpers";
 import { Loop } from "./Loop";
-import "./main.css";
-
 import { Color, Fog } from "three";
 import { setupControls } from "./controls";
 import { player } from "./Player";

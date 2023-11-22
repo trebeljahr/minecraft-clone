@@ -22,16 +22,6 @@
   align-items: center;
 }
 
-#inventory {
-  position: absolute;
-  top: 0;
-  height: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  width: 100vw;
-  height: 100vh;
-}
 
 [data-amount]::before {
   content: attr(data-amount);
@@ -51,12 +41,13 @@
   background-repeat: no-repeat;
   background-size: cover;
 }
-#inventoryContainer {
+#inventoryElement {
   margin-top: -10vh;
+  margin: auto;
   max-width: calc(9 * var(--item-box-size) + 50px);
   padding: 5px 0px;
+  display: none;
   flex-wrap: wrap;
-  display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
@@ -64,8 +55,21 @@
   background: rgb(68, 64, 64);
 }
 
-#hotbarContainer > div,
-#inventoryContainer > div {
+#inventoryScreenContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* pointer-events: none */
+}
+
+#hotbarElement > div,
+#inventoryElement > div {
   width: var(--item-box-size);
   height: var(--item-box-size);
   background: rgb(139, 139, 139);
@@ -73,7 +77,7 @@
   /* border: 6px solid rgb(68, 64, 64); */
 }
 
-#hotbarContainer {
+#hotbarElement {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -83,7 +87,7 @@
   background: rgb(68, 64, 64);
 }
 
-#hotbar {
+#hotbarContainerElement {
   position: absolute;
   bottom: 0;
   width: 100%;
@@ -175,6 +179,7 @@ html {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  transition: opacity 1.5s linear;
 }
 
 .menuButton {

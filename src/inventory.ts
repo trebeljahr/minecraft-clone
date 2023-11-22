@@ -2,6 +2,29 @@ import { blocks, itemImages } from "./blocks";
 import { Swappable } from "@shopify/draggable";
 import { MouseClickEvent } from "./helpers";
 
+const throttle = (fn: Function, wait: number = 60) => {
+  let inThrottle: boolean,
+    lastFn: ReturnType<typeof setTimeout>,
+    lastTime: number;
+  return function (this: any) {
+    const context = this,
+      args = arguments;
+    if (!inThrottle) {
+      fn.apply(context, args);
+      lastTime = Date.now();
+      inThrottle = true;
+    } else {
+      clearTimeout(lastFn);
+      lastFn = setTimeout(() => {
+        if (Date.now() - lastTime >= wait) {
+          fn.apply(context, args);
+          lastTime = Date.now();
+        }
+      }, Math.max(wait - (Date.now() - lastTime), 0));
+    }
+  };
+};
+
 const {
   gold,
   birchwood,
@@ -15,8 +38,8 @@ const {
   air,
 } = blocks;
 
-const maxItemStack = 128;
-const initialHotbar = [
+const maxItemStack = 64;
+const initialHotbarSlots = [
   { itemType: oakwood, amount: 1 },
   { itemType: birchwood, amount: maxItemStack },
   { itemType: coal, amount: maxItemStack },
@@ -60,21 +83,21 @@ export class Inventory {
       itemType: air,
       amount: 0,
     });
-    this.hotbarSlots = initialHotbar;
+    this.hotbarSlots = initialHotbarSlots;
 
     for (let slot of this.slots) {
       const node = this.makeInventoryNode(slot.itemType, 0);
-      this.containerElement.appendChild(node);
+      this.inventoryElement.appendChild(node);
     }
     for (let hotbarSlot of this.hotbarSlots) {
       const node = this.makeInventoryNode(
         hotbarSlot.itemType,
         hotbarSlot.amount
       );
-      this.hotbarContainerElement.appendChild(node);
+      this.hotbarElement.appendChild(node);
     }
-    const swappableContainers = this.containerElement.children;
-    const swappableHotbarContainers = this.hotbarContainerElement.children;
+    const swappableContainers = this.inventoryElement.children;
+    const swappableHotbarContainers = this.hotbarElement.children;
 
     new Swappable([...swappableContainers, ...swappableHotbarContainers], {
       draggable: "span",
@@ -82,7 +105,7 @@ export class Inventory {
 
     // attach scroll handlers to hotbar
     const hotbarItemboxElements = [
-      ...this.hotbarContainerElement.children,
+      ...this.hotbarElement.children,
     ] as HTMLElement[];
 
     hotbarItemboxElements[0].style.outline = "solid 5px white";
@@ -98,7 +121,7 @@ export class Inventory {
         }
       }
     };
-    document.addEventListener("wheel", onScroll);
+    document.addEventListener("wheel", throttle(onScroll));
   }
   makeInventoryNode = (itemType: number, amount: number) => {
     const inventorySlotNode = document.createElement("div");
@@ -125,9 +148,20 @@ export class Inventory {
   };
 
   attachBlockImageTo(itemType: number, itemNode: HTMLElement) {
-    const image = itemImages[itemType];
-    console.log(image);
+    console.log("Attaching image to item");
+    console.log(itemType, itemImages[itemType]);
     console.log(itemNode);
+
+    if (itemType === air) return;
+
+    const image = itemImages[itemType];
+    const imgElem = document.createElement("img");
+    imgElem.src = image;
+    imgElem.style.width = "100%";
+    imgElem.style.height = "100%";
+    imgElem.alt = `item of type ${itemType}`;
+
+    itemNode.appendChild(imgElem);
   }
 
   findFreeSlot() {
@@ -136,7 +170,9 @@ export class Inventory {
   }
 
   toggle() {
-    this.element.style.display = this.isOpen ? "none" : "flex";
+    console.log("Toggling Inventory");
+
+    this.inventoryElement.style.display = this.isOpen ? "none" : "flex";
     this.isOpen = !this.isOpen;
   }
 
@@ -148,8 +184,11 @@ export class Inventory {
       slot++;
     }
   }
+
   addIntoSlot(index: number, itemTypeToInsert: number, amountToInsert: number) {
     const slot = this.getInventorySlot(index);
+    console.log(slot);
+
     const { amount: amountPresent, itemType: slotType } = this.parse(
       slot.dataset
     );
@@ -159,8 +198,14 @@ export class Inventory {
     if (slotType === air) {
       slot.dataset.itemType = `${itemTypeToInsert}`;
       const image = itemImages[itemTypeToInsert];
+
+      console.log(itemTypeToInsert);
+
       if (image !== undefined && image !== "") {
-        slot.style.backgroundImage = `url(${image})`;
+        // slot.style.backgroundImage = `url(${image})`;
+        // slot.appendChild
+        console.log("Attaching image...");
+        this.attachBlockImageTo(itemTypeToInsert, slot);
       }
     }
     const total = Math.min(maxItemStack, amountToInsert + amountPresent);
@@ -213,37 +258,39 @@ export class Inventory {
       delete this.activeHotbarElement.dataset.amount;
       delete this.activeHotbarElement.dataset.itemType;
       this.activeHotbarElement.style.backgroundImage = "";
+      this.activeHotbarElement.children[0].remove();
     } else {
       this.activeHotbarElement.dataset.amount = `${amount - 1}`;
     }
+  }
+
+  getActiveItemInHotbar() {
+    const { itemType } = this.parse(this.activeHotbarElement.dataset);
     return itemType;
   }
 
-  get containerElement() {
-    return document.getElementById("inventoryContainer");
-  }
-
-  get element() {
-    return document.getElementById("inventory");
+  get inventoryElement() {
+    return document.getElementById("inventoryElement");
   }
 
   get hotbarElement() {
-    return document.getElementById("hotbar");
+    return document.getElementById("hotbarElement");
   }
 
   get hotbarContainerElement() {
-    return document.getElementById("hotbarContainer");
+    return document.getElementById("hotbarContainerElement");
   }
 
   get hotbarItemSlotElements() {
-    return [...this.hotbarContainerElement.children] as HTMLElement[];
+    return [...this.hotbarElement.children] as HTMLElement[];
   }
+
   get activeHotbarElement() {
     return this.getHotbarSlot(this.activeHotbarSlot);
   }
 
   get inventoryItemSlotElements() {
-    return [...this.containerElement.children] as HTMLElement[];
+    return [...this.inventoryElement.children] as HTMLElement[];
   }
 
   getInventorySlot(index: number) {

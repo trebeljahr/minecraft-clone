@@ -5,13 +5,8 @@ module.exports = merge({
   entry: path.join(__dirname, "src", "main.ts"),
 
   output: {
-    path: __dirname + "/public",
-    publicPath: "/public",
-    filename: "bundle.js",
-  },
-
-  output: {
-    path: path.join(__dirname, "public"),
+    path: __dirname + "/public/dist/",
+    publicPath: "/dist/",
   },
 
   resolve: {
