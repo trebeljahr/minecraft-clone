@@ -8,14 +8,14 @@
     "esModuleInterop": true
     // "allowJs": true
   },
-  "include": ["./src", "./typings"]
-
-  // "exclude": [
-  //   "**/__mocks__/**",
-  //   "**/jest.config.js/**",
-  //   "public",
-  //   "**/temporary.js",
-  //   "**/webpack.common.js",
-  //   "wepback.common.js"
-  // ]
+  "include": ["./src", "./typings"],
+  "exclude": [
+    "node_modules/",
+    "__mocks__",
+    "public",
+    "dist",
+    "**/temporary.js",
+    "**/webpack.common.js",
+    "wepback.common.js"
+  ]
 }

@@ -157,6 +157,11 @@ canvas {
   height: 100vh;
 }
 
+html {
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
 
 #menu {
   position: absolute;

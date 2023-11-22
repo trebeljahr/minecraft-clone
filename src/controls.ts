@@ -90,29 +90,36 @@ const keyboardControls = (event: KeyboardEvent) => {
 };
 
 export function setupControls() {
-  const blocker = document.getElementById("blocker");
   const crosshairs = document.getElementById("crosshairContainer");
-  const instructions = document.getElementById("instructions");
+  const menu = document.getElementById("menu");
 
-  blocker.addEventListener("click", function () {
+  const playButton = document.getElementById("playButton");
+  playButton.addEventListener("click", () => {
+    console.log(menu);
+    console.log(menu.style);
+
+    menu.style.display = "none";
     player.controls.lock();
   });
 
-  player.controls.addEventListener("lock", function () {
+  // blocker.addEventListener("click", () => {
+  //   player.controls.lock();
+  // });
+
+  player.controls.addEventListener("lock", () => {
     world.menu = false;
-    instructions.style.display = "none";
-    blocker.style.display = "none";
+
+    menu.style.display = "none";
     if (!world.inventory.isOpen) {
       crosshairs.style.display = "flex";
       world.inventory.hotbarElement.style.display = "flex";
     }
   });
 
-  player.controls.addEventListener("unlock", function () {
+  player.controls.addEventListener("unlock", () => {
     world.menu = true;
     if (!world.inventory.isOpen) {
-      blocker.style.display = "flex";
-      instructions.style.display = "block";
+      menu.style.display = "flex";
       world.inventory.hotbarElement.style.display = "none";
     }
     crosshairs.style.display = "none";

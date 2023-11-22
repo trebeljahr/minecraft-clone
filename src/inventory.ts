@@ -126,9 +126,8 @@ export class Inventory {
 
   attachBlockImageTo(itemType: number, itemNode: HTMLElement) {
     const image = itemImages[itemType];
-    if (image !== undefined && image !== "") {
-      itemNode.style.backgroundImage = `url(${image})`;
-    }
+    console.log(image);
+    console.log(itemNode);
   }
 
   findFreeSlot() {
@@ -227,6 +226,7 @@ export class Inventory {
   get element() {
     return document.getElementById("inventory");
   }
+
   get hotbarElement() {
     return document.getElementById("hotbar");
   }

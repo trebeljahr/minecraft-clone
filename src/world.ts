@@ -49,7 +49,7 @@ export let world: World = {
 };
 
 function createRenderer() {
-  const canvas = document.querySelector("#canvas");
+  const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
   const renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
