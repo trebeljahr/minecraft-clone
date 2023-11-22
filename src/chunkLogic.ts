@@ -77,6 +77,7 @@ export function updateVoxelGeometry(pos: Position) {
 export function setVoxel(chunks: Chunks, pos: number[], type: number) {
   const chunkId = computeChunkId(pos);
   const voxelOffset = computeVoxelIndex(pos);
+
   try {
     chunks[chunkId].data[voxelOffset] = type;
     chunks[chunkId].data[voxelOffset + fields.r] = 0;
@@ -85,7 +86,7 @@ export function setVoxel(chunks: Chunks, pos: number[], type: number) {
     chunks[chunkId].data[voxelOffset + fields.light] = 0;
     chunks[chunkId].data[voxelOffset + fields.sunlight] = 0;
   } catch (err) {
-    console.log(pos, chunks, chunkId);
+    console.warn(pos, chunks, chunkId);
     throw err;
   }
   return chunks;

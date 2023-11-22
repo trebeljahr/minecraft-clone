@@ -148,10 +148,6 @@ export class Inventory {
   };
 
   attachBlockImageTo(itemType: number, itemNode: HTMLElement) {
-    console.log("Attaching image to item");
-    console.log(itemType, itemImages[itemType]);
-    console.log(itemNode);
-
     if (itemType === air) return;
 
     const image = itemImages[itemType];
@@ -170,8 +166,6 @@ export class Inventory {
   }
 
   toggle() {
-    console.log("Toggling Inventory");
-
     this.inventoryElement.style.display = this.isOpen ? "none" : "flex";
     this.isOpen = !this.isOpen;
   }
@@ -187,24 +181,16 @@ export class Inventory {
 
   addIntoSlot(index: number, itemTypeToInsert: number, amountToInsert: number) {
     const slot = this.getInventorySlot(index);
-    console.log(slot);
-
     const { amount: amountPresent, itemType: slotType } = this.parse(
       slot.dataset
     );
-    console.log(itemTypeToInsert, slotType);
     const canInsert = slotType === itemTypeToInsert || slotType === air;
     if (!canInsert) return amountToInsert as Remainder;
     if (slotType === air) {
       slot.dataset.itemType = `${itemTypeToInsert}`;
       const image = itemImages[itemTypeToInsert];
 
-      console.log(itemTypeToInsert);
-
       if (image !== undefined && image !== "") {
-        // slot.style.backgroundImage = `url(${image})`;
-        // slot.appendChild
-        console.log("Attaching image...");
         this.attachBlockImageTo(itemTypeToInsert, slot);
       }
     }

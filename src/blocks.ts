@@ -56,6 +56,6 @@ export const itemImages = {
   [blocks.coal]: "/assets/coal-item.png",
   [blocks.birchwood]: "/assets/birchwood-item.png",
   [blocks.oakwood]: "/assets/oakwood-item.png",
-  // [blocks.foliage]: foliageItem,
+  [blocks.foliage]: "/assets/foliage-item.png",
   // [blocks.cactus]: cactusItem,
 };

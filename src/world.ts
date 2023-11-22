@@ -42,7 +42,7 @@ export let world: World = {
   lastChunkId: "0,0,0",
   camera,
   menu: true,
-  chunkHelperVisibility: true,
+  chunkHelperVisibility: false,
   scene: new Scene(),
   globalChunks,
   inventory: new Inventory(),
