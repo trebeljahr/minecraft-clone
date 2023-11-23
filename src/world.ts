@@ -25,6 +25,7 @@ interface World {
   inventory: Inventory;
   menu: boolean;
   globalChunks: Chunks;
+  changedChunks: Chunks;
   chunkHelperVisibility: boolean;
   renderer: WebGLRenderer;
   renderRequested: boolean;
@@ -33,6 +34,7 @@ interface World {
 
 const camera = createCamera();
 const globalChunks: Chunks = {};
+const changedChunks: Chunks = {};
 
 export let world: World = {
   meshes: {},
@@ -45,6 +47,7 @@ export let world: World = {
   chunkHelperVisibility: false,
   scene: new Scene(),
   globalChunks,
+  changedChunks,
   inventory: new Inventory(),
 };
 

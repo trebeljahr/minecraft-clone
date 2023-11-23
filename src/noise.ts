@@ -98,7 +98,8 @@ export function seed(seed: number) {
   }
 }
 
-seed(5000);
+const customSeed = 5000;
+seed(customSeed);
 
 function fade(t: number) {
   return t * t * t * (t * (t * 6 - 15) + 10);

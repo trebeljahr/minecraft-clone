@@ -21,6 +21,8 @@ import { world } from "./world";
 
 export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
   const promises = [];
+  const storedWorld = JSON.parse(localStorage.getItem("world") || "{}");
+
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
@@ -28,6 +30,20 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
         console.log("Chunk already exists");
         continue;
       }
+
+      console.log(
+        "has chunk?",
+        Object.keys(storedWorld).includes(chunkIdForSpawning)
+      );
+
+      // console.log(Object.keys(storedWorld).length, chunkIdForSpawning);
+
+      if (storedWorld && storedWorld[chunkIdForSpawning]) {
+        console.log("Chunk already exists in local storage");
+        chunks[chunkIdForSpawning] = storedWorld[chunkIdForSpawning];
+        continue;
+      }
+
       surroundingOffsets.forEach((offset) => {
         const offVec = new Vector3(...offset);
         if (!chunks[addOffsetToChunkId(newChunkId, offVec)]) {

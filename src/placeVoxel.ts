@@ -106,6 +106,9 @@ export async function placeVoxel(voxelId: number, pos: Position) {
   );
   mergeChunkUpdates(world.globalChunks, updatedChunks);
 
+  world.changedChunks[chunkId] = world.globalChunks[chunkId];
+  localStorage.setItem("world", JSON.stringify(world.changedChunks));
+
   updateSurroundingChunkGeometry(pos);
   requestRenderIfNotRequested();
 }
