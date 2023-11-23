@@ -68,7 +68,7 @@ interface InventorySlot {
   itemType: number;
 }
 
-const inventoryRows = 3;
+const inventoryRows = 4;
 const inventoryCols = 9;
 
 export class Inventory {
@@ -133,13 +133,6 @@ export class Inventory {
       itemNode.dataset.itemType = `${itemType}`;
     }
 
-    itemNode.addEventListener("click", (event) => {
-      const mouseClick = new MouseClickEvent(event);
-      if (mouseClick.left) {
-        const { itemType } = this.parse(itemNode.dataset);
-        this.addIntoInventory(itemType, 100);
-      }
-    });
     this.attachBlockImageTo(itemType, itemNode);
     inventorySlotNode.appendChild(itemNode);
 
