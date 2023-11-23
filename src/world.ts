@@ -22,6 +22,7 @@ interface World {
   debugMeshes: Record<string, LineSegments>;
   camera: PerspectiveCamera;
   scene: Scene;
+  initialLoadDone: boolean;
   inventory: Inventory;
   menu: boolean;
   globalChunks: Chunks;
@@ -38,6 +39,7 @@ const changedChunks: Chunks = {};
 
 export let world: World = {
   meshes: {},
+  initialLoadDone: false,
   debugMeshes: {},
   renderer: createRenderer(),
   renderRequested: false,

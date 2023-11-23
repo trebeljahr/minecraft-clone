@@ -18,7 +18,14 @@ async function init() {
   if (inSingleBlockMode) onlyDisplaySingleBlock();
   else {
     const logTime = new SimpleTimer();
-    handleChunks().then(() => logTime.takenFor("Init"));
+    handleChunks().then(() => {
+      logTime.takenFor("Init");
+      world.initialLoadDone = true;
+      // const loadingElement = document.getElementById("worldLoaderState");
+      // loadingElement.style.display = "none";
+      const button = document.getElementById("playButton") as HTMLButtonElement;
+      button.disabled = false;
+    });
     loop.register({ tick: shouldChunksUpdate });
   }
 

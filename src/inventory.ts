@@ -158,7 +158,6 @@ export class Inventory {
 
       const { itemType, amount } = this.parse(slot.dataset);
 
-      console.log({ itemType, itemTypeToInsert, amount: amount + 1 });
       return itemType === itemTypeToInsert && amount + 1 <= maxItemStack;
     });
 
@@ -239,7 +238,6 @@ export class Inventory {
   parse({ amount: a, itemType: i }: Record<string, string>) {
     const amount = parseInt(a);
     const itemType = parseInt(i);
-    console.log(amount, itemType);
     return {
       amount: isNaN(amount) ? 0 : amount,
       itemType: isNaN(itemType) ? air : itemType,

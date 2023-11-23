@@ -25,18 +25,11 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
   const storedWorld = JSON.parse(localStorage.getItem("world") || "{}");
   world.changedChunks = storedWorld;
 
-  const total = chunksToSpawn.length * (verticalNumberOfChunks + 1);
+  let total = chunksToSpawn.length * (verticalNumberOfChunks + 1);
   let current = 0;
 
   function updateProgress() {
     let progress = Math.floor((++current / total) * 100);
-    console.log(
-      { progress },
-      total,
-      current,
-      chunksToSpawn.length,
-      verticalNumberOfChunks
-    );
     updateProgressBar(progress);
   }
 
@@ -44,13 +37,11 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
       if (chunks[chunkIdForSpawning]?.isGenerated) {
-        console.log("Chunk already exists");
         updateProgress();
         continue;
       }
 
       if (storedWorld && storedWorld[chunkIdForSpawning]) {
-        console.log("Chunk already exists in local storage");
         chunks[chunkIdForSpawning] = storedWorld[chunkIdForSpawning];
         updateProgress();
         continue;
@@ -78,6 +69,10 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
 
   await Promise.all(promises);
 
+  const progressBarText = document.getElementById("worldLoaderText");
+  progressBarText.innerText = "Growing Trees...";
+  current = 0;
+
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
@@ -88,9 +83,14 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
           chunkIdForSpawning
         );
         mergeChunkUpdates(chunks, updatedChunksWithTrees);
+        updateProgress();
       });
     }
   }
+
+  progressBarText.innerText = "Adding sunlight...";
+  current = 0;
+  total = chunksToSpawn.length;
 
   const sunlightPromises = [];
   for (let newChunkId of chunksToSpawn) {
@@ -99,6 +99,8 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
       [newChunkId]
     );
     mergeChunkUpdates(chunks, updatedChunks);
+    updateProgress();
+
     // console.log(Object.keys(stillNeedUpdates).length);
 
     // Object.keys(stillNeedUpdates).forEach((chunkId) => {
@@ -116,6 +118,10 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
 
   await Promise.all(sunlightPromises);
 
+  progressBarText.innerText = "Finalizing...";
+  total = chunksToSpawn.length * (verticalNumberOfChunks + 1);
+  current = 0;
+
   const updateGeometryPromises = [];
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
@@ -123,10 +129,16 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
 
       // const pos = computeSmallChunkCornerFromId(chunkIdForSpawning);
       // updateGeometryPromises.push(updateSurroundingChunkGeometry(pos));
-      updateGeometryPromises.push(updateGeometry(chunkIdForSpawning));
+      updateGeometryPromises.push(
+        updateGeometry(chunkIdForSpawning).then(() => {
+          updateProgress();
+        })
+      );
     }
   }
   await Promise.all(updateGeometryPromises);
+
+  progressBarText.innerText = "Ready!";
 
   return chunksToSpawn;
 }

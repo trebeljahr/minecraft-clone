@@ -76,6 +76,13 @@ html {
   background-color: #ddd; 
   padding: 3px; 
   border-radius: 5px; 
+  box-sizing: border-box;
+  margin-bottom: 40px;
+  margin-top: 10px;
+}
+
+#worldLoaderState {
+  margin: 10px; 
 }
 
 #progressBar {
@@ -122,7 +129,12 @@ html {
   margin: 10px;
 }
 
-#menu button:hover{
+#menu button:disabled {
+  cursor: default;
+  opacity: 0.2;
+}
+
+#menu button:enabled:hover {
   border:solid 2px #fff;
   background: #fff;
   color: #1f1f1f !important;
