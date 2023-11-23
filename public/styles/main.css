@@ -69,7 +69,23 @@ html {
   display: flex;
   justify-content: center;
   align-items: center;
-  /* pointer-events: none */
+}
+
+#progressBarContainer {
+  width: 100%; 
+  background-color: #ddd; 
+  padding: 3px; 
+  border-radius: 5px; 
+}
+
+#progressBar {
+  width: 0%; 
+  height: 20px; 
+  background-color: #4CAF50; 
+  text-align: center; 
+  line-height: 20px; 
+  color: white; 
+  border-radius: 3px; 
 }
 
 #hotbarElement > div,

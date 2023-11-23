@@ -1,13 +1,13 @@
-import { chunkSize, viewDistance } from "./constants";
-import { SimpleTimer } from "./helpers";
-import { Loop } from "./Loop";
 import { Color, Fog } from "three";
-import { setupControls } from "./controls";
+import { Loop } from "./Loop";
 import { player } from "./Player";
+import { chunkSize, viewDistance } from "./constants";
+import { setupControls } from "./controls";
+import { SimpleTimer } from "./helpers";
+import { onlyDisplaySingleBlock } from "./onlyDisplaySingleBlock";
 import { onWindowResize } from "./rendering";
 import { handleChunks, shouldChunksUpdate } from "./streamChunks";
 import { world } from "./world";
-import { onlyDisplaySingleBlock } from "./onlyDisplaySingleBlock";
 
 init();
 
