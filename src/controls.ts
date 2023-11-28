@@ -2,7 +2,7 @@ import { Vector3 } from "three";
 import { blocks } from "./blocks";
 import { getHeightValue } from "./chunkLogic";
 import { terrainHeight } from "./constants";
-import { MouseClickEvent } from "./helpers";
+import { MouseClickEvent, getVoxel } from "./helpers";
 import {
   convertIntersectionToPosition,
   getIntersection,
@@ -11,19 +11,34 @@ import {
 } from "./placeVoxel";
 import { player } from "./Player";
 import { world } from "./world";
+import { Intersection } from "./intersectRay";
 
 const { air } = blocks;
 
+function placeBlockFromInventory(intersection: Intersection) {
+  const block = world.inventory.getActiveItemInHotbar();
+  const pos = convertIntersectionToPosition(intersection, block);
+  if (!isOutOfPlayer(pos) || block === air) return;
+
+  placeVoxel(block, pos);
+  if (!air) world.inventory.takeOutItem();
+}
+
+function mineBlockFromWorld(intersection: Intersection) {
+  const pos = convertIntersectionToPosition(intersection, air);
+  const minedVoxel = getVoxel(world.globalChunks, pos);
+  placeVoxel(air, pos);
+  world.inventory.addIntoInventory(minedVoxel.type, 1);
+}
+
 function handleMouseClick(event: MouseEvent) {
   if (world.menu) return;
+
   const mouseClick = new MouseClickEvent(event);
   const intersection = getIntersection(mouseClick);
-  const block = mouseClick.right ? world.inventory.takeOutItem() : air;
   if (intersection) {
-    const pos = convertIntersectionToPosition(intersection, block);
-    if (mouseClick.right && (!isOutOfPlayer(pos) || block === air)) return;
-
-    placeVoxel(block, pos);
+    if (mouseClick.right) placeBlockFromInventory(intersection);
+    if (mouseClick.left) mineBlockFromWorld(intersection);
   }
 }
 
@@ -35,9 +50,9 @@ const keyboardControls = (event: KeyboardEvent) => {
     case "KeyE":
       if (!player.controls.isLocked && !world.inventory.isOpen) return;
       world.inventory.toggle();
-      world.inventory.isOpen
-        ? player.controls.unlock()
-        : player.controls.lock();
+      if (world.inventory.isOpen) player.controls.unlock();
+      else player.controls.lock();
+
       break;
     case "KeyH":
       console.log(
@@ -90,30 +105,70 @@ const keyboardControls = (event: KeyboardEvent) => {
 };
 
 export function setupControls() {
-  const blocker = document.getElementById("blocker");
   const crosshairs = document.getElementById("crosshairContainer");
-  const instructions = document.getElementById("instructions");
+  const menu = document.getElementById("menu");
+  const playButton = document.getElementById("playButton");
+  const controlsButton = document.getElementById("controlsButton");
+  const optionsButton = document.getElementById("optionsButton");
+  const controls = document.getElementById("controlsScreen");
+  const options = document.getElementById("optionsScreen");
+  const optionsBackButton = document.getElementById("optionsBackButton");
+  const controlsBackButton = document.getElementById("controlsBackButton");
+  const menuScreen = document.getElementById("menuScreen");
+  const loadingScreen = document.getElementById("loadingScreen");
 
-  blocker.addEventListener("click", function () {
-    player.controls.lock();
+  controlsButton.addEventListener("click", () => {
+    console.log("Clicked controls");
+    controls.style.display = "flex";
+    menuScreen.style.display = "none";
   });
 
-  player.controls.addEventListener("lock", function () {
+  optionsButton.addEventListener("click", () => {
+    console.log("Clicked options");
+    options.style.display = "flex";
+    menuScreen.style.display = "none";
+  });
+
+  optionsBackButton.addEventListener("click", () => {
+    options.style.display = "none";
+    menuScreen.style.display = "flex";
+  });
+
+  controlsBackButton.addEventListener("click", () => {
+    controls.style.display = "none";
+    menuScreen.style.display = "flex";
+  });
+
+  playButton.addEventListener("click", () => {
+    loadingScreen.style.display = "flex";
+    menuScreen.style.display = "none";
+
+    crosshairs.style.display = "flex";
+    world.inventory.hotbarContainerElement.style.display = "flex";
+
+    setTimeout(() => {
+      player.controls.lock();
+    }, 1000);
+  });
+
+  player.controls.addEventListener("lock", () => {
     world.menu = false;
-    instructions.style.display = "none";
-    blocker.style.display = "none";
+
     if (!world.inventory.isOpen) {
       crosshairs.style.display = "flex";
-      world.inventory.hotbarElement.style.display = "flex";
+      menu.style.display = "none";
     }
   });
 
-  player.controls.addEventListener("unlock", function () {
+  player.controls.addEventListener("unlock", () => {
     world.menu = true;
     if (!world.inventory.isOpen) {
-      blocker.style.display = "flex";
-      instructions.style.display = "block";
-      world.inventory.hotbarElement.style.display = "none";
+      menu.style.display = "flex";
+      menuScreen.style.display = "flex";
+      loadingScreen.style.display = "none";
+
+      document.body.style.cursor = "pointer";
+      world.inventory.hotbarContainerElement.style.display = "none";
     }
     crosshairs.style.display = "none";
   });
@@ -128,7 +183,6 @@ export function setupControls() {
 }
 
 function onKeyDown(event: { code: string }) {
-  // console.log("Pressed Key with code:", event.code);
   switch (event.code) {
     case "KeyM":
       player.controlMaxSpeed(10);
@@ -168,6 +222,9 @@ function onKeyDown(event: { code: string }) {
       if (!player.isFlying) {
         player.jump();
       }
+      break;
+    default:
+      console.log("Pressed Key with code:", event.code);
       break;
   }
 }

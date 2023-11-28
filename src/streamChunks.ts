@@ -58,6 +58,14 @@ export function shouldChunksUpdate() {
   }
 }
 
+function deleteElementFromScene(nameToDelete: string) {
+  const object = world.scene.getObjectByName(nameToDelete) as Mesh;
+
+  object?.geometry?.dispose();
+  (object?.material as Material)?.dispose();
+  object && world.scene.remove(object);
+}
+
 export function pruneChunks(playerPosition: Vector3) {
   Object.keys(world.globalChunks)
     .filter((id) => {
@@ -73,10 +81,8 @@ export function pruneChunks(playerPosition: Vector3) {
       delete world.meshes[idToDelete];
       delete world.debugMeshes[idToDelete];
       delete world.globalChunks[idToDelete];
-      const object = world.scene.getObjectByName("chunk:" + idToDelete) as Mesh;
-      object?.geometry?.dispose();
-      (object?.material as Material)?.dispose();
-      object && world.scene.remove(object);
+      deleteElementFromScene("chunk:" + idToDelete);
+      deleteElementFromScene("debug:" + idToDelete);
       world.renderer.renderLists.dispose();
     });
 }

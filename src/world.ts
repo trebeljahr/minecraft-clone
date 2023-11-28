@@ -22,9 +22,11 @@ interface World {
   debugMeshes: Record<string, LineSegments>;
   camera: PerspectiveCamera;
   scene: Scene;
+  initialLoadDone: boolean;
   inventory: Inventory;
   menu: boolean;
   globalChunks: Chunks;
+  changedChunks: Chunks;
   chunkHelperVisibility: boolean;
   renderer: WebGLRenderer;
   renderRequested: boolean;
@@ -33,23 +35,26 @@ interface World {
 
 const camera = createCamera();
 const globalChunks: Chunks = {};
+const changedChunks: Chunks = {};
 
 export let world: World = {
   meshes: {},
+  initialLoadDone: false,
   debugMeshes: {},
   renderer: createRenderer(),
   renderRequested: false,
   lastChunkId: "0,0,0",
   camera,
   menu: true,
-  chunkHelperVisibility: true,
+  chunkHelperVisibility: false,
   scene: new Scene(),
   globalChunks,
+  changedChunks,
   inventory: new Inventory(),
 };
 
 function createRenderer() {
-  const canvas = document.querySelector("#canvas");
+  const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
   const renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);

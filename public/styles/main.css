@@ -12,6 +12,10 @@
   display: none;
 }
 
+html {
+  font-family: Arial, Helvetica, sans-serif
+}
+
 :root {
   --item-box-size: 7vw;
 }
@@ -22,16 +26,6 @@
   align-items: center;
 }
 
-#inventory {
-  position: absolute;
-  top: 0;
-  height: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  width: 100vw;
-  height: 100vh;
-}
 
 [data-amount]::before {
   content: attr(data-amount);
@@ -51,12 +45,13 @@
   background-repeat: no-repeat;
   background-size: cover;
 }
-#inventoryContainer {
+#inventoryElement {
   margin-top: -10vh;
+  margin: auto;
   max-width: calc(9 * var(--item-box-size) + 50px);
   padding: 5px 0px;
+  display: none;
   flex-wrap: wrap;
-  display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
@@ -64,8 +59,44 @@
   background: rgb(68, 64, 64);
 }
 
-#hotbarContainer > div,
-#inventoryContainer > div {
+#inventoryScreenContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#progressBarContainer {
+  width: 100%; 
+  background-color: #ddd; 
+  padding: 3px; 
+  border-radius: 5px; 
+  box-sizing: border-box;
+  margin-bottom: 40px;
+  margin-top: 10px;
+}
+
+#worldLoaderState {
+  margin: 10px; 
+}
+
+#progressBar {
+  width: 0%; 
+  height: 20px; 
+  background-color: #4CAF50; 
+  text-align: center; 
+  line-height: 20px; 
+  color: white; 
+  border-radius: 3px; 
+}
+
+#hotbarElement > div,
+#inventoryElement > div {
   width: var(--item-box-size);
   height: var(--item-box-size);
   background: rgb(139, 139, 139);
@@ -73,7 +104,43 @@
   /* border: 6px solid rgb(68, 64, 64); */
 }
 
-#hotbarContainer {
+#controlsScreen, #optionsScreen, #menuScreen, #loadingScreen {
+  display: none;
+  flex-direction: column;
+  color: white;
+  justify-content: center;
+  align-items: center;
+}
+
+#menuScreen {
+  display: flex;
+}
+
+#menu h2 {
+  font-size: 2.5em;
+  margin-bottom: 5vh;
+}
+
+#menu button {
+  border:solid 2px #fff;
+  background: transparent;
+  color: #fff !important;
+  transition: all 0.4s ease;
+  margin: 10px;
+}
+
+#menu button:disabled {
+  cursor: default;
+  opacity: 0.2;
+}
+
+#menu button:enabled:hover {
+  border:solid 2px #fff;
+  background: #fff;
+  color: #1f1f1f !important;
+}
+
+#hotbarElement {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -83,7 +150,7 @@
   background: rgb(68, 64, 64);
 }
 
-#hotbar {
+#hotbarContainerElement {
   position: absolute;
   bottom: 0;
   width: 100%;
@@ -125,19 +192,6 @@ body {
   overflow: hidden;
 }
 
-#blocker {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 5;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
 
 .dg.ac {
   z-index: 30 !important;
@@ -155,4 +209,37 @@ canvas {
   display: block;
   width: 100vw;
   height: 100vh;
+}
+
+html {
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#menu {
+  position: absolute;
+  background-color: #1f1f1f;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 1.5s linear;
+}
+
+.menuButton {
+  width: 60vw;
+  height: 10vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  color: white;
+  cursor: pointer;
 }

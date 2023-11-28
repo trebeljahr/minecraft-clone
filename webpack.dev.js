@@ -4,16 +4,14 @@ const path = require("path");
 
 module.exports = merge(common, {
   mode: "development",
-
   devtool: "source-map",
 
-  //https://webpack.js.org/configuration/dev-server/
   devServer: {
     static: {
-      directory: path.join(__dirname, "dist"),
+      directory: path.join(__dirname, "public"),
     },
     compress: true,
-    port: 9000,
+    port: 3000,
   },
 
   module: {

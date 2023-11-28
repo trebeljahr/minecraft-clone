@@ -1,1 +1,58 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>a minecraft clone</title></head><body><canvas id="canvas"></canvas><div id="crosshairContainer"><div id="crosshair"></div></div><div id="inventory"><div id="hotbarContainer"><div id="slot1" style="outline:solid 5px #fff"></div><div id="slot2"></div><div id="slot3"></div><div id="slot4"></div><div id="slot5"></div><div id="slot6"></div><div id="slot7"></div><div id="slot8"></div><div id="slot9"></div></div></div><div id="blocker"><div id="instructions"><span style="font-size:36px">Click to play</span><br><br>Move: WASD<br>Jump: SPACE<br>Look: MOUSE</div></div><script type="text/javascript" src="main.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>a minecraft clone</title>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <div id="crosshairContainer"><div id="crosshair"></div></div>
+    <div id="inventoryScreenContainer">
+      <div id="inventoryElement"></div>
+    </div>
+    <div id="hotbarContainerElement">
+      <div id="hotbarElement"></div>
+    </div>
+    <div id="menu">
+      <div id="loadingScreen">
+        <h2>Loading...</h2>
+      </div>
+      <div id="menuScreen">
+        <h2 id="menuTitle">a minecraft clone</h2>
+        <div id="menuButtons">
+          <div id="worldLoaderState">
+            <span id="worldLoaderText">Generating geometry...</span>
+            <div id="progressBarContainer">
+              <div id="progressBar"></div>
+            </div>
+          </div>
+          <button disabled id="playButton" class="menuButton">Play</button>
+          <button id="optionsButton" class="menuButton">Options</button>
+          <button id="controlsButton" class="menuButton">Controls</button>
+        </div>
+      </div>
+
+      <div id="optionsScreen">
+        <h2 id="optionsTitle">Options</h2>
+        <div id="optionsButtons">
+          <button id="optionsBackButton" class="menuButton">Back</button>
+        </div>
+      </div>
+
+      <div id="controlsScreen">
+        <h2 id="controlsTitle">Controls</h2>
+
+        <div id="controlsButtons">
+          <button id="controlsBackButton" class="menuButton">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="/dist/main.js"></script>
+  </body>
+</html>

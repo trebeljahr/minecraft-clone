@@ -2,6 +2,29 @@ import { blocks, itemImages } from "./blocks";
 import { Swappable } from "@shopify/draggable";
 import { MouseClickEvent } from "./helpers";
 
+const throttle = (fn: Function, wait: number = 60) => {
+  let inThrottle: boolean,
+    lastFn: ReturnType<typeof setTimeout>,
+    lastTime: number;
+  return function (this: any) {
+    const context = this,
+      args = arguments;
+    if (!inThrottle) {
+      fn.apply(context, args);
+      lastTime = Date.now();
+      inThrottle = true;
+    } else {
+      clearTimeout(lastFn);
+      lastFn = setTimeout(() => {
+        if (Date.now() - lastTime >= wait) {
+          fn.apply(context, args);
+          lastTime = Date.now();
+        }
+      }, Math.max(wait - (Date.now() - lastTime), 0));
+    }
+  };
+};
+
 const {
   gold,
   birchwood,
@@ -15,8 +38,8 @@ const {
   air,
 } = blocks;
 
-const maxItemStack = 128;
-const initialHotbar = [
+const maxItemStack = 64;
+const initialHotbarSlots = [
   { itemType: oakwood, amount: 1 },
   { itemType: birchwood, amount: maxItemStack },
   { itemType: coal, amount: maxItemStack },
@@ -45,36 +68,35 @@ interface InventorySlot {
   itemType: number;
 }
 
-const inventoryRows = 3;
+const inventoryRows = 4;
 const inventoryCols = 9;
 
-type Remainder = number;
 export class Inventory {
   public isOpen = false;
-  private slots: InventorySlot[];
+  private inventorySlots: InventorySlot[];
   private hotbarSlots: HotbarContents;
   private activeHotbarSlot = 0;
 
   constructor() {
-    this.slots = Array(inventoryRows * inventoryCols).fill({
+    this.inventorySlots = Array(inventoryRows * inventoryCols).fill({
       itemType: air,
       amount: 0,
     });
-    this.hotbarSlots = initialHotbar;
+    this.hotbarSlots = initialHotbarSlots;
 
-    for (let slot of this.slots) {
+    for (let slot of this.inventorySlots) {
       const node = this.makeInventoryNode(slot.itemType, 0);
-      this.containerElement.appendChild(node);
+      this.inventoryElement.appendChild(node);
     }
     for (let hotbarSlot of this.hotbarSlots) {
       const node = this.makeInventoryNode(
         hotbarSlot.itemType,
         hotbarSlot.amount
       );
-      this.hotbarContainerElement.appendChild(node);
+      this.hotbarElement.appendChild(node);
     }
-    const swappableContainers = this.containerElement.children;
-    const swappableHotbarContainers = this.hotbarContainerElement.children;
+    const swappableContainers = this.inventoryElement.children;
+    const swappableHotbarContainers = this.hotbarElement.children;
 
     new Swappable([...swappableContainers, ...swappableHotbarContainers], {
       draggable: "span",
@@ -82,7 +104,7 @@ export class Inventory {
 
     // attach scroll handlers to hotbar
     const hotbarItemboxElements = [
-      ...this.hotbarContainerElement.children,
+      ...this.hotbarElement.children,
     ] as HTMLElement[];
 
     hotbarItemboxElements[0].style.outline = "solid 5px white";
@@ -98,7 +120,7 @@ export class Inventory {
         }
       }
     };
-    document.addEventListener("wheel", onScroll);
+    document.addEventListener("wheel", throttle(onScroll));
   }
   makeInventoryNode = (itemType: number, amount: number) => {
     const inventorySlotNode = document.createElement("div");
@@ -111,13 +133,6 @@ export class Inventory {
       itemNode.dataset.itemType = `${itemType}`;
     }
 
-    itemNode.addEventListener("click", (event) => {
-      const mouseClick = new MouseClickEvent(event);
-      if (mouseClick.left) {
-        const { itemType } = this.parse(itemNode.dataset);
-        this.addIntoInventory(itemType, 100);
-      }
-    });
     this.attachBlockImageTo(itemType, itemNode);
     inventorySlotNode.appendChild(itemNode);
 
@@ -125,56 +140,81 @@ export class Inventory {
   };
 
   attachBlockImageTo(itemType: number, itemNode: HTMLElement) {
+    if (itemType === air) return;
+
     const image = itemImages[itemType];
-    if (image !== undefined && image !== "") {
-      itemNode.style.backgroundImage = `url(${image})`;
-    }
+    const imgElem = document.createElement("img");
+    imgElem.src = image;
+    imgElem.style.width = "100%";
+    imgElem.style.height = "100%";
+    imgElem.alt = `item of type ${itemType}`;
+
+    itemNode.appendChild(imgElem);
   }
 
-  findFreeSlot() {
-    const slot = this.slots.findIndex((item) => item.itemType === air);
-    return { hasFreeSlot: slot !== 1, index: slot };
+  findFreeSlot(itemTypeToInsert: number) {
+    const fittingSlotIndex = this.allSlots.findIndex((item) => {
+      const slot = item.firstChild as HTMLElement;
+
+      const { itemType, amount } = this.parse(slot.dataset);
+
+      return itemType === itemTypeToInsert && amount + 1 <= maxItemStack;
+    });
+
+    if (fittingSlotIndex !== -1) {
+      return {
+        hasFreeSlot: true,
+        isHotbarSlot: fittingSlotIndex <= 8,
+        index: fittingSlotIndex,
+      };
+    }
+
+    const slot = this.allSlots.findIndex((item) => {
+      const slot = item.firstChild as HTMLElement;
+
+      const { itemType } = this.parse(slot.dataset);
+      return itemType === air;
+    });
+    return { hasFreeSlot: slot !== 1, isHotbarSlot: false, index: slot };
   }
 
   toggle() {
-    this.element.style.display = this.isOpen ? "none" : "flex";
+    this.inventoryElement.style.display = this.isOpen ? "none" : "flex";
     this.isOpen = !this.isOpen;
   }
 
   addIntoInventory(itemTypeToInsert: number, amountToInsert: number) {
-    let slot = 0;
     let amountLeft = amountToInsert;
-    while (amountLeft > 0 && slot < inventoryCols * inventoryRows) {
-      amountLeft = this.addIntoSlot(slot, itemTypeToInsert, amountLeft);
-      slot++;
-    }
-  }
-  addIntoSlot(index: number, itemTypeToInsert: number, amountToInsert: number) {
-    const slot = this.getInventorySlot(index);
-    const { amount: amountPresent, itemType: slotType } = this.parse(
-      slot.dataset
-    );
-    console.log(itemTypeToInsert, slotType);
-    const canInsert = slotType === itemTypeToInsert || slotType === air;
-    if (!canInsert) return amountToInsert as Remainder;
-    if (slotType === air) {
-      slot.dataset.itemType = `${itemTypeToInsert}`;
-      const image = itemImages[itemTypeToInsert];
-      if (image !== undefined && image !== "") {
-        slot.style.backgroundImage = `url(${image})`;
+    while (amountLeft > 0) {
+      const hadFreeSlot = this.addTo(itemTypeToInsert);
+      if (hadFreeSlot) amountLeft--;
+      else {
+        console.log("No free slot");
+        break;
       }
     }
-    const total = Math.min(maxItemStack, amountToInsert + amountPresent);
-    slot.dataset.amount = `${total}`;
-    const spaceLeft = maxItemStack - amountPresent;
-    return Math.abs(Math.min(spaceLeft - amountToInsert, 0)) as Remainder;
   }
 
-  addTo(itemType: number, amount: number) {
-    const { hasFreeSlot, index } = this.findFreeSlot();
+  addTo(itemTypeToInsert: number) {
+    const { hasFreeSlot, index } = this.findFreeSlot(itemTypeToInsert);
     if (hasFreeSlot) {
-      this.slots[index] = { itemType, amount };
+      const { amount } = this.parse(
+        this.getInventoryOrHotbarSlot(index).dataset
+      );
+      const newAmount = amount + 1;
+      const slot = this.getInventoryOrHotbarSlot(index);
+
+      slot.dataset.itemType = `${itemTypeToInsert}`;
+      const image = itemImages[itemTypeToInsert];
+
+      if (image !== undefined && image !== "" && slot.children.length === 0) {
+        this.attachBlockImageTo(itemTypeToInsert, slot);
+      }
+
+      slot.dataset.amount = `${newAmount}`;
     }
+
+    return hasFreeSlot;
   }
 
   changeHotbarItem(itemType: number, amount: number, hotbarIndex: number) {
@@ -214,41 +254,53 @@ export class Inventory {
       delete this.activeHotbarElement.dataset.amount;
       delete this.activeHotbarElement.dataset.itemType;
       this.activeHotbarElement.style.backgroundImage = "";
+      this.activeHotbarElement.children[0].remove();
     } else {
       this.activeHotbarElement.dataset.amount = `${amount - 1}`;
     }
+  }
+
+  getActiveItemInHotbar() {
+    const { itemType } = this.parse(this.activeHotbarElement.dataset);
     return itemType;
   }
 
-  get containerElement() {
-    return document.getElementById("inventoryContainer");
+  get inventoryElement() {
+    return document.getElementById("inventoryElement");
   }
 
-  get element() {
-    return document.getElementById("inventory");
-  }
   get hotbarElement() {
-    return document.getElementById("hotbar");
+    return document.getElementById("hotbarElement");
   }
 
   get hotbarContainerElement() {
-    return document.getElementById("hotbarContainer");
+    return document.getElementById("hotbarContainerElement");
   }
 
   get hotbarItemSlotElements() {
-    return [...this.hotbarContainerElement.children] as HTMLElement[];
+    return [...this.hotbarElement.children] as HTMLElement[];
   }
+
   get activeHotbarElement() {
     return this.getHotbarSlot(this.activeHotbarSlot);
   }
 
   get inventoryItemSlotElements() {
-    return [...this.containerElement.children] as HTMLElement[];
+    return [...this.inventoryElement.children] as HTMLElement[];
+  }
+
+  get allSlots() {
+    return [...this.hotbarItemSlotElements, ...this.inventoryItemSlotElements];
+  }
+
+  getInventoryOrHotbarSlot(index: number) {
+    return this.allSlots[index].firstChild as HTMLElement;
   }
 
   getInventorySlot(index: number) {
     return this.inventoryItemSlotElements[index].firstChild as HTMLElement;
   }
+
   getHotbarSlot(index: number) {
     return this.hotbarItemSlotElements[index].firstChild as HTMLElement;
   }
