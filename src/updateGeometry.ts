@@ -7,7 +7,7 @@ import {
   LineSegments,
   Mesh,
 } from "three";
-import { Chunk, chunkSize } from "./constants";
+import { chunkSize } from "./constants";
 import { computeSmallChunkCornerFromId } from "./helpers";
 import { pickSurroundingChunks } from "./streamChunks";
 import { opaque } from "./voxelMaterial";
