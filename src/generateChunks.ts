@@ -32,7 +32,13 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
     updateProgressBar(progress);
   }
 
-  for (let newChunkId of chunksToSpawn) {
+  for (let i = 0; i < chunksToSpawn.length; i++) {
+    const newChunkId = chunksToSpawn[i];
+
+    if (i % 2 === 0) {
+      continue;
+    }
+
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
       if (chunks[chunkIdForSpawning]?.isGenerated) {

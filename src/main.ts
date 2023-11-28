@@ -26,7 +26,7 @@ async function init() {
       const button = document.getElementById("playButton") as HTMLButtonElement;
       button.disabled = false;
     });
-    loop.register({ tick: shouldChunksUpdate });
+    // loop.register({ tick: shouldChunksUpdate });
   }
 
   loop.register(player);
