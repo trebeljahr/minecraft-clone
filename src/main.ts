@@ -8,14 +8,46 @@ import { onlyDisplaySingleBlock } from "./onlyDisplaySingleBlock";
 import { onWindowResize } from "./rendering";
 import { handleChunks, shouldChunksUpdate } from "./streamChunks";
 import { world } from "./world";
+import { generate } from "./generateChunks";
 
 init();
 
+async function onlyDisplaySingleChunk() {
+  const chunkId = "0,0,0";
+  await generate(world.globalChunks, [chunkId]);
+
+  const button = document.getElementById("playButton") as HTMLButtonElement;
+  button.disabled = false;
+}
+
+async function onlyDisplayFewChunks() {
+  const chunkIds = [
+    "0,0,0",
+    "0,0,1",
+    "0,0,2",
+    "1,0,0",
+    "2,0,0",
+    "2,0,1",
+    "2,0,2",
+    "1,0,2",
+    "1,0,1",
+  ];
+  await generate(world.globalChunks, chunkIds);
+
+  const button = document.getElementById("playButton") as HTMLButtonElement;
+  button.disabled = false;
+}
+
 async function init() {
   const inSingleBlockMode = false;
+  const inSingleChunkMode = false;
+  const inMultipleChunksMode = false;
+
   const loop = new Loop(world.renderer);
 
   if (inSingleBlockMode) onlyDisplaySingleBlock();
+  if (inSingleChunkMode) onlyDisplaySingleChunk();
+  if (inMultipleChunksMode) onlyDisplayFewChunks();
   else {
     const logTime = new SimpleTimer();
     handleChunks().then(() => {

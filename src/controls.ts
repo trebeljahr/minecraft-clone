@@ -2,7 +2,7 @@ import { Vector3 } from "three";
 import { blocks } from "./blocks";
 import { getHeightValue } from "./chunkLogic";
 import { terrainHeight } from "./constants";
-import { MouseClickEvent, getVoxel } from "./helpers";
+import { MouseClickEvent, computeChunkId, getVoxel } from "./helpers";
 import {
   convertIntersectionToPosition,
   getIntersection,
@@ -58,6 +58,10 @@ const keyboardControls = (event: KeyboardEvent) => {
       console.log(
         "world.Player Position: ",
         player.position.toArray().map((elem) => Math.floor(elem))
+      );
+      console.log(
+        "chunk player is in:",
+        computeChunkId(player.position.toArray())
       );
       break;
     case "KeyF":

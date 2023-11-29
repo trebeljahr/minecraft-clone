@@ -36,6 +36,8 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
     throw Error("No chunks?");
   }
   const pos = parseChunkId(chunkId);
+  // console.log(pos);
+
   for (let y = chunkSize - 1; y >= 0; y--) {
     const underBedrock = pos.y + y < 0;
     if (underBedrock) continue;
