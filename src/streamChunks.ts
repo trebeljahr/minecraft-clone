@@ -140,13 +140,13 @@ export async function sunlightChunks(
   return { updatedChunks: availableChunks, stillNeedUpdates };
 }
 
-export async function streamInChunk(globalChunks: Chunks, chunkId: string) {
+export async function streamInChunk(chunks: Chunks, chunkId: string) {
   await chunkWorkerPool.queue(async (worker) => {
     const updatedChunks = await worker.generateChunkData(
-      pickSurroundingChunks(globalChunks, chunkId),
+      pickSurroundingChunks(chunks, chunkId),
       chunkId
     );
-    mergeChunkUpdates(globalChunks, updatedChunks);
+    mergeChunkUpdates(chunks, updatedChunks);
   });
-  return globalChunks;
+  return chunks;
 }
