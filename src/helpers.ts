@@ -113,7 +113,8 @@ const yTable = new Array(chunkSize).fill(0).map((_, y) => y * chunkSliceSize);
 const zTable = new Array(chunkSize).fill(0).map((_, z) => z * chunkSize);
 
 export function computeVoxelIndex(pos: number[]) {
-  const [x, y, z] = pos.map((coord) => coord % chunkSize);
+  const [x, y, z] = pos.map((coord) => Math.floor(coord % chunkSize));
+
   return (yTable[y] + zTable[z] + x) * fields.count;
 }
 
@@ -196,6 +197,10 @@ export function makeEmptyChunk(chunkId: string): Chunk {
   };
 }
 
+export function getChunkCoordinates(pos: number[]): Position {
+  return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
+}
+
 export function getChunkCoordinatesFromId(chunkId: string) {
   return chunkId.split(",").map((num) => parseInt(num));
 }
@@ -216,10 +221,6 @@ export function computeChunkColumnId(pos: number[]) {
 export function parseChunkId(chunkId: string) {
   const [x, y, z] = chunkId.split(",").map((digits) => parseInt(digits));
   return new Vector3(x, y, z).multiplyScalar(chunkSize);
-}
-
-export function getChunkCoordinates(pos: number[]): Position {
-  return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
 }
 
 export function computeVoxelCoordinates(pos: Vector3) {

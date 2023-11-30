@@ -1,8 +1,11 @@
 import { Vector3 } from "three";
 import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
-import { Chunks, copy } from "./constants";
+import { Chunks, copy, spectatorMode } from "./constants";
 import { world } from "./world";
+import { blocks } from "./blocks";
+
+const { air } = blocks;
 
 class Player {
   public controls: PointerLockControls;
@@ -83,13 +86,13 @@ class Player {
       const clippingOffsetZ = this.velocity.z < 0 ? -0.5 : 0.5;
 
       this.controls.moveRight(this.velocity.x * delta + clippingOffsetX);
-      if (!this.collidesWithTerrain) {
+      if (!this.collidesWithTerrain || spectatorMode) {
         this.controls.moveRight(this.velocity.x * delta);
       }
       this.controls.moveRight(-this.velocity.x * delta - clippingOffsetX);
 
       this.controls.moveForward(this.velocity.z * delta + clippingOffsetZ);
-      if (!this.collidesWithTerrain) {
+      if (!this.collidesWithTerrain || spectatorMode) {
         this.controls.moveForward(this.velocity.z * delta);
       }
       this.controls.moveForward(-this.velocity.z * delta - clippingOffsetZ);
@@ -105,8 +108,8 @@ class Player {
   }
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
-    const { type: collision } = getVoxel(world.globalChunks, [x, y, z]);
-    if (collision !== 0) return true;
+    const { type: blockCollidedWith } = getVoxel(world.globalChunks, [x, y, z]);
+    if (blockCollidedWith !== air) return true;
     return false;
   }
 
