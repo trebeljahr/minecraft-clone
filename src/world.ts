@@ -34,8 +34,8 @@ interface World {
 }
 
 const camera = createCamera();
-const globalChunks: Chunks = {};
-const changedChunks: Chunks = {};
+const globalChunks: Chunks = new Map();
+const changedChunks: Chunks = new Map();
 
 export let world: World = {
   meshes: {},

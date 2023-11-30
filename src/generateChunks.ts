@@ -24,7 +24,7 @@ import { chunkWorkerPool } from "./workers/workerPool";
 
 export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
   const storedWorld = JSON.parse(localStorage.getItem("world") || "{}");
-  world.changedChunks = storedWorld;
+  world.changedChunks = new Map(Object.entries(storedWorld));
 
   let total = chunksToSpawn.length * (verticalNumberOfChunks + 1);
 
@@ -35,45 +35,31 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
     updateProgressBar(progress);
   }
 
-  const sunlightPromises: Promise<void>[] = [];
-  const chunkGenPromises: Promise<Chunks>[] = [];
+  // const sunlightPromises: Promise<void>[] = [];
+  const chunkGenPromises = [];
 
   const logTime = new SimpleTimer();
 
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
       const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
-      if (!chunks[chunkIdForSpawning]) {
-        chunks[chunkIdForSpawning] = makeEmptyChunk(chunkIdForSpawning);
+      const chunk = chunks.get(chunkIdForSpawning);
+      if (!chunk) {
+        chunks.set(chunkIdForSpawning, makeEmptyChunk(chunkIdForSpawning));
       }
 
-      if (chunks[chunkIdForSpawning]?.isGenerated) {
+      if (chunk?.isGenerated) {
         continue;
       }
-
-      if (storedWorld && storedWorld[chunkIdForSpawning]) {
-        chunks[chunkIdForSpawning] = storedWorld[chunkIdForSpawning];
-        continue;
-      }
-
-      // surroundingOffsets.forEach((offset) => {
-      //   const offVec = new Vector3(...offset);
-      //   if (!chunks[addOffsetToChunkId(chunkIdForSpawning, offVec)]) {
-      //     chunks[addOffsetToChunkId(chunkIdForSpawning, offVec)] =
-      //       makeEmptyChunk(chunkIdForSpawning);
-      //   }
-      // });
-
-      // console.log(chunks);
 
       chunkGenPromises.push(
         chunkWorkerPool.queue(async (worker) => {
           const updatedChunks = await worker.generateChunkData(
-            { [chunkIdForSpawning]: chunks[chunkIdForSpawning] },
+            world.globalChunks,
             chunkIdForSpawning
           );
           mergeChunkUpdates(chunks, updatedChunks);
-        }) as unknown as Promise<Chunks>
+        })
       );
     }
   }
@@ -111,23 +97,24 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
     //   mergeChunkUpdates(chunks, updatedChunksWithTrees);
     // }
 
-    sunlightPromises.push(
-      sunlightChunks(getSurroundingChunksColumns(chunks, newChunkId), [
-        newChunkId,
-      ]).then(async ({ updatedChunks }) => {
-        mergeChunkUpdates(chunks, updatedChunks);
+    await sunlightChunks(getSurroundingChunksColumns(chunks, newChunkId), [
+      newChunkId,
+    ]).then(async ({ updatedChunks }) => {
+      // mergeChunkUpdates(chunks, updatedChunks);
+      updatedChunks.forEach((chunk) => {
+        chunks.set(chunk.chunkId, chunk);
+      });
 
-        for (let y = verticalNumberOfChunks; y >= 0; y--) {
-          const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
+      for (let y = verticalNumberOfChunks; y >= 0; y--) {
+        const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
 
-          updateGeometry(chunkIdForSpawning);
-          updateProgress();
-        }
-      })
-    );
+        updateGeometry(chunkIdForSpawning);
+        updateProgress();
+      }
+    });
   }
 
-  await Promise.all(sunlightPromises);
+  // await Promise.all(sunlightPromises);
   logTime.takenFor("Sunlight and trees");
 
   const progressBarText = document.getElementById("worldLoaderText");
