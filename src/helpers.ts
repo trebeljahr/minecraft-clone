@@ -112,10 +112,21 @@ export function setLightValue(
 const yTable = new Array(chunkSize).fill(0).map((_, y) => y * chunkSliceSize);
 const zTable = new Array(chunkSize).fill(0).map((_, z) => z * chunkSize);
 
-export function computeVoxelIndex(pos: number[]) {
-  const [x, y, z] = pos.map((coord) => Math.floor(coord % chunkSize));
+function euclideanModulo(n: number, m: number) {
+  return ((n % m) + m) % m;
+}
 
-  return (yTable[y] + zTable[z] + x) * fields.count;
+export function computeVoxelIndex(pos: number[]) {
+  const [x, y, z] = pos.map((coord) =>
+    euclideanModulo(Math.floor(coord), chunkSize)
+  );
+
+  const result = (yTable[y] + zTable[z] + x) * fields.count;
+  if (isNaN(result)) {
+    console.warn({ x, y, z });
+    throw Error(`NaN result for ${pos}`);
+  }
+  return result;
 }
 
 export function getSurroundingChunksColumns(chunks: Chunks, chunkId: string) {
