@@ -10,7 +10,7 @@ import {
   shouldSpawnTree,
   spawnTree,
 } from "../chunkLogic";
-import { Chunks, chunkSize, Position } from "../constants";
+import { Chunks, chunkSize, fields, Position } from "../constants";
 import { getVoxel, parseChunkId } from "../helpers";
 import { blocks } from "../blocks";
 const { emerald, lapis, diamond, gold, coal, stone, grass, dirt } = blocks;
@@ -37,10 +37,13 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
   }
   const pos = parseChunkId(chunkId);
 
-  for (let i = 0; i < Math.pow(chunkSize, 3); i++) {
+  const totalChunkVoxelAmount = Math.pow(chunkSize, 3);
+  for (let i = 0; i < totalChunkVoxelAmount; i++) {
+    const index = i * fields.count;
     const y = Math.floor(i / (chunkSize * chunkSize));
     const z = Math.floor((i - y * chunkSize * chunkSize) / chunkSize);
     const x = i - y * chunkSize * chunkSize - z * chunkSize;
+
     const offsetPos = [x + pos.x, y + pos.y, z + pos.z];
 
     const chunk = chunks[chunkId];
@@ -48,24 +51,24 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
     if (underBedrock) continue;
     const bedrock = pos.y + y === 0;
     if (bedrock) {
-      setVoxel(chunk, i, coal);
+      setVoxel(chunk, index, coal);
       continue;
     }
     if (shouldPlaceBlock(offsetPos)) {
       if (shouldSpawnGold(offsetPos)) {
-        setVoxel(chunk, i, gold);
+        setVoxel(chunk, index, gold);
       } else if (shouldSpawnDiamonds(offsetPos)) {
-        setVoxel(chunk, i, diamond);
+        setVoxel(chunk, index, diamond);
       } else if (shouldSpawnLapis(offsetPos)) {
-        setVoxel(chunk, i, lapis);
+        setVoxel(chunk, index, lapis);
       } else if (shouldSpawnEmeralds(offsetPos)) {
-        setVoxel(chunk, i, emerald);
+        setVoxel(chunk, index, emerald);
       } else if (shouldSpawnGrass(offsetPos)) {
-        setVoxel(chunk, i, grass);
+        setVoxel(chunk, index, grass);
       } else if (shouldSpawnDirt(offsetPos)) {
-        setVoxel(chunk, i, dirt);
+        setVoxel(chunk, index, dirt);
       } else {
-        setVoxel(chunk, i, stone);
+        setVoxel(chunk, index, stone);
       }
     }
   }
