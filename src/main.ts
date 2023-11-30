@@ -46,8 +46,8 @@ async function init() {
   const loop = new Loop(world.renderer);
 
   if (inSingleBlockMode) onlyDisplaySingleBlock();
-  if (inSingleChunkMode) onlyDisplaySingleChunk();
-  if (inMultipleChunksMode) onlyDisplayFewChunks();
+  else if (inSingleChunkMode) onlyDisplaySingleChunk();
+  else if (inMultipleChunksMode) onlyDisplayFewChunks();
   else {
     const logTime = new SimpleTimer();
     handleChunks().then(() => {
