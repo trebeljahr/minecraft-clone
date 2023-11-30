@@ -1,4 +1,5 @@
 import {
+  Chunk,
   Chunks,
   chunkSize,
   fields,
@@ -38,24 +39,24 @@ export function spawnTree(
     if (y >= leafHeightMin && y < treeHeight) {
       for (let x = currentX - leafWidth; x <= currentX + leafWidth; x++) {
         for (let z = currentZ - leafWidth; z <= currentZ + leafWidth; z++) {
-          chunks = setVoxel(chunks, [x, y, z], foliage);
+          chunks = setVoxelFromPos(chunks, [x, y, z], foliage);
         }
       }
     } else if (y >= leafHeightMin && y <= treeHeight) {
       for (let x = currentX - 1; x <= currentX + 1; x++) {
         for (let z = currentZ - 1; z <= currentZ + 1; z++) {
-          chunks = setVoxel(chunks, [x, y, z], foliage);
+          chunks = setVoxelFromPos(chunks, [x, y, z], foliage);
         }
       }
     } else if (y >= leafHeightMin) {
-      chunks = setVoxel(chunks, [currentX, y, currentZ], foliage);
-      chunks = setVoxel(chunks, [currentX, y, currentZ + 1], foliage);
-      chunks = setVoxel(chunks, [currentX, y, currentZ - 1], foliage);
-      chunks = setVoxel(chunks, [currentX + 1, y, currentZ], foliage);
-      chunks = setVoxel(chunks, [currentX - 1, y, currentZ], foliage);
+      chunks = setVoxelFromPos(chunks, [currentX, y, currentZ], foliage);
+      chunks = setVoxelFromPos(chunks, [currentX, y, currentZ + 1], foliage);
+      chunks = setVoxelFromPos(chunks, [currentX, y, currentZ - 1], foliage);
+      chunks = setVoxelFromPos(chunks, [currentX + 1, y, currentZ], foliage);
+      chunks = setVoxelFromPos(chunks, [currentX - 1, y, currentZ], foliage);
     }
     if (y <= treeHeight) {
-      chunks = setVoxel(chunks, [currentX, y, currentZ], wood);
+      chunks = setVoxelFromPos(chunks, [currentX, y, currentZ], wood);
     }
   }
   return chunks;
@@ -74,22 +75,26 @@ export function updateVoxelGeometry(pos: Position) {
   }
 }
 
-export function setVoxel(chunks: Chunks, pos: number[], type: number) {
+export function setVoxelFromPos(chunks: Chunks, pos: Position, type: number) {
   const chunkId = computeChunkId(pos);
-  const voxelOffset = computeVoxelIndex(pos);
+  const voxelIndex = computeVoxelIndex(pos);
+  setVoxel(chunks[chunkId], voxelIndex, type);
+  return chunks;
+}
 
+export function setVoxel(chunk: Chunk, voxelIndex: number, type: number) {
   try {
-    chunks[chunkId].data[voxelOffset] = type;
-    chunks[chunkId].data[voxelOffset + fields.r] = 0;
-    chunks[chunkId].data[voxelOffset + fields.g] = 0;
-    chunks[chunkId].data[voxelOffset + fields.b] = 0;
-    chunks[chunkId].data[voxelOffset + fields.light] = 0;
-    chunks[chunkId].data[voxelOffset + fields.sunlight] = 0;
+    chunk.data[voxelIndex] = type;
+    chunk.data[voxelIndex + fields.r] = 0;
+    chunk.data[voxelIndex + fields.g] = 0;
+    chunk.data[voxelIndex + fields.b] = 0;
+    chunk.data[voxelIndex + fields.light] = 0;
+    chunk.data[voxelIndex + fields.sunlight] = 0;
   } catch (err) {
-    console.warn(pos, chunks, chunkId);
+    console.warn(voxelIndex, chunk);
     throw err;
   }
-  return chunks;
+  return chunk;
 }
 
 const minHeight = chunkSize * 2;
