@@ -1,7 +1,14 @@
 import { Color, Fog } from "three";
 import { Loop } from "./Loop";
 import { player } from "./Player";
-import { chunkSize, viewDistance } from "./constants";
+import {
+  chunkSize,
+  fogColor,
+  inMultipleChunksMode,
+  inSingleBlockMode,
+  inSingleChunkMode,
+  viewDistance,
+} from "./constants";
 import { setupControls } from "./controls";
 import { SimpleTimer } from "./helpers";
 import { onlyDisplaySingleBlock } from "./onlyDisplaySingleBlock";
@@ -39,10 +46,6 @@ async function onlyDisplayFewChunks() {
 }
 
 async function init() {
-  const inSingleBlockMode = false;
-  const inSingleChunkMode = false;
-  const inMultipleChunksMode = false;
-
   const loop = new Loop(world.renderer);
 
   if (inSingleBlockMode) onlyDisplaySingleBlock();
@@ -66,7 +69,7 @@ async function init() {
   loop.start();
 
   setupControls();
-  const color = "lightblue";
+  const color = fogColor;
   world.scene.fog = new Fog(
     color,
     viewDistance * chunkSize - 2 * chunkSize,

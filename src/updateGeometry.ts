@@ -7,7 +7,7 @@ import {
   LineSegments,
   Mesh,
 } from "three";
-import { chunkSize } from "./constants";
+import { chunkSize, debugMeshColor } from "./constants";
 import { computeSmallChunkCornerFromId } from "./helpers";
 import { pickSurroundingChunks } from "./streamChunks";
 import { opaque } from "./voxelMaterial";
@@ -73,7 +73,7 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
 
     const chunkOutline = new LineSegments(
       new EdgesGeometry(new BoxGeometry(chunkSize, chunkSize, chunkSize)),
-      new LineBasicMaterial({ color: 0x00ff00 })
+      new LineBasicMaterial({ color: debugMeshColor })
     );
     chunkOutline.name = "debug:" + chunkId;
     world.debugMeshes[chunkId] = chunkOutline;

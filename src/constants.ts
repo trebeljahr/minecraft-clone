@@ -1,12 +1,4 @@
 import { blocks } from "./blocks";
-export const chunkSize = 16;
-export const halfChunk = chunkSize / 2;
-export const chunkSliceSize = chunkSize * chunkSize;
-export const verticalNumberOfChunks = 4;
-export const surface = (verticalNumberOfChunks - 1) * chunkSize;
-export const terrainHeight = surface;
-export const blockLength = 100;
-
 import * as THREE from "three";
 import { Vector3 } from "three";
 
@@ -14,12 +6,6 @@ export type Position = [number, number, number];
 export function copy(vec: THREE.Vector3) {
   return new THREE.Vector3().copy(vec);
 }
-export const maxHeight = terrainHeight + chunkSize / 2;
-
-export const tileSize = 16;
-export const tileTextureWidth = 320;
-export const tileTextureHeight = 48;
-export const viewDistance = 3;
 
 const { air, cactus, foliage } = blocks;
 
@@ -55,7 +41,6 @@ export const surroundingOffsetsWithoutSelf = surroundingOffsets.filter(
 export const glowingBlocks = [cactus];
 export const transparentBlocks = [air, cactus, foliage];
 
-export const maxLight = 15;
 export const fields = {
   r: 1,
   g: 2,
@@ -151,3 +136,23 @@ export interface LightUpdate {
 }
 
 export type LightUpdates = Record<string, LightUpdate[]>;
+
+export const inSingleBlockMode = false;
+export const inSingleChunkMode = false;
+export const inMultipleChunksMode = false;
+export const spectatorMode = true;
+export const debugMeshColor = "red";
+export const fogColor = "lightblue";
+export const maxLight = 15;
+export const chunkSize = 16;
+export const halfChunk = chunkSize / 2;
+export const chunkSliceSize = chunkSize * chunkSize;
+export const verticalNumberOfChunks = 4;
+export const surface = (verticalNumberOfChunks - 1) * chunkSize;
+export const terrainHeight = surface;
+export const blockLength = 100;
+export const maxHeight = terrainHeight + chunkSize / 2;
+export const tileSize = 16;
+export const tileTextureWidth = 320;
+export const tileTextureHeight = 48;
+export const viewDistance = 3;
