@@ -115,29 +115,27 @@ const zTable = new Array(chunkSize).fill(0).map((_, z) => z * chunkSize);
 export function computeVoxelIndex(pos: number[]) {
   const [x, y, z] = pos.map((coord) => Math.floor(coord % chunkSize));
 
-  // console.log(x, y, z);
   return (yTable[y] + zTable[z] + x) * fields.count;
 }
 
 export function getSurroundingChunksColumns(chunks: Chunks, chunkId: string) {
-  let filteredChunks: Chunks = new Map();
+  let filteredChunks: Chunks = {};
   for (let x = -1; x <= 1; x++) {
     for (let z = -1; z <= 1; z++) {
-      const column = getChunkColumn(
-        chunks,
-        addOffsetToChunkId(chunkId, { x, z })
-      );
-      column.forEach((chunk) => {
-        filteredChunks.set(chunk.chunkId, chunk);
-      });
+      filteredChunks = {
+        ...filteredChunks,
+        ...getChunkColumn(chunks, addOffsetToChunkId(chunkId, { x, z })),
+      };
     }
   }
+  // console.log(filteredChunks);
+  // console.log(Object.keys(filteredChunks).length);
   return filteredChunks;
 }
 
 export function getChunkColumn(chunks: Chunks, chunkIdTarget: string) {
-  const chunkEntries = chunks.entries();
-  const filteredEntries = [...chunkEntries].filter(([chunkId]) => {
+  const chunkEntries = Object.entries(chunks);
+  const filteredEntries = chunkEntries.filter(([chunkId]) => {
     const pos1 = parseChunkId(chunkId);
     const pos2 = parseChunkId(chunkIdTarget);
     const sameX = pos1.x === pos2.x;
@@ -147,7 +145,7 @@ export function getChunkColumn(chunks: Chunks, chunkIdTarget: string) {
     }
     return false;
   });
-  const column: Chunks = new Map(filteredEntries);
+  const column: Chunks = Object.fromEntries(filteredEntries);
 
   return column;
 }
@@ -231,7 +229,7 @@ export function computeVoxelCoordinates(pos: Vector3) {
 
 export function getVoxel(chunks: Chunks, pos: Position) {
   const chunkId = computeChunkId(pos);
-  const chunk = chunks.get(chunkId)?.data;
+  const chunk = chunks[chunkId]?.data;
   if (!chunk) {
     return {
       type: 0,
@@ -240,10 +238,6 @@ export function getVoxel(chunks: Chunks, pos: Position) {
     };
   }
   const voxelIndex = computeVoxelIndex(pos);
-  // console.log(chunkId, voxelIndex, chunk[voxelIndex]);
-
-  // chunk[voxelIndex] !== 0 && console.log(chunk[voxelIndex], voxelIndex);
-
   return {
     type: chunk[voxelIndex],
     light: chunk[voxelIndex + fields.light],

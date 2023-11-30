@@ -79,7 +79,7 @@ export function convertIntersectionToPosition(
 
 export async function placeVoxel(voxelId: number, pos: Position) {
   const chunkId = computeChunkId(pos);
-  setVoxelFromPos(world.globalChunks, pos, voxelId);
+  setVoxelFromPos({ [chunkId]: world.globalChunks[chunkId] }, pos, voxelId);
   const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
 
   const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
@@ -106,16 +106,8 @@ export async function placeVoxel(voxelId: number, pos: Position) {
   );
   mergeChunkUpdates(world.globalChunks, updatedChunks);
 
-  world.changedChunks.set(chunkId, world.globalChunks.get(chunkId));
-
-  const worldObject = [...world.changedChunks.entries()].reduce(
-    (agg, [id, chunk]) => {
-      return { ...agg, [id]: chunk };
-    },
-    {}
-  );
-
-  localStorage.setItem("world", JSON.stringify(worldObject));
+  world.changedChunks[chunkId] = world.globalChunks[chunkId];
+  localStorage.setItem("world", JSON.stringify(world.changedChunks));
 
   updateSurroundingChunkGeometry(pos);
   requestRenderIfNotRequested();
