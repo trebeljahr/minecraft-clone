@@ -32,11 +32,10 @@ export async function growTrees(chunks: Chunks, chunkId: string) {
 }
 
 export async function generateChunkData(chunks: Chunks, chunkId: string) {
-  if (chunks.size === 0) {
+  if (Object.keys(chunks).length === 0) {
     throw Error("No chunks?");
   }
   const pos = parseChunkId(chunkId);
-  const chunk = chunks.get(chunkId);
 
   const totalChunkVoxelAmount = Math.pow(chunkSize, 3);
   for (let i = 0; i < totalChunkVoxelAmount; i++) {
@@ -46,8 +45,9 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
     const x = i - y * chunkSize * chunkSize - z * chunkSize;
 
     const offsetPos = [x + pos.x, y + pos.y, z + pos.z];
-    const underBedrock = pos.y + y < 0;
 
+    const chunk = chunks[chunkId];
+    const underBedrock = pos.y + y < 0;
     if (underBedrock) continue;
     const bedrock = pos.y + y === 0;
     if (bedrock) {
@@ -73,9 +73,9 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
     }
   }
   try {
-    chunk.isGenerated = true;
+    chunks[chunkId].isGenerated = true;
   } catch (err) {
-    console.warn(chunks, chunkId);
+    console.log(chunks, chunkId);
     throw err;
   }
   return chunks;
