@@ -6,6 +6,7 @@ import {
   verticalNumberOfChunks,
 } from "./constants";
 import {
+  SimpleTimer,
   addOffsetToChunkId,
   getSurroundingChunksColumns,
   makeEmptyChunk,
@@ -36,6 +37,8 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
 
   const sunlightPromises: Promise<void>[] = [];
   const chunkGenPromises: Promise<Chunks>[] = [];
+
+  const logTime = new SimpleTimer();
 
   for (let newChunkId of chunksToSpawn) {
     for (let y = verticalNumberOfChunks; y >= 0; y--) {
@@ -76,6 +79,8 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
   }
 
   await Promise.all(chunkGenPromises);
+  logTime.takenFor("Chunk generation");
+
   for (let i = 0; i < chunksToSpawn.length; i++) {
     const newChunkId = chunksToSpawn[i];
 
@@ -97,14 +102,14 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
   }
 
   async function handleSingleChunkColumnUpdate(newChunkId: string) {
-    for (let y = verticalNumberOfChunks; y >= 0; y--) {
-      const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
-      const updatedChunksWithTrees = await growTrees(
-        pickSurroundingChunks(chunks, chunkIdForSpawning),
-        chunkIdForSpawning
-      );
-      mergeChunkUpdates(chunks, updatedChunksWithTrees);
-    }
+    // for (let y = verticalNumberOfChunks; y >= 0; y--) {
+    //   const chunkIdForSpawning = addOffsetToChunkId(newChunkId, { y });
+    //   const updatedChunksWithTrees = await growTrees(
+    //     pickSurroundingChunks(chunks, chunkIdForSpawning),
+    //     chunkIdForSpawning
+    //   );
+    //   mergeChunkUpdates(chunks, updatedChunksWithTrees);
+    // }
 
     sunlightPromises.push(
       sunlightChunks(getSurroundingChunksColumns(chunks, newChunkId), [
@@ -123,6 +128,7 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
   }
 
   await Promise.all(sunlightPromises);
+  logTime.takenFor("Sunlight and trees");
 
   const progressBarText = document.getElementById("worldLoaderText");
   progressBarText.innerText = "Ready!";
