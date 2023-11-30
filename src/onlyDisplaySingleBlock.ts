@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import { Position, chunkSize, fields } from "./constants";
 import { world } from "./world";
-import { setVoxel } from "./chunkLogic";
+import { setVoxel, setVoxelFromPos } from "./chunkLogic";
 import { blocks } from "./blocks";
 import { player } from "./Player";
 import { computeChunkId } from "./helpers";
@@ -23,7 +23,7 @@ export function onlyDisplaySingleBlock() {
 
   const [x, y, z] = player.pos.toArray();
   for (let i = 0; i < 10; i++) {
-    setVoxel(world.globalChunks, [x, y + i, z], blocks.foliage);
+    setVoxelFromPos(world.globalChunks, [x, y + i, z], blocks.foliage);
   }
 
   // world.renderer.render(world.scene, world.camera);

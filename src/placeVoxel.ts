@@ -1,6 +1,6 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { blocks } from "./blocks";
-import { setVoxel } from "./chunkLogic";
+import { setVoxel, setVoxelFromPos } from "./chunkLogic";
 import { Chunks, glowingBlocks, neighborOffsets, Position } from "./constants";
 import {
   computeChunkId,
@@ -79,7 +79,7 @@ export function convertIntersectionToPosition(
 
 export async function placeVoxel(voxelId: number, pos: Position) {
   const chunkId = computeChunkId(pos);
-  setVoxel({ [chunkId]: world.globalChunks[chunkId] }, pos, voxelId);
+  setVoxelFromPos({ [chunkId]: world.globalChunks[chunkId] }, pos, voxelId);
   const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
 
   const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
