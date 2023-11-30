@@ -16,15 +16,53 @@ import {
 } from "../helpers";
 import { getChunkForVoxel } from "../chunkLogic";
 
+class Node {
+  constructor(public value: any, public next: Node | null = null) {}
+}
+
+export class Queue {
+  private first: Node | null = null;
+  private last: Node | null = null;
+
+  enqueue(value: any) {
+    const newNode = new Node(value);
+    if (this.last) {
+      this.last.next = newNode;
+    }
+    this.last = newNode;
+    if (!this.first) {
+      this.first = newNode;
+    }
+  }
+
+  dequeue<T>() {
+    if (!this.first) return null;
+    const dequeuedNode = this.first;
+    this.first = dequeuedNode.next;
+    if (!this.first) {
+      this.last = null;
+    }
+    return dequeuedNode.value;
+  }
+
+  isEmpty() {
+    return this.first === null;
+  }
+}
+
 export function propagateSunlight(chunks: Chunks, queue: LightUpdate[]) {
-  const sunlightQueue = [...queue] as LightUpdate[];
+  const sunlightQueue = new Queue();
+
+  const outgoingQueue: LightUpdate[] = [];
+  queue.forEach((update) => sunlightQueue.enqueue(update));
+
   let iterations = 0;
-  while (queue.length > 0) {
+  while (!sunlightQueue.isEmpty()) {
     iterations++;
     const {
       pos: [x, y, z],
       lightValue,
-    } = queue.shift();
+    } = sunlightQueue.dequeue<LightUpdate>();
     const yBelow = y - 1;
     const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
     const [chunkBelow] = getChunkForVoxel(chunks, [x, yBelow, z]);
@@ -36,12 +74,12 @@ export function propagateSunlight(chunks: Chunks, queue: LightUpdate[]) {
     const belowIsTransparent = transparentBlocks.includes(blockBelow);
     const canPropagateSunlight = yBelow >= 0 && belowIsTransparent;
     if (canPropagateSunlight) {
-      queue.push({ pos: [x, yBelow, z], lightValue });
+      sunlightQueue.enqueue({ pos: [x, yBelow, z], lightValue });
       setLightValue(chunks, [x, yBelow, z], lightValue);
     }
-    sunlightQueue.push({ pos: [x, y, z], lightValue });
+    outgoingQueue.push({ pos: [x, y, z], lightValue });
   }
-  return sunlightQueue;
+  return outgoingQueue;
 }
 
 export async function createSunlightQueue(

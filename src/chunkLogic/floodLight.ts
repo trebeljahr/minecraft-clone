@@ -9,16 +9,20 @@ import {
   transparentBlocks,
 } from "../constants";
 import { computeVoxelIndex, getLightValue, SimpleTimer } from "../helpers";
+import { Queue } from "./sunlight";
 
 const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
 
 export async function floodLight(chunks: Chunks, queue: LightUpdate[]) {
+  const floodlightQueue = new Queue();
+  queue.forEach((update) => floodlightQueue.enqueue(update));
+
   const chunksThatNeedUpdates: LightUpdates = {};
-  while (queue.length > 0) {
+  while (!floodlightQueue.isEmpty()) {
     const {
       pos: [x, y, z],
       lightValue,
-    } = queue.shift();
+    } = floodlightQueue.dequeue<LightUpdate>();
     const newLightValue = lightValue - 1;
     if (newLightValue <= 0) continue;
 
@@ -48,7 +52,10 @@ export async function floodLight(chunks: Chunks, queue: LightUpdate[]) {
 
       if (lightIsBrighter && neighborIsTransparent) {
         neighborsChunk[neighborIndex + fields.light] = newLightValue;
-        queue.push({ pos: [nx, ny, nz], lightValue: newLightValue });
+        floodlightQueue.enqueue({
+          pos: [nx, ny, nz],
+          lightValue: newLightValue,
+        });
       }
     });
   }
