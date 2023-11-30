@@ -128,7 +128,7 @@ export interface Chunk {
   isGeometrized: boolean;
 }
 
-export type Chunks = Record<string, Chunk>;
+export type Chunks = Map<string, Chunk>;
 
 export interface LightUpdate {
   pos: Position;

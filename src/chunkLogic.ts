@@ -13,11 +13,11 @@ import { blocks } from "./blocks";
 const { birchwood, foliage, oakwood } = blocks;
 
 export function getChunkForVoxel(
-  chunks: Chunks,
+  chunks: Map<string, Chunk>,
   pos: number[]
 ): [Uint8Array, string] {
   const chunkId = computeChunkId(pos as Position);
-  const foundChunk = chunks[chunkId]?.data;
+  const foundChunk = chunks.get(chunkId)?.data;
   return [foundChunk, chunkId];
 }
 
@@ -78,7 +78,7 @@ export function updateVoxelGeometry(pos: Position) {
 export function setVoxelFromPos(chunks: Chunks, pos: Position, type: number) {
   const chunkId = computeChunkId(pos);
   const voxelIndex = computeVoxelIndex(pos);
-  setVoxel(chunks[chunkId], voxelIndex, type);
+  setVoxel(chunks.get(chunkId), voxelIndex, type);
   return chunks;
 }
 

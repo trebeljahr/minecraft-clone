@@ -23,18 +23,16 @@ import { world } from "./world";
 let chunkLoadingQueue: string[] = [];
 
 export function pickSurroundingChunks(globalChunks: Chunks, chunkId: string) {
-  return surroundingOffsets.reduce((output, offset) => {
+  return surroundingOffsets.reduce((outputMap, offset) => {
     const nextChunkId = addOffsetToChunkId(chunkId, new Vector3(...offset));
-    const nextChunk = globalChunks[nextChunkId];
+    const nextChunk = globalChunks.get(nextChunkId);
     // if (!nextChunk) {
     //   console.log(chunkId, globalChunks, nextChunkId);
     //   throw Error("No next chunk in global chunks");
     // }
-    return {
-      ...output,
-      [nextChunkId]: nextChunk || makeEmptyChunk(nextChunkId),
-    };
-  }, {});
+    outputMap.set(nextChunkId, nextChunk || makeEmptyChunk(nextChunkId));
+    return outputMap;
+  }, new Map());
 }
 
 export async function updateSurroundingChunkGeometry(pos: Position) {
@@ -80,7 +78,7 @@ export function pruneChunks(playerPosition: Vector3) {
     .forEach((idToDelete) => {
       delete world.meshes[idToDelete];
       delete world.debugMeshes[idToDelete];
-      delete world.globalChunks[idToDelete];
+      world.globalChunks.delete(idToDelete);
       deleteElementFromScene("chunk:" + idToDelete);
       deleteElementFromScene("debug:" + idToDelete);
       world.renderer.renderLists.dispose();
@@ -103,14 +101,13 @@ export async function handleChunks() {
 }
 
 export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
-  Object.keys(updatedChunks).forEach((chunkId) => {
-    if (updatedChunks[chunkId]) {
+  updatedChunks.forEach((chunk) => {
+    if (chunk) {
       const shouldMerge = !(
-        globalChunks[chunkId]?.isGenerated &&
-        !updatedChunks[chunkId]?.isGenerated
+        globalChunks.get(chunk.chunkId)?.isGenerated && !chunk?.isGenerated
       );
       if (shouldMerge) {
-        globalChunks[chunkId] = updatedChunks[chunkId];
+        globalChunks.set(chunk.chunkId, chunk);
       }
     } else {
       throw Error("Trying to merge empty chunks...");

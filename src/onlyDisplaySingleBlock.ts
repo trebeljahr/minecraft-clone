@@ -12,14 +12,14 @@ export function onlyDisplaySingleBlock() {
 
   const chunkId = "0,3,0";
 
-  world.globalChunks[chunkId] = {
+  world.globalChunks.set(chunkId, {
     chunkId,
     isGenerated: true,
     isSunlit: true,
     isFloodlit: true,
     isGeometrized: true,
     data: new Uint8Array(chunkSize * chunkSize * chunkSize * fields.count),
-  };
+  });
 
   const [x, y, z] = player.pos.toArray();
   for (let i = 0; i < 10; i++) {

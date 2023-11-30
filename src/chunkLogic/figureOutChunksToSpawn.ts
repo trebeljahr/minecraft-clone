@@ -12,7 +12,8 @@ export async function figureOutChunksToSpawn(queue: string[]) {
   }
   const chunksToSpawn = ids.filter((offsetId) => {
     return (
-      !world.globalChunks[offsetId]?.isGenerated && !queue.includes(offsetId)
+      !world.globalChunks.get(offsetId)?.isGenerated &&
+      !queue.includes(offsetId)
     );
   });
   return chunksToSpawn;
