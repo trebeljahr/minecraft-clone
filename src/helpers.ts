@@ -109,11 +109,12 @@ export function setLightValue(
   chunk[blockIndex + fields.light] = lightValue;
 }
 
+const yTable = new Array(chunkSize).fill(0).map((_, y) => y * chunkSliceSize);
+const zTable = new Array(chunkSize).fill(0).map((_, z) => z * chunkSize);
+
 export function computeVoxelIndex(pos: number[]) {
-  const [x, y, z] = pos
-    .map((coord) => MathUtils.euclideanModulo(coord, chunkSize))
-    .map((value) => value | 0);
-  return (y * chunkSliceSize + z * chunkSize + x) * fields.count;
+  const [x, y, z] = pos.map((coord) => coord % chunkSize);
+  return (yTable[y] + zTable[z] + x) * fields.count;
 }
 
 export function getSurroundingChunksColumns(chunks: Chunks, chunkId: string) {
