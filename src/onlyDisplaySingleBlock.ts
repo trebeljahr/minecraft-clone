@@ -1,10 +1,9 @@
-import { Vector3 } from "three";
-import { Position, chunkSize, fields } from "./constants";
-import { world } from "./world";
-import { setVoxel, setVoxelFromPos } from "./chunkLogic";
-import { blocks } from "./blocks";
 import { player } from "./Player";
+import { blocks } from "./blocks";
+import { setVoxelFromPos } from "./chunkLogic";
+import { chunkSize, fields } from "./constants";
 import { computeChunkId } from "./helpers";
+import { world } from "./world";
 
 export function onlyDisplaySingleBlock() {
   console.log(computeChunkId(player.pos.toArray()));

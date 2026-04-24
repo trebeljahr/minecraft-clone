@@ -1,21 +1,23 @@
 import { Color, Fog } from "three";
 import { Loop } from "./Loop";
 import { player } from "./Player";
+import { displayTestBed } from "./chunkLogic/tests/generateTestChunks";
 import {
   chunkSize,
   fogColor,
   inMultipleChunksMode,
   inSingleBlockMode,
   inSingleChunkMode,
+  inTestMode,
   viewDistance,
 } from "./constants";
 import { setupControls } from "./controls";
+import { generate } from "./generateChunks";
 import { SimpleTimer } from "./helpers";
 import { onlyDisplaySingleBlock } from "./onlyDisplaySingleBlock";
 import { onWindowResize } from "./rendering";
 import { handleChunks, shouldChunksUpdate } from "./streamChunks";
 import { world } from "./world";
-import { generate } from "./generateChunks";
 
 init();
 
@@ -51,18 +53,18 @@ async function init() {
   if (inSingleBlockMode) onlyDisplaySingleBlock();
   else if (inSingleChunkMode) onlyDisplaySingleChunk();
   else if (inMultipleChunksMode) onlyDisplayFewChunks();
+  else if (inTestMode) await displayTestBed();
   else {
     const logTime = new SimpleTimer();
-    handleChunks().then(() => {
-      logTime.takenFor("Init");
-      world.initialLoadDone = true;
-      // const loadingElement = document.getElementById("worldLoaderState");
-      // loadingElement.style.display = "none";
-      const button = document.getElementById("playButton") as HTMLButtonElement;
-      button.disabled = false;
-    });
-    // loop.register({ tick: shouldChunksUpdate });
+    await handleChunks();
+    logTime.takenFor("Init");
+    world.initialLoadDone = true;
+
+    loop.register({ tick: shouldChunksUpdate });
   }
+
+  const button = document.getElementById("playButton") as HTMLButtonElement;
+  button.disabled = false;
 
   loop.register(player);
 
@@ -73,7 +75,7 @@ async function init() {
   world.scene.fog = new Fog(
     color,
     viewDistance * chunkSize - 2 * chunkSize,
-    viewDistance * chunkSize
+    viewDistance * chunkSize,
   );
   world.scene.background = new Color(color);
 

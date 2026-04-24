@@ -1,9 +1,9 @@
 import { Vector3 } from "three";
-import { getVoxel } from "./helpers";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
-import { Chunks, copy, spectatorMode } from "./constants";
-import { world } from "./world";
 import { blocks } from "./blocks";
+import { copy, spectatorMode } from "./constants";
+import { getVoxel } from "./helpers";
+import { world } from "./world";
 
 const { air } = blocks;
 
@@ -52,10 +52,8 @@ class Player {
       this.planarVelocity.x -= this.planarVelocity.x * 20 * delta;
       this.planarVelocity.z -= this.planarVelocity.z * 20 * delta;
 
-      this.planarVelocity.z +=
-        this.directionPlayerWantsToMove.z * this.maxSpeed * delta;
-      this.planarVelocity.x +=
-        this.directionPlayerWantsToMove.x * this.maxSpeed * delta;
+      this.planarVelocity.z += this.directionPlayerWantsToMove.z * this.maxSpeed * delta;
+      this.planarVelocity.x += this.directionPlayerWantsToMove.x * this.maxSpeed * delta;
 
       this.planarVelocity.clampLength(0, this.maxSpeed);
       this.velocity.x = this.planarVelocity.x;
@@ -72,8 +70,7 @@ class Player {
         this.pos.y -= this.velocity.y * delta;
       }
 
-      if (this.velocity.y > -30 && !onGround && this.gravity)
-        this.velocity.y -= 9.8 * 5 * delta;
+      if (this.velocity.y > -30 && !onGround && this.gravity) this.velocity.y -= 9.8 * 5 * delta;
 
       if (!this.gravity && this.moveDown) {
         this.pos.y -= (this.maxSpeed / 10) * delta;
@@ -116,9 +113,7 @@ class Player {
   get collidesWithTerrain(): boolean {
     return (
       this.wouldCollideWithTerrain(this.position) ||
-      this.wouldCollideWithTerrain(
-        this.position.sub(new Vector3(0, this.eyeLevel, 0))
-      )
+      this.wouldCollideWithTerrain(this.position.sub(new Vector3(0, this.eyeLevel, 0)))
     );
   }
   get directionPlayerWantsToMove(): Vector3 {

@@ -22,45 +22,38 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
   const geometry = mesh ? mesh.geometry : new BufferGeometry();
 
   await chunkWorkerPool.queue(async (worker) => {
-    const { positions, normals, uvs, indices, lightValues } =
-      await worker.generateGeometry(
-        pickSurroundingChunks(world.globalChunks, chunkId),
-        chunkId,
-        defaultLight
-      );
+    const { positions, normals, uvs, indices, lightValues } = await worker.generateGeometry(
+      pickSurroundingChunks(world.globalChunks, chunkId),
+      chunkId,
+      defaultLight,
+    );
 
     const positionNumComponents = 3;
     geometry.setAttribute(
       "position",
-      new BufferAttribute(new Float32Array(positions), positionNumComponents)
+      new BufferAttribute(new Float32Array(positions), positionNumComponents),
     );
     const normalNumComponents = 3;
     geometry.setAttribute(
       "normal",
-      new BufferAttribute(new Float32Array(normals), normalNumComponents)
+      new BufferAttribute(new Float32Array(normals), normalNumComponents),
     );
     const uvNumComponents = 2;
-    geometry.setAttribute(
-      "uv",
-      new BufferAttribute(new Float32Array(uvs), uvNumComponents)
-    );
+    geometry.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), uvNumComponents));
     geometry.setIndex(indices);
     geometry.computeBoundingSphere();
 
-    geometry.setAttribute(
-      "light",
-      new BufferAttribute(new Float32Array(lightValues), 1)
-    );
+    geometry.setAttribute("light", new BufferAttribute(new Float32Array(lightValues), 1));
     geometry.setAttribute(
       "color",
       new BufferAttribute(
         new Float32Array(
           positions.map(() => {
             return 255;
-          })
+          }),
         ),
-        3
-      )
+        3,
+      ),
     );
   });
 
@@ -73,7 +66,7 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
 
     const chunkOutline = new LineSegments(
       new EdgesGeometry(new BoxGeometry(chunkSize, chunkSize, chunkSize)),
-      new LineBasicMaterial({ color: debugMeshColor })
+      new LineBasicMaterial({ color: debugMeshColor }),
     );
     chunkOutline.name = "debug:" + chunkId;
     world.debugMeshes[chunkId] = chunkOutline;
@@ -82,7 +75,7 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
       chunkOutline.position.set(
         pos[0] + chunkSize / 2,
         pos[1] + chunkSize / 2,
-        pos[2] + chunkSize / 2
+        pos[2] + chunkSize / 2,
       );
   }
 }

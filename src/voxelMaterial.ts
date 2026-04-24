@@ -1,10 +1,4 @@
-import {
-  NearestFilter,
-  ShaderLib,
-  ShaderMaterial,
-  TextureLoader,
-  UniformsUtils,
-} from "three";
+import { NearestFilter, ShaderLib, ShaderMaterial, TextureLoader, UniformsUtils } from "three";
 
 const texture = new TextureLoader().load("/assets/First-Texture-Atlas.png");
 
@@ -23,14 +17,14 @@ const opaque = new ShaderMaterial({
         "varying float vsunlight;",
         "uniform float sunlightIntensity;",
         "#include <common>",
-      ].join("\n")
+      ].join("\n"),
     )
     .replace(
       "#include <envmap_fragment>",
       [
         "#include <envmap_fragment>",
         "outgoingLight *= (vlight + max(vsunlight * sunlightIntensity, 0.05)) * 0.5;",
-      ].join("\n")
+      ].join("\n"),
     ),
   vertexShader: ShaderLib.basic.vertexShader
     .replace(
@@ -40,7 +34,7 @@ const opaque = new ShaderMaterial({
         "varying float vlight;",
         "varying float vsunlight;",
         "#include <common>",
-      ].join("\n")
+      ].join("\n"),
     )
     .replace(
       "#include <color_vertex>",
@@ -50,7 +44,7 @@ const opaque = new ShaderMaterial({
         "#endif",
         "vlight = float((int(light) >> 4) & 15) / 15.0;",
         "vsunlight = float(int(light) & 15) / 15.0;",
-      ].join("\n")
+      ].join("\n"),
     ),
   uniforms: {
     ...UniformsUtils.clone(ShaderLib.basic.uniforms),

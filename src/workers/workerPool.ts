@@ -1,5 +1,5 @@
-import { spawn, Pool } from "threads";
-import { ChunkWorkerObject } from "./chunkWorkerObject";
+import { Pool, spawn } from "threads";
+import type { ChunkWorkerObject } from "./chunkWorkerObject";
 
 export const chunkWorkerPool = Pool(
   () =>
@@ -8,7 +8,7 @@ export const chunkWorkerPool = Pool(
         name: "chunkWorker",
         type: "module",
         /* webpackEntryOptions: { filename: "workers/[name].js" } */
-      })
+      }),
     ),
-  8
+  8,
 );

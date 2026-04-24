@@ -15,13 +15,9 @@ export const blocks = {
   air: 0,
 };
 
-const swappedEntries = Object.entries(blocks).map(([key, value]) => [
-  value,
-  key,
-]);
+const swappedEntries = Object.entries(blocks).map(([key, value]) => [value, key]);
 
-export const blocksLookup: Record<string, number> =
-  Object.fromEntries(swappedEntries);
+export const blocksLookup: Record<string, number> = Object.fromEntries(swappedEntries);
 
 export const tools = {
   axe: 0,

@@ -1,4 +1,4 @@
-import { Clock, PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import { Clock, type PerspectiveCamera, type WebGLRenderer } from "three";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { world } from "./world";
 
