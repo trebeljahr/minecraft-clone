@@ -1,14 +1,13 @@
 import { getChunkForVoxel } from "../chunkLogic";
 import {
-  Chunks,
+  type Chunks,
+  type LightUpdate,
+  type LightUpdates,
   fields,
-  LightUpdate,
-  LightUpdates,
   neighborOffsets,
-  Position,
   transparentBlocks,
 } from "../constants";
-import { computeVoxelIndex, getLightValue, SimpleTimer } from "../helpers";
+import { computeVoxelIndex } from "../helpers";
 import { Queue } from "./sunlight";
 
 const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);

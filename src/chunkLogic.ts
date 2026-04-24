@@ -1,32 +1,23 @@
+import { blocks } from "./blocks";
 import {
-  Chunk,
-  Chunks,
+  type Chunk,
+  type Chunks,
+  type Position,
   chunkSize,
   fields,
   neighborOffsets,
-  Position,
-  terrainHeight,
 } from "./constants";
 import { computeChunkId, computeVoxelIndex } from "./helpers";
 import { perlin2, perlin3 } from "./noise";
-import { blocks } from "./blocks";
 const { birchwood, foliage, oakwood } = blocks;
 
-export function getChunkForVoxel(
-  chunks: Chunks,
-  pos: number[]
-): [Uint8Array, string] {
+export function getChunkForVoxel(chunks: Chunks, pos: number[]): [Uint8Array, string] {
   const chunkId = computeChunkId(pos as Position);
   const foundChunk = chunks[chunkId]?.data;
   return [foundChunk, chunkId];
 }
 
-export function spawnTree(
-  chunks: Chunks,
-  currentX: number,
-  currentY: number,
-  currentZ: number
-) {
+export function spawnTree(chunks: Chunks, currentX: number, currentY: number, currentZ: number) {
   const treeHeight = currentY + Math.floor(Math.random() * 3) + 3;
   const leafHeightMin = treeHeight - 2;
   const leafHeightMax = treeHeight + 2;
@@ -65,9 +56,7 @@ export function spawnTree(
 export function updateVoxelGeometry(pos: Position) {
   const updatedChunkIds = {};
   for (const offset of neighborOffsets) {
-    const offsetPos = pos.map(
-      (coord, i) => coord + offset.toArray()[i]
-    ) as Position;
+    const offsetPos = pos.map((coord, i) => coord + offset.toArray()[i]) as Position;
     const chunkId = computeChunkId(offsetPos);
     if (!updatedChunkIds[chunkId]) {
       updatedChunkIds[chunkId] = true;

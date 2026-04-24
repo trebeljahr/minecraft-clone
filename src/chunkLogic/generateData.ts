@@ -1,3 +1,4 @@
+import { blocks } from "../blocks";
 import {
   setVoxel,
   shouldPlaceBlock,
@@ -10,9 +11,8 @@ import {
   shouldSpawnTree,
   spawnTree,
 } from "../chunkLogic";
-import { Chunks, chunkSize, fields, Position } from "../constants";
+import { type Chunks, type Position, chunkSize, fields } from "../constants";
 import { getVoxel, parseChunkId } from "../helpers";
-import { blocks } from "../blocks";
 const { emerald, lapis, diamond, gold, coal, stone, grass, dirt } = blocks;
 
 export async function growTrees(chunks: Chunks, chunkId: string) {

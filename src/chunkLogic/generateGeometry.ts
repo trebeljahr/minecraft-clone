@@ -1,21 +1,17 @@
+import { blocks } from "../blocks";
 import {
-  Chunks,
-  transparentBlocks,
-  tileSize,
-  tileTextureWidth,
-  tileTextureHeight,
+  type Chunks,
   chunkSize,
   faces,
+  tileSize,
+  tileTextureHeight,
+  tileTextureWidth,
+  transparentBlocks,
 } from "../constants";
 import { getChunkCoordinatesFromId, getVoxel } from "../helpers";
-import { blocks } from "../blocks";
 const { cactus } = blocks;
 
-export async function generateGeometry(
-  chunks: Chunks,
-  chunkId: string,
-  defaultLight = false
-) {
+export async function generateGeometry(chunks: Chunks, chunkId: string, defaultLight = false) {
   const chunkCoordinates = getChunkCoordinatesFromId(chunkId);
   const positions: number[] = [];
   const lightValues: number[] = [];
@@ -40,15 +36,8 @@ export async function generateGeometry(
               type: neighbor,
               light: neighborLight,
               sunlight: neighbourSunLight,
-            } = getVoxel(chunks, [
-              voxelX + dir[0],
-              voxelY + dir[1],
-              voxelZ + dir[2],
-            ]);
-            if (
-              transparentBlocks.includes(neighbor) ||
-              transparentBlocks.includes(voxel)
-            ) {
+            } = getVoxel(chunks, [voxelX + dir[0], voxelY + dir[1], voxelZ + dir[2]]);
+            if (transparentBlocks.includes(neighbor) || transparentBlocks.includes(voxel)) {
               const ndx = positions.length / 3;
 
               for (const { pos, uv } of corners) {
@@ -56,7 +45,7 @@ export async function generateGeometry(
                   positions.push(
                     pos[0] - dir[0] * 0.063 + x,
                     pos[1] + y,
-                    pos[2] - dir[2] * 0.063 + z
+                    pos[2] - dir[2] * 0.063 + z,
                   );
                 } else {
                   positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
@@ -70,7 +59,7 @@ export async function generateGeometry(
                 normals.push(...dir);
                 uvs.push(
                   ((uvVoxel + uv[0]) * tileSize) / tileTextureWidth,
-                  1 - ((uvRow + 1 - uv[1]) * tileSize) / tileTextureHeight
+                  1 - ((uvRow + 1 - uv[1]) * tileSize) / tileTextureHeight,
                 );
               }
               indices.push(ndx, ndx + 1, ndx + 2, ndx + 2, ndx + 1, ndx + 3);

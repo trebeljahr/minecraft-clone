@@ -1,16 +1,10 @@
-import { generateChunkData, setVoxel } from "../src/chunkLogic";
-import {
-  addChunkAtChunkId,
-  getBigChunkCorner as getBigChunkCorner,
-  computeChunkId,
-  getSmallChunkCorner as getSmallChunkCorner,
-  computeSmallChunkCornerFromId,
-  parseChunkId,
-  generateSurroundingChunks,
-} from "../src/helpers";
-import { chunkSize, verticalNumberOfChunks } from "../src/constants";
 import { blocks } from "../src/blocks";
-import { Vector3 } from "three";
+import {
+  computeChunkId,
+  generateSurroundingChunks,
+  getBigChunkCorner,
+  getSmallChunkCorner,
+} from "../src/helpers";
 
 const { stone } = blocks;
 describe("test voxel logic", () => {

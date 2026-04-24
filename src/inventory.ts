@@ -1,42 +1,30 @@
-import { blocks, itemImages } from "./blocks";
 import { Swappable } from "@shopify/draggable";
-import { MouseClickEvent } from "./helpers";
+import { blocks, itemImages } from "./blocks";
 
-const throttle = (fn: Function, wait: number = 60) => {
-  let inThrottle: boolean,
-    lastFn: ReturnType<typeof setTimeout>,
-    lastTime: number;
+const throttle = (fn: Function, wait = 60) => {
+  let inThrottle: boolean, lastFn: ReturnType<typeof setTimeout>, lastTime: number;
   return function (this: any) {
-    const context = this,
-      args = arguments;
+    const args = arguments;
     if (!inThrottle) {
-      fn.apply(context, args);
+      fn.apply(this, args);
       lastTime = Date.now();
       inThrottle = true;
     } else {
       clearTimeout(lastFn);
-      lastFn = setTimeout(() => {
-        if (Date.now() - lastTime >= wait) {
-          fn.apply(context, args);
-          lastTime = Date.now();
-        }
-      }, Math.max(wait - (Date.now() - lastTime), 0));
+      lastFn = setTimeout(
+        () => {
+          if (Date.now() - lastTime >= wait) {
+            fn.apply(this, args);
+            lastTime = Date.now();
+          }
+        },
+        Math.max(wait - (Date.now() - lastTime), 0),
+      );
     }
   };
 };
 
-const {
-  gold,
-  birchwood,
-  coal,
-  stone,
-  iron,
-  lapis,
-  grass,
-  emerald,
-  oakwood,
-  air,
-} = blocks;
+const { gold, birchwood, coal, stone, iron, lapis, grass, emerald, oakwood, air } = blocks;
 
 const maxItemStack = 64;
 const initialHotbarSlots = [
@@ -60,7 +48,7 @@ type HotbarContents = [
   InventorySlot,
   InventorySlot,
   InventorySlot,
-  InventorySlot
+  InventorySlot,
 ];
 
 interface InventorySlot {
@@ -84,15 +72,12 @@ export class Inventory {
     });
     this.hotbarSlots = initialHotbarSlots;
 
-    for (let slot of this.inventorySlots) {
+    for (const slot of this.inventorySlots) {
       const node = this.makeInventoryNode(slot.itemType, 0);
       this.inventoryElement.appendChild(node);
     }
-    for (let hotbarSlot of this.hotbarSlots) {
-      const node = this.makeInventoryNode(
-        hotbarSlot.itemType,
-        hotbarSlot.amount
-      );
+    for (const hotbarSlot of this.hotbarSlots) {
+      const node = this.makeInventoryNode(hotbarSlot.itemType, hotbarSlot.amount);
       this.hotbarElement.appendChild(node);
     }
     const swappableContainers = this.inventoryElement.children;
@@ -103,9 +88,7 @@ export class Inventory {
     });
 
     // attach scroll handlers to hotbar
-    const hotbarItemboxElements = [
-      ...this.hotbarElement.children,
-    ] as HTMLElement[];
+    const hotbarItemboxElements = [...this.hotbarElement.children] as HTMLElement[];
 
     hotbarItemboxElements[0].style.outline = "solid 5px white";
     const onScroll = (event: WheelEvent) => {
@@ -198,9 +181,7 @@ export class Inventory {
   addTo(itemTypeToInsert: number) {
     const { hasFreeSlot, index } = this.findFreeSlot(itemTypeToInsert);
     if (hasFreeSlot) {
-      const { amount } = this.parse(
-        this.getInventoryOrHotbarSlot(index).dataset
-      );
+      const { amount } = this.parse(this.getInventoryOrHotbarSlot(index).dataset);
       const newAmount = amount + 1;
       const slot = this.getInventoryOrHotbarSlot(index);
 
@@ -236,8 +217,8 @@ export class Inventory {
   }
 
   parse({ amount: a, itemType: i }: Record<string, string>) {
-    const amount = parseInt(a);
-    const itemType = parseInt(i);
+    const amount = Number.parseInt(a);
+    const itemType = Number.parseInt(i);
     return {
       amount: isNaN(amount) ? 0 : amount,
       itemType: isNaN(itemType) ? air : itemType,

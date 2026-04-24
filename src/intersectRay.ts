@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { Chunks, Position } from "./constants";
+import type { Chunks, Position } from "./constants";
 import { getVoxel } from "./helpers";
 
 export interface Intersection {
@@ -12,13 +12,9 @@ export function intersectRay(
   chunks: Chunks,
   start: Vector3,
   end: Vector3,
-  velocity = 6
+  velocity = 6,
 ): Intersection | null {
-  const {
-    x: dx,
-    y: dy,
-    z: dz,
-  } = new Vector3().copy(end).sub(start).normalize();
+  const { x: dx, y: dy, z: dz } = new Vector3().copy(end).sub(start).normalize();
 
   let t = 0.0;
   let { x: ix, y: iy, z: iz } = new Vector3().copy(start).floor();
@@ -35,9 +31,9 @@ export function intersectRay(
   const yDist = stepY > 0 ? iy + 1 - start.y : start.y - iy;
   const zDist = stepZ > 0 ? iz + 1 - start.z : start.z - iz;
 
-  let txMax = txDelta < Infinity ? txDelta * xDist : Infinity;
-  let tyMax = tyDelta < Infinity ? tyDelta * yDist : Infinity;
-  let tzMax = tzDelta < Infinity ? tzDelta * zDist : Infinity;
+  let txMax = txDelta < Number.POSITIVE_INFINITY ? txDelta * xDist : Number.POSITIVE_INFINITY;
+  let tyMax = tyDelta < Number.POSITIVE_INFINITY ? tyDelta * yDist : Number.POSITIVE_INFINITY;
+  let tzMax = tzDelta < Number.POSITIVE_INFINITY ? tzDelta * zDist : Number.POSITIVE_INFINITY;
 
   let steppedIndex = -1;
 

@@ -1,9 +1,10 @@
-import { Material, Mesh, Vector3 } from "three";
+import { type Material, type Mesh, Vector3 } from "three";
+import { player } from "./Player";
 import { figureOutChunksToSpawn } from "./chunkLogic/figureOutChunksToSpawn";
 import {
-  Chunks,
-  LightUpdates,
-  Position,
+  type Chunks,
+  type LightUpdates,
+  type Position,
   surroundingOffsets,
   viewDistance,
 } from "./constants";
@@ -15,7 +16,6 @@ import {
   getChunkCoordinatesFromId,
   makeEmptyChunk,
 } from "./helpers";
-import { player } from "./Player";
 import { updateGeometry } from "./updateGeometry";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { world } from "./world";
@@ -44,9 +44,7 @@ export async function updateSurroundingChunkGeometry(pos: Position) {
     const neighbourChunkId = addOffsetToChunkId(chunkId, new Vector3(...dir));
     chunksToUpdateSet.add(neighbourChunkId);
   });
-  const chunkUpdatePromises = [...chunksToUpdateSet].map((chunkId) =>
-    updateGeometry(chunkId)
-  );
+  const chunkUpdatePromises = [...chunksToUpdateSet].map((chunkId) => updateGeometry(chunkId));
   return Promise.all(chunkUpdatePromises);
 }
 
@@ -72,9 +70,7 @@ export function pruneChunks(playerPosition: Vector3) {
       const currentChunkId = computeChunkId(playerPosition.toArray());
       const [x, , z] = getChunkCoordinatesFromId(id);
       const [x2, , z2] = getChunkCoordinatesFromId(currentChunkId);
-      const outOfView =
-        Math.abs(x - x2) > viewDistance + 1 ||
-        Math.abs(z - z2) > viewDistance + 1;
+      const outOfView = Math.abs(x - x2) > viewDistance + 1 || Math.abs(z - z2) > viewDistance + 1;
       return outOfView;
     })
     .forEach((idToDelete) => {
@@ -96,9 +92,7 @@ export async function handleChunks() {
   chunkLoadingQueue.push(...chunksToSpawn);
   const chunksSpawned = await generate(world.globalChunks, chunksToSpawn);
 
-  chunkLoadingQueue = chunkLoadingQueue.filter(
-    (id) => !chunksSpawned.includes(id)
-  );
+  chunkLoadingQueue = chunkLoadingQueue.filter((id) => !chunksSpawned.includes(id));
   pruneChunks(player.position);
 }
 
@@ -106,8 +100,7 @@ export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
   Object.keys(updatedChunks).forEach((chunkId) => {
     if (updatedChunks[chunkId]) {
       const shouldMerge = !(
-        globalChunks[chunkId]?.isGenerated &&
-        !updatedChunks[chunkId]?.isGenerated
+        globalChunks[chunkId]?.isGenerated && !updatedChunks[chunkId]?.isGenerated
       );
       if (shouldMerge) {
         globalChunks[chunkId] = updatedChunks[chunkId];
@@ -118,20 +111,17 @@ export function mergeChunkUpdates(globalChunks: Chunks, updatedChunks: Chunks) {
   });
 }
 
-export async function sunlightChunks(
-  availableChunks: Chunks,
-  chunksToLight: string[]
-) {
+export async function sunlightChunks(availableChunks: Chunks, chunksToLight: string[]) {
   let stillNeedUpdates: LightUpdates;
   await chunkWorkerPool.queue(async (worker) => {
     const { chunks, sunlightQueue } = await worker.createSunlightQueue(
       availableChunks,
-      chunksToLight
+      chunksToLight,
     );
     mergeChunkUpdates(availableChunks, chunks);
     const { updatedChunks, chunksThatNeedUpdates } = await worker.floodLight(
       availableChunks,
-      sunlightQueue
+      sunlightQueue,
     );
     mergeChunkUpdates(availableChunks, updatedChunks);
     stillNeedUpdates = chunksThatNeedUpdates;
@@ -144,7 +134,7 @@ export async function streamInChunk(chunks: Chunks, chunkId: string) {
   await chunkWorkerPool.queue(async (worker) => {
     const updatedChunks = await worker.generateChunkData(
       pickSurroundingChunks(chunks, chunkId),
-      chunkId
+      chunkId,
     );
     mergeChunkUpdates(chunks, updatedChunks);
   });

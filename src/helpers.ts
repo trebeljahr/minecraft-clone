@@ -1,15 +1,15 @@
+import { Vector3 } from "three";
+import { blocksLookup } from "./blocks";
+import { getChunkForVoxel } from "./chunkLogic";
 import {
-  fields,
-  copy,
+  type Chunk,
+  type Chunks,
+  type Position,
   chunkSize,
   chunkSliceSize,
-  Chunks,
-  Position,
-  Chunk,
+  copy,
+  fields,
 } from "./constants";
-import { MathUtils, Vector3 } from "three";
-import { blocksLookup, blocks } from "./blocks";
-import { getChunkForVoxel } from "./chunkLogic";
 
 const leftMouse = 0;
 const rightMouse = 2;
@@ -44,9 +44,7 @@ export class SimpleTimer {
     const stamp = Date.now();
     this.timeStamps[now] = stamp;
     this.lastTimeStamp = now;
-    console.log(
-      `Time taken from ${since} to ${now} was ${stamp - this.timeStamps[since]}`
-    );
+    console.log(`Time taken from ${since} to ${now} was ${stamp - this.timeStamps[since]}`);
   }
 }
 
@@ -74,10 +72,7 @@ export function getLightValue(chunks: Chunks, pos: Position) {
   return blockLightValue;
 }
 
-export function addOffsetToChunkId(
-  id: string,
-  { x: xOff = 0, y: yOff = 0, z: zOff = 0 }
-) {
+export function addOffsetToChunkId(id: string, { x: xOff = 0, y: yOff = 0, z: zOff = 0 }) {
   const [x, y, z] = getChunkCoordinatesFromId(id);
   const newChunkId = `${x + xOff},${y + yOff},${z + zOff}`;
   return newChunkId;
@@ -99,11 +94,7 @@ export function getDistanceBetweenChunks(chunkId1: string, chunkId2: string) {
   return chunkPos1.distanceTo(chunkPos2);
 }
 
-export function setLightValue(
-  chunks: Chunks,
-  pos: Position,
-  lightValue: number
-) {
+export function setLightValue(chunks: Chunks, pos: Position, lightValue: number) {
   const [chunk] = getChunkForVoxel(chunks, pos);
   const blockIndex = computeVoxelIndex(pos);
   chunk[blockIndex + fields.light] = lightValue;
@@ -117,9 +108,7 @@ function euclideanModulo(n: number, m: number) {
 }
 
 export function computeVoxelIndex(pos: number[]) {
-  const [x, y, z] = pos.map((coord) =>
-    euclideanModulo(Math.floor(coord), chunkSize)
-  );
+  const [x, y, z] = pos.map((coord) => euclideanModulo(Math.floor(coord), chunkSize));
 
   const result = (yTable[y] + zTable[z] + x) * fields.count;
   if (isNaN(result)) {
@@ -170,19 +159,14 @@ export function getSmallChunkCorner(pos: Position): Position {
 }
 
 export function getBigChunkCorner(pos: Position): Position {
-  return getSmallChunkCorner(pos).map(
-    (coord) => coord + chunkSize - 1
-  ) as Position;
+  return getSmallChunkCorner(pos).map((coord) => coord + chunkSize - 1) as Position;
 }
 
 export function computeSmallChunkCornerFromId(chunkId: string): Position {
-  return getChunkCoordinatesFromId(chunkId).map(
-    (coord) => coord * chunkSize
-  ) as Position;
+  return getChunkCoordinatesFromId(chunkId).map((coord) => coord * chunkSize) as Position;
 }
 
-export const byBlockData = (_: number, index: number) =>
-  index % fields.count === 0;
+export const byBlockData = (_: number, index: number) => index % fields.count === 0;
 
 export function transformToBlocks(chunk: Uint8Array) {
   return [...chunk].filter(byBlockData).map((num) => {
@@ -213,7 +197,7 @@ export function getChunkCoordinates(pos: number[]): Position {
 }
 
 export function getChunkCoordinatesFromId(chunkId: string) {
-  return chunkId.split(",").map((num) => parseInt(num));
+  return chunkId.split(",").map((num) => Number.parseInt(num));
 }
 
 export function getChunkCoordinatesVector(chunkId: string) {
@@ -230,7 +214,7 @@ export function computeChunkColumnId(pos: number[]) {
 }
 
 export function parseChunkId(chunkId: string) {
-  const [x, y, z] = chunkId.split(",").map((digits) => parseInt(digits));
+  const [x, y, z] = chunkId.split(",").map((digits) => Number.parseInt(digits));
   return new Vector3(x, y, z).multiplyScalar(chunkSize);
 }
 

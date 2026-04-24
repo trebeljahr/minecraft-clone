@@ -1,17 +1,17 @@
 import { Vector3 } from "three";
+import { player } from "./Player";
 import { blocks } from "./blocks";
-import { getHeightValue } from "./chunkLogic";
 import { terrainHeight } from "./constants";
 import { MouseClickEvent, computeChunkId, getVoxel } from "./helpers";
+import type { Intersection } from "./intersectRay";
 import {
   convertIntersectionToPosition,
   getIntersection,
   isOutOfPlayer,
+  placeLightVoxelDebug,
   placeVoxel,
 } from "./placeVoxel";
-import { player } from "./Player";
 import { world } from "./world";
-import { Intersection } from "./intersectRay";
 
 const { air } = blocks;
 
@@ -20,7 +20,8 @@ function placeBlockFromInventory(intersection: Intersection) {
   const pos = convertIntersectionToPosition(intersection, block);
   if (!isOutOfPlayer(pos) || block === air) return;
 
-  placeVoxel(block, pos);
+  // placeVoxel(block, pos);
+  placeLightVoxelDebug(pos);
   if (!air) world.inventory.takeOutItem();
 }
 
@@ -54,15 +55,17 @@ const keyboardControls = (event: KeyboardEvent) => {
       else player.controls.lock();
 
       break;
+    case "KeyL":
+      console.log("Next step in floodlight calc");
+
+      world.stepFloodLightCalc();
+      break;
     case "KeyH":
       console.log(
         "world.Player Position: ",
-        player.position.toArray().map((elem) => Math.floor(elem))
+        player.position.toArray().map((elem) => Math.floor(elem)),
       );
-      console.log(
-        "chunk player is in:",
-        computeChunkId(player.position.toArray())
-      );
+      console.log("chunk player is in:", computeChunkId(player.position.toArray()));
       break;
     case "KeyF":
       const pos = player.controls.getObject().position;
@@ -87,23 +90,12 @@ const keyboardControls = (event: KeyboardEvent) => {
 
       console.log("direction", camDirection);
       console.log("position:", world.camera.position);
+      console.log("chunk id", computeChunkId(world.camera.position.toArray()));
       break;
     case "KeyG":
       console.log("Pressed G", player.position);
-      console.log(
-        "X is stuck",
-        player.position.x - Math.floor(player.position.x) <= 0.001
-      );
-      console.log(
-        "Z is stuck",
-        player.position.z - Math.floor(player.position.z) <= 0.001
-      );
-      break;
-    case "KeyK":
-      console.log(
-        "Height Value here",
-        getHeightValue(player.position.x, player.position.z)
-      );
+      console.log("X is stuck", player.position.x - Math.floor(player.position.x) <= 0.001);
+      console.log("Z is stuck", player.position.z - Math.floor(player.position.z) <= 0.001);
       break;
   }
 };

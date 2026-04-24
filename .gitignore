@@ -2,3 +2,6 @@ node_modules/
 public/dist/
 
 yarn-error.log
+# claude code
+.claude/settings.local.json
+.claude/worktrees/

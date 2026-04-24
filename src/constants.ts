@@ -1,8 +1,9 @@
-import { blocks } from "./blocks";
 import * as THREE from "three";
 import { Vector3 } from "three";
+import { blocks } from "./blocks";
 
 export type Position = [number, number, number];
+
 export function copy(vec: THREE.Vector3) {
   return new THREE.Vector3().copy(vec);
 }
@@ -19,7 +20,7 @@ export const neighborOffsets = [
   new Vector3(0, 0, 1), // front
 ];
 
-let surroundingOffsets = [] as Position[];
+const surroundingOffsets = [] as Position[];
 
 for (let z = -1; z <= 1; z++) {
   for (let y = -1; y <= 1; y++) {
@@ -32,11 +33,9 @@ for (let z = -1; z <= 1; z++) {
 export { surroundingOffsets };
 
 const sum = (a: number, b: number) => a + b;
-export const surroundingOffsetsWithoutSelf = surroundingOffsets.filter(
-  (coords) => {
-    return coords.map(Math.abs).reduce(sum, 0) > 0;
-  }
-);
+export const surroundingOffsetsWithoutSelf = surroundingOffsets.filter((coords) => {
+  return coords.map(Math.abs).reduce(sum, 0) > 0;
+});
 
 export const glowingBlocks = [cactus];
 export const transparentBlocks = [air, cactus, foliage];
@@ -140,6 +139,8 @@ export type LightUpdates = Record<string, LightUpdate[]>;
 export const inSingleBlockMode = false;
 export const inSingleChunkMode = false;
 export const inMultipleChunksMode = false;
+export const inTestMode = true;
+
 export const spectatorMode = true;
 export const debugMeshColor = "red";
 export const fogColor = "lightblue";

@@ -1,23 +1,19 @@
+import { getChunkForVoxel } from "../chunkLogic";
 import {
-  Position,
+  type Chunks,
+  type LightUpdate,
+  type Position,
   chunkSize,
   transparentBlocks,
-  Chunks,
   verticalNumberOfChunks,
-  LightUpdate,
 } from "../constants";
-import {
-  setLightValue,
-  getSmallChunkCorner,
-  computeVoxelIndex,
-  parseChunkId,
-  computeSmallChunkCornerFromId,
-  SimpleTimer,
-} from "../helpers";
-import { getChunkForVoxel } from "../chunkLogic";
+import { computeSmallChunkCornerFromId, computeVoxelIndex, setLightValue } from "../helpers";
 
 class Node {
-  constructor(public value: any, public next: Node | null = null) {}
+  constructor(
+    public value: any,
+    public next: Node | null = null,
+  ) {}
 }
 
 export class Queue {
@@ -82,27 +78,18 @@ export function propagateSunlight(chunks: Chunks, queue: LightUpdate[]) {
   return outgoingQueue;
 }
 
-export async function createSunlightQueue(
-  chunks: Chunks,
-  chunksThatNeedToBeUpdated: string[]
-) {
-  const queue = chunksThatNeedToBeUpdated
-    .map((id) => {
-      const [cx, , cz] = computeSmallChunkCornerFromId(id);
-      const queue = [] as LightUpdate[];
-      for (let xOff = 0; xOff < chunkSize; xOff++) {
-        for (let zOff = 0; zOff < chunkSize; zOff++) {
-          const pos = [
-            xOff + cx,
-            verticalNumberOfChunks * chunkSize,
-            zOff + cz,
-          ] as Position;
-          queue.push({ pos, lightValue: 15 });
-        }
+export async function createSunlightQueue(chunks: Chunks, chunksThatNeedToBeUpdated: string[]) {
+  const queue = chunksThatNeedToBeUpdated.flatMap((id) => {
+    const [cx, , cz] = computeSmallChunkCornerFromId(id);
+    const queue = [] as LightUpdate[];
+    for (let xOff = 0; xOff < chunkSize; xOff++) {
+      for (let zOff = 0; zOff < chunkSize; zOff++) {
+        const pos = [xOff + cx, verticalNumberOfChunks * chunkSize, zOff + cz] as Position;
+        queue.push({ pos, lightValue: 15 });
       }
-      return queue;
-    })
-    .flat();
+    }
+    return queue;
+  });
   // queue is correct length!
 
   const sunlightQueue = propagateSunlight(chunks, queue);

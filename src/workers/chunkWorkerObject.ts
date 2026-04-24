@@ -1,7 +1,7 @@
 import { floodLight } from "../chunkLogic/floodLight";
-import { generateGeometry } from "../chunkLogic/generateGeometry";
 import { generateChunkData, growTrees } from "../chunkLogic/generateData";
-import { propagateSunlight, createSunlightQueue } from "../chunkLogic/sunlight";
+import { generateGeometry } from "../chunkLogic/generateGeometry";
+import { createSunlightQueue, propagateSunlight } from "../chunkLogic/sunlight";
 
 export const ChunkWorkerObject = {
   generateChunkData,

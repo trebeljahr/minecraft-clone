@@ -1,17 +1,18 @@
-import { PerspectiveCamera, Vector3 } from "three";
+import { Vector3 } from "three";
+import { player } from "./Player";
 import { blocks } from "./blocks";
-import { setVoxel, setVoxelFromPos } from "./chunkLogic";
-import { Chunks, glowingBlocks, neighborOffsets, Position } from "./constants";
+import { setVoxelFromPos } from "./chunkLogic";
+import { createFloodlightQueueVisualizer } from "./chunkLogic/tests/generateTestChunks";
+import { type Position, glowingBlocks, neighborOffsets } from "./constants";
 import {
+  type MouseClickEvent,
   computeChunkId,
   getSurroundingChunksColumns,
   getVoxel,
-  MouseClickEvent,
+  makeEmptyChunk,
   setLightValue,
 } from "./helpers";
-import { intersectRay, Intersection } from "./intersectRay";
-import { Inventory } from "./inventory";
-import { player } from "./Player";
+import { type Intersection, intersectRay } from "./intersectRay";
 import { requestRenderIfNotRequested } from "./rendering";
 import {
   mergeChunkUpdates,
@@ -41,9 +42,7 @@ export function getIntersection(mouseClick: MouseClickEvent) {
 }
 
 export function areSame(a: any[], b: any[]) {
-  return (
-    a.every((item) => b.includes(item)) && b.every((item) => a.includes(item))
-  );
+  return a.every((item) => b.includes(item)) && b.every((item) => a.includes(item));
 }
 export function isOutOfPlayer(pos: Position) {
   const blockPos = pos.map(Math.floor);
@@ -65,10 +64,7 @@ export function isOutOfPlayer(pos: Position) {
   return true;
 }
 
-export function convertIntersectionToPosition(
-  intersection: Intersection,
-  voxelId: number
-) {
+export function convertIntersectionToPosition(intersection: Intersection, voxelId: number) {
   const pos = intersection.position
     .map((v, ndx) => {
       return v + intersection.normal[ndx] * (voxelId > 0 ? 0.5 : -0.5);
@@ -77,15 +73,33 @@ export function convertIntersectionToPosition(
   return pos;
 }
 
+export async function placeVoxelSafe(voxelId: number, pos: Position) {
+  const chunkId = computeChunkId(pos);
+  if (!world.globalChunks[chunkId]) {
+    world.globalChunks[chunkId] = makeEmptyChunk(chunkId);
+  }
+
+  setVoxelFromPos(world.globalChunks, pos, voxelId);
+}
+
+export async function placeLightVoxelDebug(pos: Position) {
+  const chunkId = computeChunkId(pos);
+  if (!world.globalChunks[chunkId]) {
+    world.globalChunks[chunkId] = makeEmptyChunk(chunkId);
+  }
+
+  const lightQueue = [{ pos, lightValue: 15 }];
+
+  createFloodlightQueueVisualizer(lightQueue);
+}
+
 export async function placeVoxel(voxelId: number, pos: Position) {
   const chunkId = computeChunkId(pos);
   setVoxelFromPos({ [chunkId]: world.globalChunks[chunkId] }, pos, voxelId);
   const ownLight = glowingBlocks.includes(voxelId) ? 15 : 0;
 
   const neighborLight = neighborOffsets.reduce((currentMax, offset) => {
-    const neighborPos = pos.map(
-      (coord, i) => coord + offset.toArray()[i]
-    ) as Position;
+    const neighborPos = pos.map((coord, i) => coord + offset.toArray()[i]) as Position;
     const { light } = getVoxel(world.globalChunks, neighborPos);
     return Math.max(light, currentMax);
   }, 0);
@@ -95,14 +109,14 @@ export async function placeVoxel(voxelId: number, pos: Position) {
   await chunkWorkerPool.queue(async (worker) => {
     const { updatedChunks } = await worker.floodLight(
       pickSurroundingChunks(world.globalChunks, chunkId),
-      [{ pos, lightValue }]
+      [{ pos, lightValue }],
     );
     mergeChunkUpdates(world.globalChunks, updatedChunks);
   });
 
   const { updatedChunks } = await sunlightChunks(
     getSurroundingChunksColumns(world.globalChunks, chunkId),
-    [chunkId]
+    [chunkId],
   );
   mergeChunkUpdates(world.globalChunks, updatedChunks);
 

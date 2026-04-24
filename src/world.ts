@@ -1,20 +1,13 @@
 import {
   ACESFilmicToneMapping,
-  LineSegments,
-  Mesh,
+  type LineSegments,
+  type Mesh,
   PerspectiveCamera,
   Scene,
-  sRGBEncoding,
   WebGLRenderer,
+  sRGBEncoding,
 } from "three";
-import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
-import {
-  Chunk,
-  Chunks,
-  chunkSize,
-  terrainHeight,
-  viewDistance,
-} from "./constants";
+import { type Chunks, chunkSize, terrainHeight, viewDistance } from "./constants";
 import { Inventory } from "./inventory";
 
 interface World {
@@ -27,6 +20,7 @@ interface World {
   menu: boolean;
   globalChunks: Chunks;
   changedChunks: Chunks;
+  stepFloodLightCalc: () => void;
   chunkHelperVisibility: boolean;
   renderer: WebGLRenderer;
   renderRequested: boolean;
@@ -37,7 +31,7 @@ const camera = createCamera();
 const globalChunks: Chunks = {};
 const changedChunks: Chunks = {};
 
-export let world: World = {
+export const world: World = {
   meshes: {},
   initialLoadDone: false,
   debugMeshes: {},
@@ -47,6 +41,7 @@ export let world: World = {
   camera,
   menu: true,
   chunkHelperVisibility: false,
+  stepFloodLightCalc: () => {},
   scene: new Scene(),
   globalChunks,
   changedChunks,
@@ -71,7 +66,7 @@ function createCamera() {
     60,
     window.innerWidth / window.innerHeight,
     near,
-    viewDistance * chunkSize
+    viewDistance * chunkSize,
   );
   camera.position.y = terrainHeight + 5;
   return camera;

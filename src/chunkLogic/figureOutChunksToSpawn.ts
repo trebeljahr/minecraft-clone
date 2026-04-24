@@ -1,4 +1,4 @@
-import { Chunks, viewDistance } from "../constants";
+import { viewDistance } from "../constants";
 import { addOffsetToChunkId } from "../helpers";
 import { world } from "../world";
 
@@ -11,9 +11,7 @@ export async function figureOutChunksToSpawn(queue: string[]) {
     }
   }
   const chunksToSpawn = ids.filter((offsetId) => {
-    return (
-      !world.globalChunks[offsetId]?.isGenerated && !queue.includes(offsetId)
-    );
+    return !world.globalChunks[offsetId]?.isGenerated && !queue.includes(offsetId);
   });
   return chunksToSpawn;
 }
