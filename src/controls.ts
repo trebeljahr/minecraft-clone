@@ -67,23 +67,24 @@ const keyboardControls = (event: KeyboardEvent) => {
       );
       console.log("chunk player is in:", computeChunkId(player.position.toArray()));
       break;
-    case "KeyF":
-      const pos = player.controls.getObject().position;
+    case "KeyF": {
+      const pos = player.controls.object.position;
       const newPos = new Vector3(0, terrainHeight + 5, 0);
       pos.y = newPos.y;
       pos.x = newPos.x;
       pos.z = newPos.z;
 
       break;
+    }
     case "KeyZ":
       console.log("Pressed Z");
       world.chunkHelperVisibility = !world.chunkHelperVisibility;
 
-      Object.keys(world.debugMeshes).forEach((chunkId) => {
+      for (const chunkId of Object.keys(world.debugMeshes)) {
         world.debugMeshes[chunkId].visible = world.chunkHelperVisibility;
-      });
+      }
       break;
-    case "KeyK":
+    case "KeyK": {
       console.log("Camera Debug");
       const camDirection = new Vector3(0, 0, 0);
       world.camera.getWorldDirection(camDirection);
@@ -92,6 +93,7 @@ const keyboardControls = (event: KeyboardEvent) => {
       console.log("position:", world.camera.position);
       console.log("chunk id", computeChunkId(world.camera.position.toArray()));
       break;
+    }
     case "KeyG":
       console.log("Pressed G", player.position);
       console.log("X is stuck", player.position.x - Math.floor(player.position.x) <= 0.001);
@@ -175,7 +177,7 @@ export function setupControls() {
   document.addEventListener("keydown", onKeyDown);
   document.addEventListener("keyup", onKeyUp);
 
-  world.scene.add(player.controls.getObject());
+  world.scene.add(player.controls.object);
 }
 
 function onKeyDown(event: { code: string }) {
@@ -211,6 +213,7 @@ function onKeyDown(event: { code: string }) {
       break;
     case "KeyJ":
       player.gravity = !player.gravity;
+      break;
     case "Space":
       if (!player.gravity) {
         player.moveUp = true;
