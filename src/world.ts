@@ -3,9 +3,9 @@ import {
   type LineSegments,
   type Mesh,
   PerspectiveCamera,
+  SRGBColorSpace,
   Scene,
   WebGLRenderer,
-  sRGBEncoding,
 } from "three";
 import { type Chunks, chunkSize, terrainHeight, viewDistance } from "./constants";
 import { Inventory } from "./inventory";
@@ -53,10 +53,9 @@ function createRenderer() {
   const renderer = new WebGLRenderer({ antialias: true, canvas });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.outputEncoding = sRGBEncoding;
+  renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.shadowMap.enabled = true;
-  renderer.physicallyCorrectLights = true;
   return renderer;
 }
 
@@ -72,4 +71,4 @@ function createCamera() {
   return camera;
 }
 
-global.world = world;
+(globalThis as unknown as { world: World }).world = world;

@@ -21,10 +21,11 @@ module.exports = merge(common, {
           compress: {
             drop_console: true,
             keep_fargs: false,
-            ecma: 6,
+            ecma: 2020,
             toplevel: true,
             module: true,
           },
+          ecma: 2020,
         },
       }),
     ],

@@ -12,7 +12,7 @@ class Loop {
   private camera: PerspectiveCamera;
   private renderer: WebGLRenderer;
   private updatables: Animatable[];
-  private stats = Stats();
+  private stats = new Stats();
   constructor(renderer: WebGLRenderer) {
     this.renderer = renderer;
     this.updatables = [];

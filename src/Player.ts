@@ -97,11 +97,11 @@ class Player {
   }
 
   get pos(): Vector3 {
-    return this.controls.getObject().position;
+    return this.controls.object.position;
   }
 
   get position(): Vector3 {
-    return copy(this.controls.getObject().position);
+    return copy(this.controls.object.position);
   }
 
   wouldCollideWithTerrain({ x, y, z }: Vector3) {
