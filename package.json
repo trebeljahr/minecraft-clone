@@ -1,6 +1,7 @@
 {
   "name": "minecraft-clone",
   "version": "0.0.1",
+  "packageManager": "pnpm@10.33.2",
   "description": "A simple minecraft clone that can be played online in the browser",
   "author": "Rico Trebeljahr",
   "main": "app.js",
@@ -46,6 +47,8 @@
     "webpack-merge": "^4.2.1"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,css}": ["biome check --write --no-errors-on-unmatched"]
+    "*.{js,jsx,ts,tsx,json,jsonc,css}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
   }
 }
