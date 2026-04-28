@@ -9,6 +9,7 @@ import {
   transparentBlocks,
 } from "../constants";
 import { getChunkCoordinatesFromId, getVoxel } from "../helpers";
+
 const { cactus } = blocks;
 
 export async function generateGeometry(chunks: Chunks, chunkId: string, defaultLight = false) {

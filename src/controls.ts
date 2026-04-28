@@ -1,9 +1,9 @@
 import { Vector3 } from "three";
-import { player } from "./Player";
 import { blocks } from "./blocks";
 import { terrainHeight } from "./constants";
-import { MouseClickEvent, computeChunkId, getVoxel } from "./helpers";
+import { computeChunkId, getVoxel, MouseClickEvent } from "./helpers";
 import type { Intersection } from "./intersectRay";
+import { player } from "./Player";
 import {
   convertIntersectionToPosition,
   getIntersection,

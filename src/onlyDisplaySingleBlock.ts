@@ -1,8 +1,8 @@
-import { player } from "./Player";
 import { blocks } from "./blocks";
 import { setVoxelFromPos } from "./chunkLogic";
 import { chunkSize, fields } from "./constants";
 import { computeChunkId } from "./helpers";
+import { player } from "./Player";
 import { world } from "./world";
 
 export function onlyDisplaySingleBlock() {

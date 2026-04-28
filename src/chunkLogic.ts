@@ -2,13 +2,14 @@ import { blocks } from "./blocks";
 import {
   type Chunk,
   type Chunks,
-  type Position,
   chunkSize,
   fields,
   neighborOffsets,
+  type Position,
 } from "./constants";
 import { computeChunkId, computeVoxelIndex } from "./helpers";
 import { perlin2, perlin3 } from "./noise";
+
 const { birchwood, foliage, oakwood } = blocks;
 
 export function getChunkForVoxel(chunks: Chunks, pos: number[]): [Uint8Array, string] {

@@ -1,18 +1,18 @@
 import { Vector3 } from "three";
-import { player } from "./Player";
 import { blocks } from "./blocks";
 import { setVoxelFromPos } from "./chunkLogic";
 import { createFloodlightQueueVisualizer } from "./chunkLogic/tests/generateTestChunks";
-import { type Position, glowingBlocks, neighborOffsets } from "./constants";
+import { glowingBlocks, neighborOffsets, type Position } from "./constants";
 import {
-  type MouseClickEvent,
   computeChunkId,
   getSurroundingChunksColumns,
   getVoxel,
+  type MouseClickEvent,
   makeEmptyChunk,
   setLightValue,
 } from "./helpers";
 import { type Intersection, intersectRay } from "./intersectRay";
+import { player } from "./Player";
 import { requestRenderIfNotRequested } from "./rendering";
 import {
   mergeChunkUpdates,

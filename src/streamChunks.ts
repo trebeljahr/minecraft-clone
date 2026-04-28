@@ -1,5 +1,4 @@
 import { type Material, type Mesh, Vector3 } from "three";
-import { player } from "./Player";
 import { figureOutChunksToSpawn } from "./chunkLogic/figureOutChunksToSpawn";
 import {
   type Chunks,
@@ -16,6 +15,7 @@ import {
   getChunkCoordinatesFromId,
   makeEmptyChunk,
 } from "./helpers";
+import { player } from "./Player";
 import { updateGeometry } from "./updateGeometry";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { world } from "./world";

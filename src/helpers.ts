@@ -4,11 +4,11 @@ import { getChunkForVoxel } from "./chunkLogic";
 import {
   type Chunk,
   type Chunks,
-  type Position,
   chunkSize,
   chunkSliceSize,
   copy,
   fields,
+  type Position,
 } from "./constants";
 
 const leftMouse = 0;
@@ -29,7 +29,7 @@ export class SimpleTimer {
   }
 
   get startTimeStamp() {
-    return this.timeStamps["start"];
+    return this.timeStamps.start;
   }
 
   takenFor(name: string) {
@@ -111,7 +111,7 @@ export function computeVoxelIndex(pos: number[]) {
   const [x, y, z] = pos.map((coord) => euclideanModulo(Math.floor(coord), chunkSize));
 
   const result = (yTable[y] + zTable[z] + x) * fields.count;
-  if (isNaN(result)) {
+  if (Number.isNaN(result)) {
     console.warn({ x, y, z });
     throw Error(`NaN result for ${pos}`);
   }
@@ -197,7 +197,7 @@ export function getChunkCoordinates(pos: number[]): Position {
 }
 
 export function getChunkCoordinatesFromId(chunkId: string) {
-  return chunkId.split(",").map((num) => Number.parseInt(num));
+  return chunkId.split(",").map((num) => Number.parseInt(num, 10));
 }
 
 export function getChunkCoordinatesVector(chunkId: string) {
@@ -214,7 +214,7 @@ export function computeChunkColumnId(pos: number[]) {
 }
 
 export function parseChunkId(chunkId: string) {
-  const [x, y, z] = chunkId.split(",").map((digits) => Number.parseInt(digits));
+  const [x, y, z] = chunkId.split(",").map((digits) => Number.parseInt(digits, 10));
   return new Vector3(x, y, z).multiplyScalar(chunkSize);
 }
 

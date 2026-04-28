@@ -1,9 +1,9 @@
 import { getChunkForVoxel } from "../chunkLogic";
 import {
   type Chunks,
+  chunkSize,
   type LightUpdate,
   type Position,
-  chunkSize,
   transparentBlocks,
   verticalNumberOfChunks,
 } from "../constants";
@@ -31,7 +31,7 @@ export class Queue {
     }
   }
 
-  dequeue<T>() {
+  dequeue<_T>() {
     if (!this.first) return null;
     const dequeuedNode = this.first;
     this.first = dequeuedNode.next;
@@ -52,9 +52,9 @@ export function propagateSunlight(chunks: Chunks, queue: LightUpdate[]) {
   const outgoingQueue: LightUpdate[] = [];
   queue.forEach((update) => sunlightQueue.enqueue(update));
 
-  let iterations = 0;
+  let _iterations = 0;
   while (!sunlightQueue.isEmpty()) {
-    iterations++;
+    _iterations++;
     const {
       pos: [x, y, z],
       lightValue,
