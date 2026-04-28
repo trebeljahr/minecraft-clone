@@ -5,7 +5,7 @@
 
 .draggable--original,
 .draggable-source--is-dragging {
-  background-image: none !important;
+  background-image: none;
 }
 .draggable--original::before,
 .draggable-source--is-dragging::before {
@@ -126,7 +126,7 @@ html {
 #menu button {
   border: solid 2px #fff;
   background: transparent;
-  color: #fff !important;
+  color: #fff;
   transition: all 0.4s ease;
   margin: 10px;
 }
@@ -139,7 +139,7 @@ html {
 #menu button:enabled:hover {
   border: solid 2px #fff;
   background: #fff;
-  color: #1f1f1f !important;
+  color: #1f1f1f;
 }
 
 #hotbarElement {
@@ -195,7 +195,7 @@ body {
 }
 
 .dg.ac {
-  z-index: 30 !important;
+  z-index: 30;
 }
 
 #instructions {

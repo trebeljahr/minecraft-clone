@@ -3,8 +3,8 @@ import {
   type LineSegments,
   type Mesh,
   PerspectiveCamera,
-  SRGBColorSpace,
   Scene,
+  SRGBColorSpace,
   WebGLRenderer,
 } from "three";
 import { type Chunks, chunkSize, terrainHeight, viewDistance } from "./constants";

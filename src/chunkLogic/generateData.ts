@@ -11,8 +11,9 @@ import {
   shouldSpawnTree,
   spawnTree,
 } from "../chunkLogic";
-import { type Chunks, type Position, chunkSize, fields } from "../constants";
+import { type Chunks, chunkSize, fields, type Position } from "../constants";
 import { getVoxel, parseChunkId } from "../helpers";
+
 const { emerald, lapis, diamond, gold, coal, stone, grass, dirt } = blocks;
 
 export async function growTrees(chunks: Chunks, chunkId: string) {
@@ -37,7 +38,7 @@ export async function generateChunkData(chunks: Chunks, chunkId: string) {
   }
   const pos = parseChunkId(chunkId);
 
-  const totalChunkVoxelAmount = Math.pow(chunkSize, 3);
+  const totalChunkVoxelAmount = chunkSize ** 3;
   for (let i = 0; i < totalChunkVoxelAmount; i++) {
     const index = i * fields.count;
     const y = Math.floor(i / (chunkSize * chunkSize));

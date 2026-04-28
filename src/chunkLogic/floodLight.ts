@@ -1,9 +1,9 @@
 import { getChunkForVoxel } from "../chunkLogic";
 import {
   type Chunks,
+  fields,
   type LightUpdate,
   type LightUpdates,
-  fields,
   neighborOffsets,
   transparentBlocks,
 } from "../constants";

@@ -1,5 +1,5 @@
 const merge = require("webpack-merge");
-const path = require("path");
+const path = require("node:path");
 
 module.exports = merge({
   entry: path.join(__dirname, "src", "main.ts"),

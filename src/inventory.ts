@@ -217,11 +217,11 @@ export class Inventory {
   }
 
   parse({ amount: a, itemType: i }: Record<string, string>) {
-    const amount = Number.parseInt(a);
-    const itemType = Number.parseInt(i);
+    const amount = Number.parseInt(a, 10);
+    const itemType = Number.parseInt(i, 10);
     return {
-      amount: isNaN(amount) ? 0 : amount,
-      itemType: isNaN(itemType) ? air : itemType,
+      amount: Number.isNaN(amount) ? 0 : amount,
+      itemType: Number.isNaN(itemType) ? air : itemType,
     };
   }
 

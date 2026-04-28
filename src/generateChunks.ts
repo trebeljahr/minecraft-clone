@@ -1,10 +1,10 @@
 import { growTrees } from "./chunkLogic/generateData";
 import { type Chunks, verticalNumberOfChunks } from "./constants";
 import {
-  SimpleTimer,
   addOffsetToChunkId,
   getSurroundingChunksColumns,
   makeEmptyChunk,
+  SimpleTimer,
 } from "./helpers";
 import { updateProgressBar } from "./progressBar";
 import { mergeChunkUpdates, pickSurroundingChunks, sunlightChunks } from "./streamChunks";
@@ -41,7 +41,7 @@ export async function generate(chunks: Chunks, chunksToSpawn: string[]) {
         continue;
       }
 
-      if (storedWorld && storedWorld[chunkIdForSpawning]) {
+      if (storedWorld?.[chunkIdForSpawning]) {
         chunks[chunkIdForSpawning] = storedWorld[chunkIdForSpawning];
         continue;
       }

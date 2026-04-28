@@ -1,6 +1,4 @@
 import { Color, Fog } from "three";
-import { Loop } from "./Loop";
-import { player } from "./Player";
 import { displayTestBed } from "./chunkLogic/tests/generateTestChunks";
 import {
   chunkSize,
@@ -14,7 +12,9 @@ import {
 import { setupControls } from "./controls";
 import { generate } from "./generateChunks";
 import { SimpleTimer } from "./helpers";
+import { Loop } from "./Loop";
 import { onlyDisplaySingleBlock } from "./onlyDisplaySingleBlock";
+import { player } from "./Player";
 import { onWindowResize } from "./rendering";
 import { handleChunks, shouldChunksUpdate } from "./streamChunks";
 import { world } from "./world";
