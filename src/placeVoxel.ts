@@ -41,7 +41,7 @@ export function getIntersection(mouseClick: MouseClickEvent) {
   return intersection;
 }
 
-export function areSame(a: any[], b: any[]) {
+export function areSame<T>(a: T[], b: T[]) {
   return a.every((item) => b.includes(item)) && b.every((item) => a.includes(item));
 }
 export function isOutOfPlayer(pos: Position) {

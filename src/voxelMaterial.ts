@@ -1,4 +1,13 @@
-import { NearestFilter, ShaderLib, ShaderMaterial, TextureLoader, UniformsUtils } from "three";
+import {
+  NearestFilter,
+  ShaderLib,
+  ShaderMaterial,
+  type Texture,
+  TextureLoader,
+  UniformsUtils,
+} from "three";
+
+type VoxelMaterial = ShaderMaterial & { map: Texture };
 
 const texture = new TextureLoader().load("/assets/First-Texture-Atlas.png");
 
@@ -50,7 +59,7 @@ const opaque = new ShaderMaterial({
     ...UniformsUtils.clone(ShaderLib.basic.uniforms),
     sunlightIntensity: { value: 1 },
   },
-}) as any;
+}) as VoxelMaterial;
 
 opaque.map = texture;
 opaque.uniforms.map.value = texture;
