@@ -71,11 +71,11 @@ export async function updateGeometry(chunkId: string, defaultLight = false) {
     chunkOutline.name = "debug:" + chunkId;
     world.debugMeshes[chunkId] = chunkOutline;
     world.debugMeshes[chunkId].visible = world.chunkHelperVisibility;
-    world.scene.add(chunkOutline),
-      chunkOutline.position.set(
-        pos[0] + chunkSize / 2,
-        pos[1] + chunkSize / 2,
-        pos[2] + chunkSize / 2,
-      );
+    world.scene.add(chunkOutline);
+    chunkOutline.position.set(
+      pos[0] + chunkSize / 2,
+      pos[1] + chunkSize / 2,
+      pos[2] + chunkSize / 2,
+    );
   }
 }

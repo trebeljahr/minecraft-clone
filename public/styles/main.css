@@ -45,8 +45,8 @@ html {
   background-size: cover;
 }
 #inventoryElement {
-  margin-top: -10vh;
   margin: auto;
+  margin-top: -10vh;
   max-width: calc(9 * var(--item-box-size) + 50px);
   padding: 5px 0px;
   display: none;
