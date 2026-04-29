@@ -1,10 +1,11 @@
 import { Swappable } from "@shopify/draggable";
 import { blocks, itemImages } from "./blocks";
 
-const throttle = (fn: Function, wait = 60) => {
-  let inThrottle: boolean, lastFn: ReturnType<typeof setTimeout>, lastTime: number;
-  return function (this: any) {
-    const args = arguments;
+const throttle = (fn: (...args: unknown[]) => void, wait = 60) => {
+  let inThrottle: boolean;
+  let lastFn: ReturnType<typeof setTimeout>;
+  let lastTime: number;
+  return function (this: unknown, ...args: unknown[]) {
     if (!inThrottle) {
       fn.apply(this, args);
       lastTime = Date.now();
