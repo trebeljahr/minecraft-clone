@@ -9,18 +9,18 @@ import {
 } from "../constants";
 import { computeSmallChunkCornerFromId, computeVoxelIndex, setLightValue } from "../helpers";
 
-class Node {
+class Node<T> {
   constructor(
-    public value: any,
-    public next: Node | null = null,
+    public value: T,
+    public next: Node<T> | null = null,
   ) {}
 }
 
-export class Queue {
-  private first: Node | null = null;
-  private last: Node | null = null;
+export class Queue<T = unknown> {
+  private first: Node<T> | null = null;
+  private last: Node<T> | null = null;
 
-  enqueue(value: any) {
+  enqueue(value: T) {
     const newNode = new Node(value);
     if (this.last) {
       this.last.next = newNode;
@@ -31,7 +31,7 @@ export class Queue {
     }
   }
 
-  dequeue<_T>() {
+  dequeue(): T | null {
     if (!this.first) return null;
     const dequeuedNode = this.first;
     this.first = dequeuedNode.next;
