@@ -31,8 +31,10 @@ export class Queue<T = unknown> {
     }
   }
 
-  dequeue(): T | null {
-    if (!this.first) return null;
+  dequeue(): T {
+    if (!this.first) {
+      throw new Error("Cannot dequeue from an empty queue");
+    }
     const dequeuedNode = this.first;
     this.first = dequeuedNode.next;
     if (!this.first) {
@@ -47,10 +49,12 @@ export class Queue<T = unknown> {
 }
 
 export function propagateSunlight(chunks: Chunks, queue: LightUpdate[]) {
-  const sunlightQueue = new Queue();
+  const sunlightQueue = new Queue<LightUpdate>();
 
   const outgoingQueue: LightUpdate[] = [];
-  queue.forEach((update) => sunlightQueue.enqueue(update));
+  queue.forEach((update) => {
+    sunlightQueue.enqueue(update);
+  });
 
   let _iterations = 0;
   while (!sunlightQueue.isEmpty()) {
@@ -58,7 +62,7 @@ export function propagateSunlight(chunks: Chunks, queue: LightUpdate[]) {
     const {
       pos: [x, y, z],
       lightValue,
-    } = sunlightQueue.dequeue<LightUpdate>();
+    } = sunlightQueue.dequeue();
     const yBelow = y - 1;
     const blockBelowIndex = computeVoxelIndex([x, yBelow, z]);
     const [chunkBelow] = getChunkForVoxel(chunks, [x, yBelow, z]);

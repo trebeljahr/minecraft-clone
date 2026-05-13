@@ -1,4 +1,3 @@
-import { blocks } from "../src/blocks";
 import {
   computeChunkId,
   generateSurroundingChunks,
@@ -6,7 +5,6 @@ import {
   getSmallChunkCorner,
 } from "../src/helpers";
 
-const { _stone } = blocks;
 describe("test voxel logic", () => {
   // it("should set voxel on edges of chunk correctly", () => {
   //   let chunks = addChunkAtChunkId({}, "0,0,0");

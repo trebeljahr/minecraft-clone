@@ -13,15 +13,17 @@ import { Queue } from "./sunlight";
 const neighbors = [...neighborOffsets].slice(1, neighborOffsets.length);
 
 export async function floodLight(chunks: Chunks, queue: LightUpdate[]) {
-  const floodlightQueue = new Queue();
-  queue.forEach((update) => floodlightQueue.enqueue(update));
+  const floodlightQueue = new Queue<LightUpdate>();
+  queue.forEach((update) => {
+    floodlightQueue.enqueue(update);
+  });
 
   const chunksThatNeedUpdates: LightUpdates = {};
   while (!floodlightQueue.isEmpty()) {
     const {
       pos: [x, y, z],
       lightValue,
-    } = floodlightQueue.dequeue<LightUpdate>();
+    } = floodlightQueue.dequeue();
     const newLightValue = lightValue - 1;
     if (newLightValue <= 0) continue;
 
