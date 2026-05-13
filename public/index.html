@@ -8,6 +8,23 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <title>a minecraft clone</title>
+    <script>
+      (function () {
+        var domain = "mc.trebeljahr.com";
+        if (location.hostname !== domain) return;
+        window.plausible =
+          window.plausible ||
+          function () {
+            (window.plausible.q = window.plausible.q || []).push(arguments);
+          };
+        var script = document.createElement("script");
+        script.defer = true;
+        script.dataset.domain = domain;
+        script.src =
+          "https://plausible.trebeljahr.com/js/script.file-downloads.hash.outbound-links.pageview-props.revenue.tagged-events.js";
+        document.head.appendChild(script);
+      })();
+    </script>
   </head>
   <body>
     <canvas id="canvas"></canvas>
