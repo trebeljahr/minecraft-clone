@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "webpack-dev-server --open --config webpack.dev.js",
+    "prebuild": "node scripts/generate-seo.mjs",
     "build": "webpack --config webpack.prod.js",
     "test": "./node_modules/jest/bin/jest.js",
     "format": "biome format --write .",
