@@ -138,22 +138,16 @@ export function setupControls() {
   });
 
   playButton.addEventListener("click", () => {
-    loadingScreen.style.display = "flex";
-    menuScreen.style.display = "none";
-
-    crosshairs.style.display = "flex";
-    world.inventory.hotbarContainerElement.style.display = "flex";
-
-    setTimeout(() => {
-      player.controls.lock();
-    }, 1000);
+    player.controls.lock();
   });
 
   player.controls.addEventListener("lock", () => {
     world.menu = false;
 
     if (!world.inventory.isOpen) {
+      loadingScreen.style.display = "none";
       crosshairs.style.display = "flex";
+      world.inventory.hotbarContainerElement.style.display = "flex";
       menu.style.display = "none";
     }
   });

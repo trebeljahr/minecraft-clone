@@ -139,7 +139,7 @@ export type LightUpdates = Record<string, LightUpdate[]>;
 export const inSingleBlockMode = false;
 export const inSingleChunkMode = false;
 export const inMultipleChunksMode = false;
-export const inTestMode = true;
+export const inTestMode = false;
 
 export const spectatorMode = true;
 export const debugMeshColor = "red";
