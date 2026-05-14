@@ -6,7 +6,7 @@
   "author": "Rico Trebeljahr",
   "main": "app.js",
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "webpack-dev-server --open --config webpack.dev.js",
