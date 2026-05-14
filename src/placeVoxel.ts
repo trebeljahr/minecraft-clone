@@ -1,5 +1,4 @@
 import { Vector3 } from "three";
-import { blocks } from "./blocks";
 import { setVoxelFromPos } from "./chunkLogic";
 import { createFloodlightQueueVisualizer } from "./chunkLogic/tests/generateTestChunks";
 import { glowingBlocks, neighborOffsets, type Position } from "./constants";
@@ -22,8 +21,6 @@ import {
 } from "./streamChunks";
 import { chunkWorkerPool } from "./workers/workerPool";
 import { world } from "./world";
-
-const { _air } = blocks;
 
 export function getIntersection(mouseClick: MouseClickEvent) {
   if (!(mouseClick.right || mouseClick.left)) return;

@@ -192,6 +192,23 @@ export function makeEmptyChunk(chunkId: string): Chunk {
   };
 }
 
+export function generateSurroundingChunks(chunks: Chunks, id: string) {
+  const [chunkX, chunkY, chunkZ] = getChunkCoordinatesFromId(id);
+
+  for (let xOff = -1; xOff <= 1; xOff++) {
+    for (let yOff = -1; yOff <= 1; yOff++) {
+      for (let zOff = -1; zOff <= 1; zOff++) {
+        const chunkId = [chunkX + xOff, chunkY + yOff, chunkZ + zOff].join(",");
+        if (!chunks[chunkId]) {
+          chunks[chunkId] = makeEmptyChunk(chunkId);
+        }
+      }
+    }
+  }
+
+  return chunks;
+}
+
 export function getChunkCoordinates(pos: number[]): Position {
   return pos.map((coord) => coord / chunkSize).map(Math.floor) as Position;
 }
