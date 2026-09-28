@@ -1,0 +1,17 @@
+# Webpack does NOT content-hash this build. webpack.common.js sets no
+# output.filename, so the entry is always /dist/main.js, the vendor split chunk
+# is /dist/706.js and the worker is /dist/workers/chunkWorker.js. public/index.html
+# hardcodes <script src="/dist/main.js">, so `immutable` with a year-long max-age
+# would pin stale JS in every returning browser after a deploy. Short TTL plus
+# ETag revalidation instead. Switch these to max-age=31536000, immutable once
+# webpack emits [contenthash] filenames and index.html is generated to match.
+/dist/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+# Textures, icons and CSS are committed files with stable, unhashed names.
+# They change rarely, but a stale one is still wrong, so cap the TTL at a day.
+/assets/*
+  Cache-Control: public, max-age=86400
+
+/styles/*
+  Cache-Control: public, max-age=86400
