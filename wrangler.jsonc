@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "minecraft-clone",
+  "compatibility_date": "2026-09-28",
+  "assets": {
+    // `pnpm build` writes /dist into the committed public/ tree, so public/ is
+    // the deploy root (webpack.common.js sets output.path to public/dist/).
+    "directory": "./public"
+    // No `not_found_handling`: the site has no 404.html, and public/index.html
+    // is a single page with no client-side routing, so neither the 404-page nor
+    // the SPA fallback applies. Unknown paths get Cloudflare's plain 404.
+  }
+}
