@@ -10,6 +10,7 @@ import {
   viewDistance,
 } from "./constants";
 import { setupControls } from "./controls";
+import { recordDonationReturn } from "./donation";
 import { generate } from "./generateChunks";
 import { SimpleTimer } from "./helpers";
 import { Loop } from "./Loop";
@@ -19,6 +20,7 @@ import { onWindowResize } from "./rendering";
 import { handleChunks, shouldChunksUpdate } from "./streamChunks";
 import { world } from "./world";
 
+recordDonationReturn();
 init();
 
 async function onlyDisplaySingleChunk() {

@@ -123,7 +123,8 @@ html {
   margin-bottom: 5vh;
 }
 
-#menu button {
+#menu button,
+#menu a.menuButton {
   border: solid 2px #fff;
   background: transparent;
   color: #fff;
@@ -131,12 +132,18 @@ html {
   margin: 10px;
 }
 
+#menu a.menuButton {
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
 #menu button:disabled {
   cursor: default;
   opacity: 0.2;
 }
 
-#menu button:enabled:hover {
+#menu button:enabled:hover,
+#menu a.menuButton:hover {
   border: solid 2px #fff;
   background: #fff;
   color: #1f1f1f;
