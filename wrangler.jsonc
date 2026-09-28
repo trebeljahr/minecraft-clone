@@ -9,5 +9,8 @@
     // No `not_found_handling`: the site has no 404.html, and public/index.html
     // is a single page with no client-side routing, so neither the 404-page nor
     // the SPA fallback applies. Unknown paths get Cloudflare's plain 404.
-  }
+  },
+  // Adding a `routes` entry silently disables the workers.dev URL unless
+  // this is set explicitly.
+  "workers_dev": true
 }
