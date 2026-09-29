@@ -6,6 +6,12 @@ module.exports = merge(common, {
   mode: "development",
   devtool: "source-map",
 
+  output: {
+    // No content hash in dev: stable names keep rebuilds cheap and readable.
+    filename: "dist/[name].js",
+    chunkFilename: "dist/[name].js",
+  },
+
   devServer: {
     static: {
       directory: path.join(__dirname, "public"),

@@ -7,7 +7,7 @@ export const chunkWorkerPool = Pool(
       new Worker(new URL("./chunkWorker.ts", import.meta.url), {
         name: "chunkWorker",
         type: "module",
-        /* webpackEntryOptions: { filename: "workers/[name].js" } */
+        /* webpackEntryOptions: { filename: "dist/workers/[name].[contenthash].js" } */
       }),
     ),
   8,
