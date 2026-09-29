@@ -21,3 +21,18 @@ export function recordDonationReturn(win: DonationWindow = window) {
   url.searchParams.delete("supported");
   win.history.replaceState(win.history.state, "", url.pathname + url.search + url.hash);
 }
+
+/** Prepare the link for normal clicks, keyboard use, and opening a new tab. */
+export function prepareDonationLink() {
+  const link = document.getElementById("donateLink") as HTMLAnchorElement | null;
+  if (!link) return;
+  const update = () => {
+    const url = new URL("https://ricos.site/donate/minecraft-clone");
+    url.searchParams.set("returnTo", window.location.href);
+    link.href = url.href;
+  };
+  for (const event of ["click", "auxclick", "pointerdown", "focus", "contextmenu"]) {
+    link.addEventListener(event, update);
+  }
+  update();
+}
