@@ -54,5 +54,11 @@
     "*.{js,jsx,ts,tsx,json,jsonc,css}": [
       "biome check --write --no-errors-on-unmatched"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch@3": "3.1.4",
+      "sockjs>uuid": "11.1.1"
+    }
   }
 }
