@@ -28,7 +28,15 @@ export function prepareDonationLink() {
   if (!link) return;
   const update = () => {
     const url = new URL("https://ricos.site/donate/minecraft-clone");
-    url.searchParams.set("returnTo", window.location.href);
+    const current = new URL(window.location.href);
+    if (
+      process.env.NODE_ENV === "development" ||
+      ["localhost", "127.0.0.1", "[::1]"].includes(current.hostname)
+    ) {
+      url.protocol = "http:";
+      url.host = "localhost:3713";
+    }
+    url.searchParams.set("returnTo", current.href);
     link.href = url.href;
   };
   for (const event of ["click", "auxclick", "pointerdown", "focus", "contextmenu"]) {
