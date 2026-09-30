@@ -1,5 +1,8 @@
 export const donationSupportedAtKey = "donation-supported-at";
 
+// Webpack replaces this expression at build time; no browser process shim is needed.
+declare const process: { readonly env: { readonly NODE_ENV: string } };
+
 type DonationWindow = {
   location: { href: string };
   history: Pick<History, "state" | "replaceState">;
