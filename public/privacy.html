@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1f1f1f" />
+    <meta
+      name="description"
+      content="Privacy policy of Minecraft Clone: every server your browser contacts, what the game keeps in your browser, and your rights under the GDPR."
+    />
+    <link rel="canonical" href="https://mc.trebeljahr.com/privacy" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="stylesheet" href="/styles/legal.css" />
+    <title>Privacy Policy | Minecraft Clone</title>
+    <!--
+      What this page says is what the code does. A new request to another host, or a new
+      local-storage key, updates this page and its date in the same change.
+      Hosts: the Plausible loader and the Donate link in src/index.html, the Donate link in
+      src/donation.ts. Cloudflare Web Analytics is switched on in the Cloudflare dashboard,
+      not in this repository. Local storage: "world" in src/generateChunks.ts and
+      src/placeVoxel.ts, "donation-supported-at" in src/donation.ts.
+      The provider and contact details also appear in public/imprint.html. Change them together.
+    -->
+  </head>
+  <body>
+    <main>
+      <p class="nav"><a href="/">Back to the game</a></p>
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: 19 October 2026</p>
+      <p>
+        This page lists every server your browser contacts when you open
+        <code>mc.trebeljahr.com</code>, and what each one receives. The game runs in your browser.
+        It has no accounts and no forms, and it sets no cookies.
+      </p>
+
+      <h2>Controller</h2>
+      <p>
+        The controller under the EU General Data Protection Regulation (GDPR) is the service
+        provider named in the <a href="/imprint">imprint</a>: Rico Trebeljahr, c/o Block Services,
+        Stuttgarter Str. 106, 70736 Fellbach, Germany. Email for privacy questions:
+        <a href="mailto:imprint+mc@trebeljahr.com">imprint+mc@trebeljahr.com</a>.
+      </p>
+
+      <h2>Servers your browser contacts</h2>
+      <ul>
+        <li>
+          <code>mc.trebeljahr.com</code>: the game, served by Cloudflare. The page, the game code,
+          the block textures and the style sheets all come from here.
+        </li>
+        <li>
+          <code>static.cloudflareinsights.com</code>: the script of Cloudflare Web Analytics.
+          Visitors in the EU, the EEA, the United Kingdom and Switzerland do not get it.
+        </li>
+        <li>
+          <code>plausible.trebeljahr.com</code>: my own Plausible Analytics server. Only the game
+          page loads it, not the imprint or this page.
+        </li>
+      </ul>
+      <p>
+        No other server receives a request from your browser. A link to another site, such as the
+        donation page on ricos.site, contacts that site only when you click it.
+      </p>
+
+      <h2>Hosting by Cloudflare</h2>
+      <p>
+        The game is a set of static files. Cloudflare, Inc., 101 Townsend St, San Francisco, CA
+        94107, USA, serves them from its Worker <code>minecraft-clone</code>. The Worker holds only
+        the files, and no code of mine runs on a server when you load a page. The game code runs in
+        your browser.
+      </p>
+      <p>
+        Cloudflare receives your IP address, the address of the page, the user agent and the
+        referrer of each request. It uses them to deliver the game and to protect it against abuse.
+        I do not export or keep logs of these requests.
+      </p>
+      <p>
+        The game uses the fonts installed on your device. Its code, its textures and its style
+        sheets come only from <code>mc.trebeljahr.com</code>.
+      </p>
+      <p>
+        Legal basis: Art. 6 (1) (f) GDPR (legitimate interest in delivering the site securely).
+      </p>
+
+      <h2>Cloudflare Web Analytics</h2>
+      <p>
+        Cloudflare adds the script of
+        <a href="https://developers.cloudflare.com/web-analytics/" rel="noreferrer"
+          >Cloudflare Web Analytics</a
+        >
+        to each page. Your browser loads it from <code>static.cloudflareinsights.com</code>, and the
+        script sends its reports to <code>mc.trebeljahr.com/cdn-cgi/rum</code>.
+      </p>
+      <p>
+        The script sends one report when the page has loaded and one when you leave it. The reports
+        hold the page URL, the referrer, and the version of your browser and of your operating
+        system. They also hold figures for the memory that the page's scripts use, and how long the
+        page took to load and to react.
+      </p>
+      <p>
+        The timings include Largest Contentful Paint, Interaction to Next Paint and Cumulative
+        Layout Shift. A report names the page element behind a timing, such as
+        <code>#menuTitle</code>. Cloudflare shows me totals by page, country, browser and device
+        type. The reports hold nothing about what you build in the game.
+      </p>
+      <p>
+        The script sets no cookies and stores nothing on your device. It gives each page view a
+        random ID and keeps no ID from one page view to the next. Cloudflare receives your IP
+        address with the report, discards it at the nearest data center and does not store it.
+      </p>
+      <p>
+        Cloudflare does not add the script for visitors who connect through a Cloudflare data
+        center in the EU, the EEA, the United Kingdom or Switzerland. For all other visitors the
+        legal basis is Art. 6 (1) (f) GDPR (legitimate interest in knowing how fast the pages load).
+        You can object at any time, or block <code>static.cloudflareinsights.com</code> with a
+        content blocker.
+      </p>
+
+      <h2>Plausible Analytics</h2>
+      <p>
+        I count visits with
+        <a href="https://plausible.io/data-policy" rel="noreferrer">Plausible Analytics</a>. It
+        runs on my own server at <code>plausible.trebeljahr.com</code>, rented from Hetzner Online
+        GmbH in Nuremberg, Germany. Requests to it pass through Cloudflare as described under
+        Hosting.
+      </p>
+      <p>
+        Your browser loads the Plausible script from <code>plausible.trebeljahr.com</code> and
+        sends its events there. That server receives your IP address and user agent. I do not route
+        these requests through <code>mc.trebeljahr.com</code>, so a content blocker can stop them.
+        The game works the same without them.
+      </p>
+      <p>
+        Only the game page loads the script, and only on <code>mc.trebeljahr.com</code>. Local and
+        test copies of the game do not load it. The imprint and this page do not load it.
+      </p>
+      <p>
+        Plausible sets no cookies and stores nothing on your device. The script reads one entry in
+        your local storage, <code>plausible_ignore</code>. That entry exists only if you set it
+        yourself to switch counting off.
+      </p>
+      <p>
+        Plausible combines your IP address and user agent with a salt that changes every day, and
+        stores only the resulting hash. It deletes the salt after 24 hours, so nobody can trace the
+        hash back to you. It never stores the IP address.
+      </p>
+      <p>
+        The script sends three kinds of events. A page view goes out when the game page opens. A
+        click on a link to another site goes out with the address of that link. When you switch to
+        another tab or window, or leave the page, an event reports how long the page had your
+        attention and how far you scrolled.
+      </p>
+      <p>
+        Plausible records the page address, the referrer, the browser, the operating system, the
+        device type and your approximate location. The location is the country and, where
+        Plausible's database knows them, the region and city. Plausible derives it from the IP
+        address and then discards the address.
+      </p>
+      <p>
+        Legal basis: Art. 6 (1) (f) GDPR (legitimate interest in knowing how many people play the
+        game). You can object at any time, or block <code>plausible.trebeljahr.com</code> with a
+        content blocker.
+      </p>
+
+      <h2>The donation link</h2>
+      <p>
+        The "Donate" button opens <code>ricos.site</code> in a new tab. Your browser contacts that
+        site only when you click the button. The address of the button contains the address of the
+        game page, so the donation page can send you back. Plausible records the click, with that
+        address. The donation page has its own
+        <a href="https://ricos.site/privacy">privacy policy</a>.
+      </p>
+
+      <h2>Data in your browser</h2>
+      <p>
+        The game writes up to two entries to your browser's local storage. Neither one leaves your
+        device, and you can delete both when you clear this site's data in your browser.
+      </p>
+      <ul>
+        <li>
+          <code>world</code>: the chunks of the world that you changed by mining a block. The game
+          writes it each time you mine a block, and reads it when it starts.
+        </li>
+        <li>
+          <code>donation-supported-at</code>: the time you came back from the donation page on
+          ricos.site. The game writes it only when the address has <code>?supported=1</code>.
+          Nothing reads it yet.
+        </li>
+      </ul>
+      <p>
+        The game uses no cookies, no session storage, no IndexedDB, no Cache Storage and no service
+        worker.
+      </p>
+      <p>
+        Legal basis: § 25 (2) No. 2 TDDDG for the first entry (the game stores the changes you
+        make to the world). The second entry records an action of yours.
+      </p>
+
+      <h2>Transfers outside the EU</h2>
+      <p>
+        Cloudflare, Inc. is established in the United States. It handles each request in a data
+        center of its network, normally the one nearest to you. Access by U.S. authorities under
+        U.S. law cannot be fully excluded. My Plausible server is in Germany.
+      </p>
+
+      <h2>Storage period</h2>
+      <ul>
+        <li>
+          Plausible keeps its events with no time limit. Each event carries only the daily hash,
+          which nobody can link to you once the salt is deleted after 24 hours.
+        </li>
+        <li>
+          Cloudflare Web Analytics keeps totals by page, country, browser and device type.
+          Cloudflare does not store the IP address.
+        </li>
+        <li>The entries in your local storage stay there until you delete them.</li>
+      </ul>
+
+      <h2>Your rights</h2>
+      <p>Under the GDPR you have the right to:</p>
+      <ul>
+        <li>access the personal data held about you (Art. 15);</li>
+        <li>have inaccurate data corrected (Art. 16);</li>
+        <li>
+          have your data deleted (Art. 17), unless a legal obligation requires me to keep it;
+        </li>
+        <li>restrict processing (Art. 18);</li>
+        <li>receive your data in a portable format (Art. 20);</li>
+        <li>
+          object to processing based on legitimate interest (Art. 21), which includes both kinds of
+          analytics above.
+        </li>
+      </ul>
+      <p>
+        To use any of these rights, email
+        <a href="mailto:imprint+mc@trebeljahr.com">imprint+mc@trebeljahr.com</a>. You can also
+        complain to a supervisory authority (Art. 77 GDPR). The authority responsible for me is the
+        Landesbeauftragte für den Datenschutz und die Informationsfreiheit Baden-Württemberg.
+      </p>
+      <p>
+        The game makes no automated decisions about you and builds no profile of you (Art. 22
+        GDPR).
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        I update this page when the game starts or stops contacting a server, or changes what it
+        keeps in your browser. The date at the top shows the last change.
+      </p>
+
+      <p class="nav nav--end">
+        <a href="/">Back to the game</a>
+        <a href="/imprint">Imprint</a>
+      </p>
+    </main>
+  </body>
+</html>

@@ -10,6 +10,7 @@ const seo = {
   routes: [
     { path: "/", changefreq: "monthly", priority: "1.0" },
     { path: "/imprint", changefreq: "yearly", priority: "0.3" },
+    { path: "/privacy", changefreq: "yearly", priority: "0.3" },
   ],
   lastmod: (process.env.SITEMAP_LASTMOD || new Date().toISOString()).slice(0, 10),
   title: "Minecraft Clone",
