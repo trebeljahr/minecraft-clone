@@ -252,3 +252,33 @@ html {
   color: white;
   cursor: pointer;
 }
+
+#legalLinks {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  font-size: 14px;
+}
+
+#legalLinks a {
+  padding: 4px 8px;
+  color: #bbb;
+}
+
+#legalLinks a:hover,
+#legalLinks a:focus-visible {
+  color: #fff;
+}
+
+/* On a short screen the menu buttons reach the bottom edge. Move the links into the
+   corner, beside the buttons, so they never cover one. */
+@media (max-height: 560px) {
+  #legalLinks {
+    right: auto;
+    left: 8px;
+  }
+}

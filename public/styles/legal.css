@@ -1,0 +1,89 @@
+/* The imprint (/imprint) and privacy (/privacy) pages. Same palette and type as the
+   game menu (styles/main.css): #1f1f1f ground, white text, Arial, #4caf50 accent.
+   main.css is not loaded here because it locks the page to one screen. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #1f1f1f;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+}
+
+main {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 16px 4rem;
+}
+
+h1 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 2.25rem 0 0.5rem;
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+p,
+ul,
+address {
+  margin: 0.75rem 0;
+}
+
+ul {
+  padding-left: 1.25rem;
+}
+
+li + li {
+  margin-top: 0.5rem;
+}
+
+address {
+  font-style: normal;
+}
+
+a {
+  color: #4caf50;
+}
+
+a:hover,
+a:focus-visible {
+  color: #fff;
+}
+
+a,
+address,
+code {
+  overflow-wrap: anywhere;
+}
+
+code {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  color: #ddd;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+}
+
+.nav--end {
+  margin-top: 3rem;
+}
+
+.updated {
+  margin-top: 0;
+  color: #bbb;
+}

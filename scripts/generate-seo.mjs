@@ -7,7 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seo = {
   siteUrl: "https://mc.trebeljahr.com",
   outputDir: path.resolve(__dirname, "../public"),
-  routes: [{ path: "/", changefreq: "monthly", priority: "1.0" }],
+  routes: [
+    { path: "/", changefreq: "monthly", priority: "1.0" },
+    { path: "/imprint", changefreq: "yearly", priority: "0.3" },
+  ],
   lastmod: (process.env.SITEMAP_LASTMOD || new Date().toISOString()).slice(0, 10),
   title: "Minecraft Clone",
   subtitle: "Browser Voxel Sandbox",
