@@ -118,6 +118,7 @@ html {
   display: flex;
 }
 
+#menu h1,
 #menu h2 {
   font-size: 2.5em;
   margin-bottom: 5vh;
