@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  GitHub social preview cards (1280x640). Rendered by
+  scripts/marketing/render-social-preview.mjs. ?v= picks the layout:
+  a (screenshot-led), b (typographic, block icons), c (dark, mining before/after).
+  All images are real captures from scripts/marketing/capture-screenshots.mjs
+  or the game's own block icons in public/assets/.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>minecraft-clone social preview</title>
+<style>
+  :root {
+    --sky-top: #7fd3fb;
+    --sky: #38bdf8;
+    --grass: #4d7c2a;
+    --soil: #1f2f19;
+    --white: #ffffff;
+    --mint: #d7f5c8;
+    --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--sans); }
+  .card { width: 1280px; height: 640px; position: relative; overflow: hidden; display: none; }
+  body[data-v="a"] #a, body[data-v="b"] #b, body[data-v="c"] #c { display: block; }
+  .url { font-size: 26px; font-weight: 500; letter-spacing: .01em; }
+
+  /* A: screenshot-led */
+  #a img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 78%; }
+  #a .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,34,14,.9) 0%, rgba(20,34,14,.72) 38%, rgba(20,34,14,0) 66%); }
+  #a .text { position: absolute; left: 64px; top: 64px; bottom: 64px; width: 560px; color: var(--white); display: flex; flex-direction: column; justify-content: center; gap: 24px; }
+  #a h1 { margin: 0; font-size: 70px; line-height: 1.02; font-weight: 800; letter-spacing: -.02em; }
+  #a p { margin: 0; font-size: 28px; line-height: 1.35; color: var(--mint); }
+  #a .url { color: var(--white); opacity: .9; }
+
+  /* B: typographic, the game's block icons */
+  #b { background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky) 62%, var(--grass) 62%, var(--soil) 100%); color: var(--white); }
+  #b .text { position: absolute; left: 64px; top: 64px; right: 64px; }
+  #b .eyebrow { font-size: 26px; font-weight: 700; color: var(--soil); opacity: .75; }
+  #b h1 { margin: 14px 0 0; font-size: 92px; line-height: 1; font-weight: 800; letter-spacing: -.025em; text-shadow: 0 2px 0 rgba(31,47,25,.25); }
+  #b .blocks { position: absolute; left: 64px; right: 64px; top: 330px; display: flex; justify-content: space-between; }
+  #b .blocks img { width: 104px; height: 104px; object-fit: contain; filter: drop-shadow(0 8px 10px rgba(0,0,0,.3)); }
+  #b .foot { position: absolute; left: 64px; right: 64px; bottom: 56px; display: flex; justify-content: space-between; align-items: baseline; font-size: 28px; color: var(--mint); }
+
+  /* C: dark, mining before/after */
+  #c { background: var(--soil); color: var(--white); padding: 56px 64px; }
+  #c h1 { margin: 0; font-size: 56px; font-weight: 800; letter-spacing: -.02em; }
+  #c .pair { display: flex; gap: 24px; margin-top: 36px; }
+  #c figure { margin: 0; flex: 1; }
+  #c figure img { width: 100%; height: 340px; object-fit: cover; object-position: 50% 45%; border-radius: 10px; display: block; }
+  #c figcaption { margin-top: 12px; font-size: 24px; color: var(--mint); }
+  #c .url { position: absolute; right: 64px; top: 72px; color: var(--mint); }
+</style>
+</head>
+<body>
+  <section id="a" class="card">
+    <img src="../screenshots/world.jpg" alt="">
+    <div class="shade"></div>
+    <div class="text">
+      <h1>A voxel world in a browser tab</h1>
+      <p>Walk, fly and dig through generated terrain. No install, no account.</p>
+      <div class="url">mc.trebeljahr.com</div>
+    </div>
+  </section>
+
+  <section id="b" class="card">
+    <div class="text">
+      <div class="eyebrow">mc.trebeljahr.com</div>
+      <h1>A voxel world<br>in a browser tab</h1>
+    </div>
+    <div class="blocks">
+      <img src="../../../public/assets/grass-item.png" alt="">
+      <img src="../../../public/assets/dirt-item.png" alt="">
+      <img src="../../../public/assets/stone-item.png" alt="">
+      <img src="../../../public/assets/oakwood-item.png" alt="">
+      <img src="../../../public/assets/birchwood-item.png" alt="">
+      <img src="../../../public/assets/coal-item.png" alt="">
+      <img src="../../../public/assets/iron-item.png" alt="">
+      <img src="../../../public/assets/gold-item.png" alt="">
+      <img src="../../../public/assets/lapis-item.png" alt="">
+      <img src="../../../public/assets/emerald-item.png" alt="">
+    </div>
+    <div class="foot"><span>Three.js · TypeScript · Web Workers</span><span>Open source</span></div>
+  </section>
+
+  <section id="c" class="card">
+    <h1>Dig into a generated world</h1>
+    <div class="url">mc.trebeljahr.com</div>
+    <div class="pair">
+      <figure><img src="../screenshots/mining-before.jpg" alt=""><figcaption>Before</figcaption></figure>
+      <figure><img src="../screenshots/mining.jpg" alt=""><figcaption>Four left clicks later</figcaption></figure>
+    </div>
+  </section>
+
+<script>
+  document.body.dataset.v = new URLSearchParams(location.search).get("v") || "a";
+</script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+{
+  "generated": "2026-11-06",
+  "generatedBy": "pnpm build && pnpm marketing:screenshots",
+  "files": [
+    {
+      "path": "screenshots/world.jpg",
+      "purpose": "README hero: the world from the spawn point",
+      "source": "scripts/marketing/capture-screenshots.mjs, production build, headless Chromium (ANGLE/Metal), 1600x1000 at 2x",
+      "width": 3200,
+      "height": 2000,
+      "bytes": 478288,
+      "sha256": "6b1604eacf1b184f0685c31c4bd4d762861a4aef43269505570370fe30ec8590"
+    },
+    {
+      "path": "screenshots/hills.jpg",
+      "purpose": "Second world view, turned towards the hills",
+      "source": "scripts/marketing/capture-screenshots.mjs",
+      "width": 3200,
+      "height": 2000,
+      "bytes": 529910,
+      "sha256": "648b2f2b56ceed595846e0d498c1de56220fc1fbac188db6d86bfc64ba3c11bd"
+    },
+    {
+      "path": "screenshots/mining-before.jpg",
+      "purpose": "Mining pair, before",
+      "source": "scripts/marketing/capture-screenshots.mjs, after landing with gravity on",
+      "width": 3200,
+      "height": 2000,
+      "bytes": 855524,
+      "sha256": "b829961b336e1b7d4b3f4ffb635d3cca180da2f516c1acbc31aa45297264f26b"
+    },
+    {
+      "path": "screenshots/mining.jpg",
+      "purpose": "Mining pair, after four left clicks",
+      "source": "scripts/marketing/capture-screenshots.mjs",
+      "width": 3200,
+      "height": 2000,
+      "bytes": 855507,
+      "sha256": "113ac1ca61d0536b0fbc6a7b9c6ea48407a17ef14e3098f5d22485b31b355d13"
+    },
+    {
+      "path": "screenshots/menu.jpg",
+      "purpose": "Start menu",
+      "source": "scripts/marketing/capture-screenshots.mjs",
+      "width": 3200,
+      "height": 2000,
+      "bytes": 93972,
+      "sha256": "e56984a61205af72118f9bfc95a46a0145fd6e0bf9d19b819aeb0bafc5050f29"
+    },
+    {
+      "path": "social-preview/social-preview-a.png",
+      "purpose": "GitHub social preview, option A (screenshot-led)",
+      "source": "social-preview/template.html?v=a with screenshots/world.jpg",
+      "width": 1280,
+      "height": 640,
+      "bytes": 679630,
+      "sha256": "098bcbc3bd582ee1b6f37bfc4d0aa946cfecf4abfc5d9cad6543178cc86a6293"
+    },
+    {
+      "path": "social-preview/social-preview-b.png",
+      "purpose": "GitHub social preview, option B (typographic, block icons)",
+      "source": "social-preview/template.html?v=b with public/assets/*-item.png",
+      "width": 1280,
+      "height": 640,
+      "bytes": 235318,
+      "sha256": "ec67154a78672f4d0c18c6b682b91a025477feb0f03474cf74318bc2e00523ea"
+    },
+    {
+      "path": "social-preview/social-preview-c.png",
+      "purpose": "GitHub social preview, option C (dark, mining before/after)",
+      "source": "social-preview/template.html?v=c with the mining pair",
+      "width": 1280,
+      "height": 640,
+      "bytes": 636159,
+      "sha256": "8cbf1e83439d9000defb25f7decbd6ffe73c0697c139ae7b14ee5401953902d0"
+    },
+    {
+      "path": "social-preview/template.html",
+      "purpose": "HTML/CSS source of the three cards",
+      "source": "Hand-written; Helvetica Neue / Arial",
+      "width": null,
+      "height": null,
+      "bytes": 4992,
+      "sha256": "7810d0cc475c16c32fb2377a71c813dcb57e454a3b9907c36107c921d623ede1"
+    }
+  ]
+}

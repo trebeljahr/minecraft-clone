@@ -2,8 +2,17 @@
   "name": "minecraft-clone",
   "version": "0.0.1",
   "packageManager": "pnpm@10.33.2",
-  "description": "A simple minecraft clone that can be played online in the browser",
+  "description": "A voxel world in a browser tab. Walk, fly and dig through generated terrain. Built with three.js and TypeScript.",
   "author": "Rico Trebeljahr",
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://mc.trebeljahr.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trebeljahr/minecraft-clone.git"
+  },
+  "bugs": {
+    "url": "https://github.com/trebeljahr/minecraft-clone/issues"
+  },
   "main": "app.js",
   "engines": {
     "node": "24.x"
@@ -16,7 +25,8 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "marketing:screenshots": "node scripts/marketing/capture-screenshots.mjs && node scripts/marketing/render-social-preview.mjs"
   },
   "dependencies": {
     "@shopify/draggable": "^1.0.0-beta.8",
