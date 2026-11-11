@@ -2,7 +2,7 @@
 // docs/marketing/social-preview/template.html into social-preview-{a,b,c}.png
 // (1280x640), and the two og:image cards (1200x630) from variant A:
 //
-//   og-wordmark.png  card A with its wordmark and line, laid out at 1.91:1
+//   og-wordmark.png  card A with its wordmark and line (no URL), laid out at 1.91:1
 //   og-clean.png     card A without shade or text, the world reframed
 //
 // Run capture-screenshots.mjs first: the cards use its JPEGs.
@@ -33,7 +33,8 @@ const ogOnly = process.argv.includes("--og");
 const ogTall = "html, body, .card { height: 672px !important; }";
 const ogCards = {
   // Live A: object-fit cover and a flex-centred text column adapt on their own.
-  "og-wordmark": "",
+  // The URL line is left out; the column re-centres without it.
+  "og-wordmark": "#a .url { display: none !important; }",
   // Shade and text gone; reframed so the hotbar is cropped off and the hill
   // sits near the centre. Visible part of the 2000x1250-scale screenshot:
   // x 400..2000, y 250..1090 (the hotbar starts at y 1098).

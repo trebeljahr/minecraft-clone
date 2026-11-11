@@ -76,12 +76,12 @@
     },
     {
       "path": "social-preview/og-wordmark.png",
-      "purpose": "og:image, with wordmark: card A laid out at 1.91:1",
+      "purpose": "og:image, with wordmark: card A without the URL line, laid out at 1.91:1",
       "source": "social-preview/template.html?v=a at 1280x672, 2x, scaled to 1200x630 with ImageMagick",
       "width": 1200,
       "height": 630,
-      "bytes": 611223,
-      "sha256": "c8b672a1eee4689ba7fd170cdf82495f722da5d084d4a0b554311d314c7b6543"
+      "bytes": 604684,
+      "sha256": "00d6668f5e53dc4dc24ada71b224f66f2a632a249ea60640a6afbfb096aba347"
     },
     {
       "path": "social-preview/og-clean.png",
