@@ -75,6 +75,24 @@
       "sha256": "8cbf1e83439d9000defb25f7decbd6ffe73c0697c139ae7b14ee5401953902d0"
     },
     {
+      "path": "social-preview/og-wordmark.png",
+      "purpose": "og:image, with wordmark: card A laid out at 1.91:1",
+      "source": "social-preview/template.html?v=a at 1280x672, 2x, scaled to 1200x630 with ImageMagick",
+      "width": 1200,
+      "height": 630,
+      "bytes": 611223,
+      "sha256": "c8b672a1eee4689ba7fd170cdf82495f722da5d084d4a0b554311d314c7b6543"
+    },
+    {
+      "path": "social-preview/og-clean.png",
+      "purpose": "og:image, no text: the world from the spawn point, hotbar cropped off",
+      "source": "social-preview/template.html?v=a at 1280x672 without shade or text, 2x, scaled to 1200x630 with ImageMagick",
+      "width": 1200,
+      "height": 630,
+      "bytes": 561467,
+      "sha256": "4e8e098e13a072436da1e9b273ab6eaf48e7a53c1db0d754e1e76b592af3d645"
+    },
+    {
       "path": "social-preview/template.html",
       "purpose": "HTML/CSS source of the three cards",
       "source": "Hand-written; Helvetica Neue / Arial",
