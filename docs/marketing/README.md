@@ -27,8 +27,10 @@ node scripts/marketing/render-social-preview.mjs --og
 | [`social-preview/social-preview-a.png`](social-preview/social-preview-a.png) | Social preview A, screenshot-led | 1280×640 | `template.html?v=a` with `world.jpg` | 2026-11-06 |
 | [`social-preview/social-preview-b.png`](social-preview/social-preview-b.png) | Social preview B, typographic | 1280×640 | `template.html?v=b` with the game's block icons from `public/assets/` | 2026-11-06 |
 | [`social-preview/social-preview-c.png`](social-preview/social-preview-c.png) | Social preview C, dark, mining pair | 1280×640 | `template.html?v=c` | 2026-11-06 |
-| [`social-preview/og-wordmark.png`](social-preview/og-wordmark.png) | og:image, with wordmark | 1200×630 | `template.html?v=a` without the URL line, laid out at 1280×672, shot at 2×, scaled with ImageMagick | 2026-11-12 |
+| [`social-preview/og-wordmark.png`](social-preview/og-wordmark.png) | og:image, with wordmark; served as `public/og-card.jpg` | 1200×630 | `template.html?v=a` without the URL line, laid out at 1280×672, shot at 2×, scaled with ImageMagick | 2026-11-12 |
 | [`social-preview/og-clean.png`](social-preview/og-clean.png) | og:image, no text | 1200×630 | `template.html?v=a` without shade or text, `world.jpg` reframed so the hotbar is cropped off | 2026-11-11 |
-| [`social-preview/template.html`](social-preview/template.html) | Source of the cards | – | HTML/CSS, Helvetica Neue / Arial, colours from `public/og-image.png` and the page's theme colour | 2026-11-06 |
+| [`social-preview/template.html`](social-preview/template.html) | Source of the cards | – | HTML/CSS, Helvetica Neue / Arial, colours from the earlier drawn og:image and the page's theme colour | 2026-11-06 |
 
 The social preview is uploaded by hand in the repository settings (Settings → Social preview).
+
+The site's og:image, `public/og-card.jpg`, is `og-wordmark.png` as JPEG: `magick docs/marketing/social-preview/og-wordmark.png -strip -sampling-factor 4:4:4 -interlace JPEG -quality 88 public/og-card.jpg`.
